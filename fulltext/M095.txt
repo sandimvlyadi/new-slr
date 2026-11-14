@@ -1,0 +1,1031 @@
+Received: November 15, 2025.               Revised: December 30, 2025.                                                           869
+
+
+
+
+   CORA-Net: Calibration-oriented, Robust, and Ordinal-aware Network with
+  Dual-path Cross-scale Attention and Uncertainty-guided Co-teaching for Knee
+                                  OA Grading
+
+           Macharla supriya1*                   Thayyabba Khatoon Mohammed2,3                         Ravikanth Motupalli4
+
+              1
+               Department of Computer Science and Engineering, MallaReddy University, Maisammaguda,
+                                             Hyderabad, Telangana, India
+                  2
+                   Department of Computer Science and Engineering ,Malla Reddy University, India
+                    3
+                      VNR Vignana Jyothi Institute of Engineering and Technology, Hyderabad, India
+                                 4
+                                   Department of Computer Science and Engineering,
+                    VNR Vignana Jyothi Institute of Engineering and Technology (VNRVJIET), India
+                             * Corresponding author’s Email: supriya160987@gmail.com
+
+
+  Abstract: CORA-Net is a calibration-first, robust, and ordinally consistent system for grading knee osteoarthritis (OA)
+  (Kellgren–Lawrence; KL-0…KL-4) from radiographs. It addresses four deployment hurdles—ordinal violations, class
+  imbalance, label noise, and inter-site distribution shift. The model couples an EfficientNet-B5 backbone and feature
+  pyramid network (FPN) with a dual-path cross-scale module: deformable spatial attention targets joint-space
+  narrowing and osteophytes, while a channel-gated token mixer stabilizes subtle texture patterns. Two predictors are
+  trained jointly—a categorical softmax head and a cumulative ordinal regression (CORAL)-based ordinal head—linked
+  by a consistency penalty that enforces monotonic grade ordering. Learning is shaped by a class-balanced Focal–
+  Tversky loss, uncertainty-guided co-teaching to suppress mislabeled examples, stochastic weight averaging with
+  exponential moving average (SWA-EMA) self-distillation for stable convergence, and a Dirichlet calibration term. At
+  inference, temperature scaling (fit on a held-out calibration split), lightweight test-time batch-norm adaptation, and
+  conformal prediction provide calibrated probabilities and coverage-controlled risk sets. Evaluation uses strict patient-
+  level stratified 5×2 cross-validation plus an external multi-center cohort, reporting macro-F1, per-class precision–
+  recall AUC (PR-AUC)/ROC AUC (AUC), Cohen’s κ, expected calibration error (ECE), Brier score, conformal
+  coverage/size, confidence intervals, ablations, and paired tests. Across internal cross-validation and external multi-site
+  testing (e.g., Site-A: 860 radiographs; Site-B: 845 radiographs), CORA-Net Ultra achieves Macro-F1 = 0.982, Macro
+  PR-AUC = 0.995, and ECE = 0.009 (Brier = 0.028), with 95% BCa bootstrap confidence intervals (1,000 resamples)
+  and Holm–Bonferroni–corrected paired tests, improving minority-grade sensitivity and reducing calibration error
+  compared with strong CNN/Transformer baselines.
+  Keywords: Knee osteoarthritis (OA), Kellgren–lawrence grading, Radiograph-based grading, Ordinal classification
+  (CORAL), Dual-path cross-scale attention, Deformable spatial attention, Channel-gated token mixing, Uncertainty-
+  guided co-teaching, Class-imbalance learning, Calibration (ECE, Brier).
+
+
+
+
+                                                                              reader variability, and highly imbalanced grade
+1. Introduction                                                               distributions that particularly penalize minority and
+                                                                              severe classes [1-3]. Although recent CNN and
+1.1 Background and challenges                                                 Transformer backbones trained on large cohorts (e.g.,
+                                                                              OAI/MOST) have pushed headline accuracy for
+    Knee osteoarthritis (OA) is a major driver of pain                        radiograph-based grading and prognosis, key
+and disability, yet radiographic grading remains                              reliability gaps persist: violations of the ordinal
+difficult due to subtle morphological cues, inter-                            nature of grades, probability miscalibration, and
+
+International Journal of Intelligent Engineering and Systems, Vol.19, No.2, 2026                      DOI: 10.22266/ijies2026.0228.53
+This article is licensed under a Creative Commons Attribution-ShareAlike 4.0 International License.
+License details: https://creativecommons.org/licenses/by-sa/4.0/
+Received: November 15, 2025.               Revised: December 30, 2025.                                                             870
+
+
+sensitivity to label noise and inter-site distribution                        distillation for optimization stability, and a Dirichlet
+shift [2–5]. Beyond accuracy, deployment settings                             calibration loss. At inference, temperature scaling,
+require calibrated, trustworthy predictions with                              lightweight test-time batch-norm adaptation, and
+auditable uncertainty, motivating routine reporting of                        conformal prediction yield calibrated probabilities
+metrics such as expected calibration error (ECE) and                          and coverage-controlled risk sets. Distinct from prior
+Brier score [6].                                                              pipelines that treat calibration or ordinality as post-
+                                                                              hoc concerns, CORA-Net explicitly couples ordinal
+1.2 Gaps in prior approaches                                                  consistency and calibration-aware learning with
+                                                                              noise-robust training, and we evaluate it using strict
+    Hybrid CNN/Transformer designs and MRI-                                   patient-level splits with external multi-site testing
+informed multi-task systems show that cross-scale                             and paired statistical comparisons. Our objective is
+features help capture joint-space narrowing and                               dependable discrimination and probability reliability
+osteophytes; however, most radiograph pipelines still                         under real-world imbalance, noise, and site shift,
+(i) do not explicitly enforce monotonic ordering of                           aligning with evidence on stronger backbones,
+Kellgren–Lawrence (KL) grades, (ii) under-                                    attention across scales, and the clinical necessity of
+emphasize calibration during training, and (iii) lack                         calibrated outputs [1-6].
+principled defenses against noisy labels common in                                The remainder of this paper is organized as
+multi-reader datasets. Furthermore, domain shift                              follows: Section 2 reviews related work; Section 3
+across scanners and sites continues to degrade                                details the CORA-Net architecture and learning
+confidence reliability even when discrimination is                            objectives; Section 4 describes datasets, patient-level
+preserved [1, 4-6]. In addition, many studies provide                         validation, calibration, and statistical testing; Section
+limited disclosure of cohort composition, patient-                            5 reports results, ablations, and external validation;
+level split construction, and external-site protocols,                        and Section 6 concludes with limitations and future
+which hinders exact replication and makes cross-                              directions.
+paper comparisons fragile.
+
+1.3 This work: CORA-Net                                                       2. Literature review
+
+    We introduce CORA-Net, a calibration-oriented,                            2.1 Evolution of radiograph-based KOA grading
+robust, ordinal-aware framework for knee OA
+                                                                                  Radiograph classifiers have progressed from
+grading from radiographs. CORA-Net couples an
+                                                                              conventional CNN backbones to attention-
+EfficientNet-B5 + FPN backbone with dual-path
+                                                                              augmented and hybrid designs trained largely on
+cross-scale attention—deformable spatial focus for
+                                                                              OAI/MOST cohorts. Early single-stream systems
+anatomy (joint-space narrowing, osteophytes) and a
+                                                                              reached radiologist-level severity estimation but
+channel-gated token mixer for stable textural cues—
+                                                                              rarely addressed probability calibration, label noise,
+driving a dual-head classifier (categorical softmax +
+                                                                              or explicit ordinal constraints [1]. Later hybrids that
+cumulative ordinal regression (CORAL) ordinal
+                                                                              pair VGG/CNN blocks or compact transformers
+head) constrained by a monotonicity consistency loss.
+                                                                              increased representational capacity and improved
+Training integrates a class-balanced Focal–Tversky
+                                                                              handling of class imbalance, yet most optimized for
+objective, uncertainty-guided co-teaching for label-
+                                                                              accuracy rather than reliability under distribution
+noise suppression, stochastic weight averaging with
+                                                                              shift [15].
+an exponential moving average (SWA-EMA) self-
+
+
+
+
+                                            Figure. 1 System Overview: Training vs Inference
+International Journal of Intelligent Engineering and Systems, Vol.19, No.2, 2026                      DOI: 10.22266/ijies2026.0228.53
+This article is licensed under a Creative Commons Attribution-ShareAlike 4.0 International License.
+License details: https://creativecommons.org/licenses/by-sa/4.0/
+Received: November 15, 2025.               Revised: December 30, 2025.                                                           871
+
+                                               Table 1. Condensed prior art vs. CORA-Net
+       Ref      Modality / Task                 Key idea (very brief)              Gap vs. CORA-Net
+       [1]      X-ray / KL grading              CNN matches radiologists           No ordinal constraints; no calibration
+       [2]      X-ray / Dx + TKR risk           DL risk on OAI radiographs         Shift/calibration underreported
+       [5]      X-ray / JSN progression         Longitudinal risk modeling         Not calibrated grading; noise untreated
+       [7]      MRI / multi-task seg+cls        3D multi-task improves features MRI-centric; clinical triage uses X-ray
+       [9]      X-ray / KL grading              Compact transformer (CCT)          Accuracy-first; reliability not analyzed
+       [14]     XR+MR / progression             Multimodal transformer fusion      Cost/complex; calibration limited
+       [15]     X-ray / staging                 VGG/CNN hybrids                    Ordinal inconsistency persists
+       [16]     MRI / progression               DL for radiographic progression External robustness unclear
+       [18]     X-ray±demo / grading            Uni vs multi-modal comparison      Small calibration focus; mixed gains
+       [20]     X-ray / real-world              High-throughput clinical grading Workflow reliability metrics sparse
+       [22]     XAI review / KOA                Grad-CAM, SHAP survey              Few quantify explanation reliability
+
+CCT-style variants further reported sizable gains on                          explanation stability or alignment between saliency
+enlarged or generative adversarial network (GAN)-                             and calibrated probabilities—an evidence gap for
+augmented datasets, but seldom included systematic                            building trust [22]. Adjacent sensing modalities
+calibration analyses [9]. Multi-task 3D magnetic                              (wearable     acoustics, vibroarthrography, bio
+resonance imaging (MRI) architectures coupling                                impedance) show promise for early or pre-
+segmentation with classification demonstrated that                            radiographic screening in noisy outpatient settings,
+structural   cues     boost    discrimination     and                         yet currently function as adjuncts to radiographs
+computational efficiency; however, these pipelines                            within standard care pathways [3, 12, 21]. Emerging
+target MRI, not routine radiographs used for triage                           non-ionizing imaging (e.g., UWB radar/SAR
+[7]. Comparative studies of unimodal radiography                              tomography) aims to capture structural proxies
+versus multimodal fusion indicate that metadata or                            without X-ray exposure and could broaden screening,
+MR channels can help in constrained scenarios, but                            but requires clinical scaling and harmonization with
+gains may narrow when strong unimodal radiograph                              accepted grading standards [4].
+models are carefully tuned on large cohorts [18].
+                                                                              2.4 Persistent gaps motivating this work
+2.2 Prognosis and progression modeling
+                                                                                  Across the literature, three issues remain
+    Beyond cross-sectional grading, prognosis efforts                         insufficiently addressed:
+use MRI and longitudinal imaging to anticipate                                    (i) Ordinal inconsistency—adjacent grades are
+structural change and pain trajectories. MRI-based                            frequently confused when monotonic ordering is not
+deep models predict radiographic progression and                              explicitly                                  enforced;
+explore end-to-end multimodal transformers,                                   (ii) Probability miscalibration—rarely optimized
+showing that imaging alone can attain moderate                                during training and infrequently reported alongside
+AUCs, with multimodal benefits most evident at                                discrimination metrics; and
+short horizons or within specific subgroups [14, 16].                             (iii) Robustness under noise and shift—limited
+Radiograph-only risk models for joint-space loss and                          use of co-teaching, self-distillation, test-time
+pain progression underscore that cohort selection,                            adaptation, or risk-aware outputs to handle label
+prediction horizon, and site heterogeneity strongly                           noise and inter-site shift.
+influence generalization performance [5, 6]. Real-                                In addition, many studies incompletely report
+world deployments demonstrate high-throughput                                 cohort construction and patient-level split protocols
+inference over thousands of knees, while                                      (including external-site definitions), which makes
+emphasizing external validation and workflow                                  replication and fair cross-paper comparison difficult.
+integration beyond headline accuracy [20].                                        The proposed framework tackles these challenges
+                                                                              jointly, positioning radiograph-based KOA grading
+2.3 Explainability and reliability                                            as a reliability-first problem aligned with clinical
+                                                                              deployment needs [1, 7, 9, 14-16, 18, 20-22].
+    Explainability has become central to clinical
+adoption. A recent KOA explainable AI (XAI)
+                                                                              3. Method (CORA-Net)
+review found widespread use of gradient-weighted
+class activation mapping (Grad-CAM) and                                         CORA-Net targets reliability for radiographic
+qualitative overlays, but little quantification of                            KOA grading by coupling dual-path cross-scale
+International Journal of Intelligent Engineering and Systems, Vol.19, No.2, 2026                      DOI: 10.22266/ijies2026.0228.53
+This article is licensed under a Creative Commons Attribution-ShareAlike 4.0 International License.
+License details: https://creativecommons.org/licenses/by-sa/4.0/
+Received: November 15, 2025.               Revised: December 30, 2025.                                                           872
+
+
+attention with a dual-head ordinal + categorical                                   𝑍𝐵 − Mixer([𝑠 ⊙ 𝑃3 , 𝑠 ⊙ 𝑃4 , 𝑠 ⊙ 𝑃5 ])        (2)
+classifier, trained under calibration-aware and noise-
+robust objectives. Design choices reflect evidence                               The fused representation is 𝑍 − 𝛾𝑍𝐴 + (1 −
+that (i) radiograph backbones benefit from multi-                             𝛾)𝑍𝐵 , with learnable gate 𝛾 ∈ [0,1].
+scale context, (ii) accuracy alone is insufficient
+without calibrated probabilities, and (iii) deployment                        3.3 Dual-head outputs: categorical and ordinal
+demands robustness to label noise and inter-site shift
+[1, 2, 7, 9, 22].                                                                  Two heads are trained jointly:
+                                                                                   • Categorical head: 𝑝 − Softmax(𝑊𝑐 𝑍) over
+3.1 Pre-processing and input                                                         Kellgren–Lawrence (KL)
+
+    Knee radiographs x are standardized by 1) knee                                 𝑦 ∈ {0, … ,4}.                                 (3)
+region-of-interest (ROI) localization and tight
+cropping, (2) photometric normalization with                                       •    Ordinal head (threshold formulation): predict
+contrast-limited adaptive histogram equalization                                        𝑜𝑘 − Pr(𝑦 > 𝑘) for 𝑘 − 0, … ,3; the implied
+(CLAHE) and (3) size normalization to WH×W.                                             class is the count of satisfied thresholds.
+Optional metadata are not used for grading to keep                                      Coupling both heads encodes monotonic
+the pipeline unimodal and clinic-friendly [2].                                          structure absent in typical single-head
+                                                                                        CNN/Transformer graders
+3.2 Backbone and dual-path cross-scale attention
+                                                                              3.4 Losses and calibration-aware objective
+    A Feature Pyramid Network (FPN) over
+EfficientNet-B5      yields {𝑃3 , 𝑃4 , 𝑃5 } .   Two                                Let 𝑤𝑐 be effective-number class weights.
+complementary paths fuse anatomy and texture cues                                  Discrimination (class-balanced hybrid):
+(joint-space narrowing, osteophytes, sclerosis)
+known to aid KOA grading on radiographs [1, 7, 9].                                ℒhyb = 𝜆ℒFocal (𝑝, 𝑦) + (1 − 𝜆)ℒTversky (𝑝, 𝑦) (4)
+    Path-A: Deformable cross-scale spatial focus.
+Concatenate features, project to queries/keys/values,                              Ordinal constraints:
+and learn offsets Δ for adaptive sampling:
+                                                                                  ℒord = ∑3𝑘=0 BCE(𝑜𝑘 , 1[𝑦 > 𝑘]),
+    𝑄 − 𝜙𝑞 (⊕𝑙 𝑃𝑙 ), 𝐾, 𝑉 − 𝜙𝑘,𝑣 (⊕𝑙 𝑃𝑙 ),
+                                                                                  ℒcons − ‖𝑝 − Π(𝑜)‖1                             (5)
+                        𝑄(𝐾+Δ)⊤
+    𝐴 − Softmax (               ) , 𝑍𝐴 − 𝐴𝑉                        (1)
+                           √𝑑
+                                                                              where Π(⋅) maps ordinal probabilities to categorical
+   Path-B: Channel-gated token mixer. Global                                  form.
+                                                                                  Dirichlet evidence calibration: logits produce
+pooling drives a gate 𝑠 − 𝜎 (𝑊2 𝛿(𝑊1 GAP(𝑃𝑙 ))) .                             evidence
+Gated maps pass through a lightweight mixer:
+
+
+
+
+                                           Figure. 2 Data collection and Preprocessing stages
+
+International Journal of Intelligent Engineering and Systems, Vol.19, No.2, 2026                      DOI: 10.22266/ijies2026.0228.53
+This article is licensed under a Creative Commons Attribution-ShareAlike 4.0 International License.
+License details: https://creativecommons.org/licenses/by-sa/4.0/
+Received: November 15, 2025.               Revised: December 30, 2025.                                                               873
+
+
+
+
+                                                       Figure. 3 Proposed Architecture
+
+    𝑒 − Softplus(𝑊𝑑 𝑍), 𝛼 − 𝑒 + 1                                  (6)        shift; and (iii) conformal prediction yields coverage-
+                                                                              controlled risk sets C(x) with target 1-α. Reporting
+    ℒdir = − log DirichletPDF(𝑦; 𝛼) +                                         includes macro-F1/precision–recall AUC (PR-
+    𝜂KL(Dir(𝛼)‖Dir(1))                                             (7)        AUC)/Cohen’s κ (κ) and expected calibration error
+                                                                              (ECE)/Brier, reflecting deployment requirements
+encouraging calibrated confidence, a gap frequently                           highlighted by clinical and XAI reviews [2, 22].
+unreported in prior KOA literature [22]. Total
+objective (class-weighted):                                                   3.7 Computational profile
+
+                                                                                 CORA-Net maintains EfficientNet-B5-level
+    ℒ = ∑𝑐 𝑤𝑐 (ℒhyb + 𝜇ℒord + 𝜌ℒcons + 𝜁ℒdir ) (8)                            complexity with modest overhead from attention and
+                                                                              dual heads; export supports quantization-aware
+                                                                              deployment, aligning with real-world radiographic
+3.5 Noise-robust training and stabilization
+                                                                              workflows [2, 20].
+    Two peers exchange the lowest-entropy 𝜅%
+samples per mini-batch (uncertainty-guided co-                                4. Proposed algorithm
+teaching), suppressing suspected label noise from                                 Objective. Learn a reliability-first radiographic
+multi-reader datasets. A teacher updated by                                   KOA grader that preserves ordinal structure, delivers
+stochastic weight averaging with an exponential                               calibrated probabilities, and is robust to label noise
+moving average (SWA-EMA) provides soft targets                                and inter-site shift, improving on accuracy-centric
+𝑞𝑇 for consistency:                                                           pipelines in prior KOA literature [1, 9, 22].
+
+    ℒdistill = 𝜏KL(𝑞𝑇 ‖𝑝)                                          (9)        4.1 Notation and components
+
+    Gradient centralization and cosine-decayed                                     •    Training       set       𝐷 = {(𝑥𝑖 , 𝑦𝑖 )}𝑁
+                                                                                                                                 𝑖−1 , 𝑦 ∈
+weight decay improve stability. These mechanisms                                        {0,1,2,3,4} (Kellgren-Lawrence (KL) grades).
+address brittleness noted in earlier accuracy-centric                              •    Backbone 𝑓𝜃 : EfficientNet-B5 + feature
+pipelines [1, 9].                                                                       pyramid network (FPN) features {𝑃3 , 𝑃4 , 𝑃5 }
+                                                                                        [1, 9].
+3.6 Inference-time reliability                                                     •    Dual-path attention: deformable spatial focus
+                                                                                        𝑍𝐴 and channel-gated token mixer 𝑍𝐵 ; fused
+    At test time, (i) temperature scaling calibrates
+                                                                                        𝑍 𝛾𝑍𝐴 + (1 − 𝛾)𝑍𝐵 .
+probabilities using a held-out calibration split
+(defined in Section IV); (ii) test-time batch                                      •    Heads:       categorical     softmax          𝑝=
+normalization (BN) adaptation updates batch norm                                        Softmax(𝑊𝑐 𝑍) and ordinal thresholds 𝑜𝑘 =
+statistics with entropy minimization to mitigate site                                   Pr(𝑦 > 𝑘), 𝑘 − 0. .3.
+
+International Journal of Intelligent Engineering and Systems, Vol.19, No.2, 2026                       DOI: 10.22266/ijies2026.0228.53
+This article is licensed under a Creative Commons Attribution-ShareAlike 4.0 International License.
+License details: https://creativecommons.org/licenses/by-sa/4.0/
+Received: November 15, 2025.               Revised: December 30, 2025.                                                               874
+
+
+     •    Losses: class-balanced Focal-Tiversky 𝐿hyb ,                          24
+          ordinal 𝐿ord , head-consistency 𝐿cons,                                25        # Cross-peer update with exchanged Sκ
+          Dirichlet calibration 𝐿dir                                            to suppress noisy labels
+     •    Robust training: uncertainty-guided co-                               26        Update M1 on Sκ(M2); Update M2 on
+          teaching, stochastic weight averaging with                            Sκ(M1) using gradient centralization
+          exponential moving average (SWA-EMA)                                  27
+          self-distillation; gradient centralization.                           28 # SWA-EMA teacher update on schedule
+     •    Inference reliability: temperature scaling;                           29 T ← SWA_EMA_Update(T, {M1, M2})
+          test-time      batch     normalization      (BN)                      30
+          adaptation; conformal prediction sets;                                31 # Fit post-hoc temperature on held-out
+          calibrated metrics as emphasized in                                   calibration split
+          deployment-minded studies [2, 22].                                    32 Tcal ← OptimizeTemperature({logits, y})
+                                                                                33 return M1, M2, T, Tcal
+  Algorithm 1 — training CORA-Net
+                                                                                  Multi-scale radiograph features and modern
+  Input: Training set D, class weights wc,
+                                                                              backbones are retained from prior best practice [1],
+  hyperparams {λ, μ, ρ, ζ, τ, κ}
+                                                                              [9]; the main contribution is the explicit coupling of
+  Output: Trained student models M1, M2; SWA-
+                                                                              joint categorical–ordinal supervision, calibration-
+  EMA teacher T; temperature Tcal
+  1 Initialize peer students M1, M2 (shared                                   aware training, and uncertainty-guided robustness—
+                                                                              criteria frequently missing from earlier KOA
+  architecture), teacher T ← M1
+                                                                              pipelines and clinical reliability analyses [2, 22].
+  2 for epoch = 1 … E do
+  3    for minibatch B = {(x,y)} ⊂ D do
+  4      # Strong augmentation and standardization                              Algorithm 2 — inference & risk-aware output
+                                                                                    Input: Trained student M* (EMA/SWA-averaged),
+  5       x̃ ← augment_and_standardize(x)
+                                                                                temperature Tcal, test image x
+  # CLAHE, crop, MixUp/CutMix (p)                                                   Output: Grade ŷ, calibrated confidence p̂, conformal
+  6                                                                             risk set C(x)
+  7       # Forward pass (for each peer)                                        1 x̃ ← standardize(x); # same pre-processing as
+  8       for m in {M1, M2} do                                                  training
+  9        Z ← DualPathAttention(FPN(ENB5(x̃)))                                 2 Z ← DualPathAttention(FPN(ENB5(x̃)))
+  # cross-scale features [1], [9]                                               3 p ← Softmax(Wc Z) ; o ← {ok}k=0..3
+  10                 p, {ok}k=0..3, α ← Heads(Z)                                4 logits ← logit(p) / Tcal                            #
+  # softmax, ordinal, Dirichlet params                                          temperature scaling [22]
+  11         U ← entropy(p)                         #                           5 p̂ ← Softmax(logits)
+                                                                                6 p̂ ← TestTimeBNAdapt(p̂; x̃)                        #
+  predictive uncertainty
+                                                                                light entropy-minimization
+  12          Sκ ← indices of lowest-entropy κ% in                              7 ŷ ← argmax(p̂)
+  minibatch # co-teaching selector                                              8 C(x) ← ConformalSet(p̂; α)                          #
+  13                                                                            target coverage 1−α
+  14         # Discrimination + ordinal + calibration                           9 return ŷ, p̂max, C(x)
+  objectives
+  15                 Lhyb ← FocalTversky(p, y)
+  # class-balanced (wc)                                                       4.2 Objective summary (for reproducibility)
+  16          Lord ← Σk BCE(ok, 1[y>k])
+  17        Lcons ← L1(p, Π({ok}))                  #                                         𝜆ℒFocal-Tversky + 𝜇ℒord +
+                                                                                  ℒ = ∑𝑐 𝑤𝑐 (                           )+
+  categorical-ordinal consistency                                                                  𝜌ℒcons + 𝜁ℒdir
+  18           Ldir ← DirichletEvidenceLoss(y, α)                                 𝜏KL(𝑞𝑇 ‖𝑝), with co-teaching on 𝑆𝜅
+  # calibration shaping [22]                                                                    𝑙𝑜𝑤𝑒𝑠𝑡 −
+                                                                                  (                                      )          (10)
+  19                                                                                𝑒𝑛𝑡𝑟𝑜𝑝𝑦 𝑠𝑎𝑚𝑝𝑙𝑒𝑠 𝑝𝑒𝑟 𝑚𝑖𝑛𝑖 − 𝑏𝑎𝑡𝑐ℎ
+  20            # Self-distillation and final loss on
+  selected Sκ                                                                     Hyperparameters ( 𝜆, 𝜇, 𝜌, 𝜁, 𝜏, 𝜅 ) are chosen via
+  21          qT ← T(x̃)                            #                         nested CV/Bayesian search under macro-F1 and
+  teacher soft targets                                                        expected calibration error ECE constraints, ensuring
+  22          Ldist ← τ · KL(qT || p)                                         the calibration-discrimination trade-off is honored as
+  23          Lm ← Σc wc · ( λ·Lhyb + μ·Lord +                                advised by deployment-oriented studies [2, 22].
+  ρ·Lcons + ζ·Ldir ) + Ldist
+
+International Journal of Intelligent Engineering and Systems, Vol.19, No.2, 2026                       DOI: 10.22266/ijies2026.0228.53
+This article is licensed under a Creative Commons Attribution-ShareAlike 4.0 International License.
+License details: https://creativecommons.org/licenses/by-sa/4.0/
+Received: November 15, 2025.               Revised: December 30, 2025.                                                              875
+
+
+     E. Complexity and Deployment Notes                                       Choices reflect pragmatic pipelines reported for
+     Compute. EfficientNet-B5 base cost with modest                           radiograph-only KOA grading and are intentionally
+overhead from dual-path attention and dual heads;                             lightweight for clinical use [1, 2, 7].
+single-GPU training feasible; quantization-aware
+training (QAT)-ready export for clinic picture                                5.3 Validation protocol
+archiving and communication systems (PACS).
+     Reliability reporting. Macro-F1, per-class                                   Performance is estimated using patient-level
+precision–recall       AUC     (PR-AUC)/ROC-AUC,                              stratified 5×2 cross-validation and verified on an
+Cohen’s κ\kappaκ, ECE/Brier score, and conformal                              external multi-center hold-out. All splits are
+coverage/set size on internal CV and external cohorts,                        constructed at the patient level such that both knees
+aligning with reliability gaps identified in prior KOA                        and all timepoints from the same subject remain
+literature [1, 2, 22].                                                        within a single fold/split, preventing leakage across
+                                                                              training/validation/test/external           evaluations.
+                                                                              Hyperparameters are selected within inner folds only;
+5. Data and experimental setup
+                                                                              the external set is untouched until final model
+5.1 Cohorts                                                                   selection, mirroring deployment-minded evaluation
+                                                                              in the literature [2, 20, 22]. All splits preserve class
+    Experiments rely on widely used knee radiograph                           ratios and avoid subject leakage. A held-out
+repositories for KOA research, complemented where                             calibration split is carved from the training portion
+available by de-identified institutional studies. Public                      only (patient-level separated) and is used exclusively
+multi-center sources such as the Osteoarthritis                               for post-hoc calibration (temperature scaling) and
+Initiative (OAI) and the Multicenter Osteoarthritis                           conformal calibration, never for weight updates or
+Study (MOST) provide diversity in scanners and                                model selection.
+protocols and are frequently adopted in grading and
+progression literature [2, 5, 16]. Subject identifiers                        5.4 Baselines and ablations
+are used to ensure patient-level isolation across all
+                                                                                  Comparators include strong CNN/Transformer
+splits. For each cohort/site, we explicitly report
+                                                                              graders: ResNet-50, DenseNet-169, ConvNeXt-B,
+inclusion/exclusion             criteria           (e.g.,
+                                                                              ViT-B/16, EfficientNet-B5, and a compact-
+implants/arthroplasty, missing labels, poor exposure,
+                                                                              transformer KOA variant (CCT-style) [1, 7, 9]. To
+duplicate       views),       cohort       composition
+                                                                              isolate novelty under identical splits and
+(patients/knees/images), and acquisition metadata
+                                                                              preprocessing, we additionally include an ordinal
+(scanner/vendor when available, view protocol, and
+                                                                              baseline (CORAL with EfficientNet-B5) and
+resolution ranges) in a cohort datasheet. Class counts
+                                                                              calibration baselines (temperature scaling and/or
+for Kellgren–Lawrence (KL) grades 0–4 and the
+                                                                              Dirichlet-only variants) where applicable. Ablations
+corresponding patient/knee/image counts per split
+                                                                              remove, one at a time, deformable spatial focus,
+(train/validation/test/external/calibration)         are
+                                                                              channel-gated mixer, ordinal head, class-balanced
+summarized in Table 2, highlighting the expected
+                                                                              loss, uncertainty-guided co-teaching, SWA-EMA
+scarcity of higher grades reported in prior work [1],
+                                                                              distillation, Dirichlet calibration loss, test-time batch-
+[20]. To enable exact replication, we provide a
+                                                                              norm adaptation, and conformal prediction. All
+deterministic split manifest (patient IDs or hashed
+                                                                              baselines are trained under the same data pipeline,
+IDs mapped to split/fold/site) and the random seeds
+                                                                              augmentation policy, and stopping criterion
+used for split generation
+                                                                              whenever applicable to ensure fair head-to-head
+5.2 Pre-processing                                                            comparison.
+
+    Each radiograph undergoes knee ROI localization,                          5.5 Endpoints
+tight cropping, contrast-limited adaptive histogram
+                                                                                  Primary endpoint is macro-F1 over KL-0…KL-4.
+equalization (CLAHE), and resizing to the input
+                                                                              Secondary endpoints include per-class PR-AUC and
+resolution required by EfficientNet-B5. Simple flags
+                                                                              ROC-AUC, Cohen’s κ, Expected Calibration Error
+exclude frames with visible implants or markers.
+                                                                              (ECE), Brier score, and conformal coverage and set
+Panel examples across grades (Fig. 2) illustrate the
+                                                                              size on the external cohort. Emphasis on calibration
+standardized appearance post-processing. Pre-
+                                                                              follows consistent gaps noted in KOA XAI and
+processing     exclusions    and    filtering  rates
+                                                                              deployment studies [2, 22]. All primary/secondary
+(number/percentage removed per cohort) are reported
+                                                                              endpoints are reported with confidence intervals, and
+in the cohort datasheet to ensure reproducibility.
+
+International Journal of Intelligent Engineering and Systems, Vol.19, No.2, 2026                      DOI: 10.22266/ijies2026.0228.53
+This article is licensed under a Creative Commons Attribution-ShareAlike 4.0 International License.
+License details: https://creativecommons.org/licenses/by-sa/4.0/
+Received: November 15, 2025.               Revised: December 30, 2025.                                                              876
+
+
+primary comparisons are pre-specified to avoid post-                              Temperature scaling is fitted on a held-out
+hoc metric selection.                                                         calibration split. For exact replication, we release
+                                                                              machine-readable training configs (hyper parameter
+5.6 Statistical analysis                                                      ranges, final chosen values, and seeds), along with
+                                                                              environment details (library versions) and evaluation
+    Uncertainty is reported as mean with 95% bias-                            scripts.
+corrected and accelerated bootstrap intervals (1,000
+resamples). McNemar’s test evaluates paired error                             5.8 Ethics and governance
+differences; DeLong’s test compares AUCs; paired
+bootstrap tests quantify macro-F1 deltas. Multiple                                Institutional data (if present) are de-identified
+comparisons      use     Holm–Bonferroni       control.                       under local Institutional Review Board (IRB)
+Decision-curve analysis summarizes clinical net                               approval with waiver of consent for retrospective
+benefit at triage thresholds KL≥2 and KL≥3. All                               analysis. Public datasets are used under their
+resampling is performed at the patient level (not                             respective data-use agreements. No re-identification
+image-level), using fixed random seeds; we report the                         attempts are performed. De-identification includes
+number of bootstraps, seed values, and the corrected                          removal of direct identifiers and verification that
+family of hypotheses (Holm–Bonferroni) in the                                 radiographs contain no embedded personal
+Statistical Plan to align each test with its endpoint,                        information; governance details and dataset-specific
+and the seed values are recorded in the reproducibility                       usage conditions are summarized in the cohort
+bundle.                                                                       datasheet.
+
+5.7 Training configuration (reproducibility)                                  5.9 Data, code, and reproducibility artifacts
+
+    Optimization uses Adam with decoupled weight                                  To enable exact replication, we provide a
+decay (AdamW) with cosine-decayed learning rate                               reproducibility bundle containing (i) a deterministic
+and weight decay, gradient centralization, mixed                              split manifest that maps hashed patient identifiers to
+precision, and early stopping on macro-F1 with ECE                            cohort/site, cross-validation fold/repeat, and split
+as a tie-breaker. Augmentations include flips, mild                           membership
+rotations,    limited     histogram      jitter, and                          (train/validation/test/calibration/external), (ii) a
+MixUp/CutMix with probability ≤0.5, constrained to                            cohort datasheet documenting inclusion/exclusion
+radiographic realism. Loss weights (λ,μ,ρ,ζ,τ,κ) are                          logic, acquisition/protocol metadata when available,
+selected via nested cross-validation or Bayesian                              and filtering rates, and (iii) a statistical analysis plan
+search under a discrimination–calibration constraint,                         specifying patient-level resampling, bootstrap
+consistent with recent KOA practice emphasizing                               configuration, paired testing procedures,
+rigorous selection and reporting [1, 2, 9, 22].
+
+          Table 2. Cohort composition and evaluation usage (patient-level isolation; radiograph counts shown)
+ Cohort / Site      Source       Role in     Radiographs          Used for         Used for      Used for    Patient-
+                      type     evaluation         (n)            training /       calibration      final      level
+                                                                   model             fitting      testing   isolation
+                                                                 selection
+    Internal         Public      Patient-        3,120          Yes (within            Yes          Yes     Yes (both
+  development        multi-       level                         inner folds       (calibration (internal    knees and
+     cohort          center     stratified                         only)          split drawn     testing       all
+ (OAI/MOST-                    5×2 cross-                                             from        within   timepoints
+     based)                     validation                                          training        CV         kept
+                                                                                      only)     protocol) within one
+                                                                                                            split/fold)
+     Site-A            De-       External         860               No                 No           Yes        Yes
+                   identified   test-only
+                 institutional
+                     cohort
+     Site-B            De-       External         845               No                 No           Yes        Yes
+                   identified   test-only
+                 institutional
+                     cohort
+
+
+International Journal of Intelligent Engineering and Systems, Vol.19, No.2, 2026                      DOI: 10.22266/ijies2026.0228.53
+This article is licensed under a Creative Commons Attribution-ShareAlike 4.0 International License.
+License details: https://creativecommons.org/licenses/by-sa/4.0/
+Received: November 15, 2025.               Revised: December 30, 2025.                                                              877
+
+                Table 3. Cohort composition                                   leakage risk and align with best practices for OA
+Cohort        KL-    KL-    KL-    KL-      KL-                 Total         grading and prognostic models [2, 9, 16]. Multi-site
+              0      1      2      3        4                                 external evaluation reflects real-world heterogeneity
+Internal      1200     600    800    400      120               3120          in acquisition and demographics, which recent OA
+(CV)                                                                          studies emphasize for generalization [1, 14].
+External        300       180       220       110          50     860
+(Site-A)                                                                      6.2 Implementation details and efficiency
+External        320       150       210       120          45     845
+(Site-B)                                                                          The accuracy–efficiency profile shown in Table 4
+                                                                              and Fig. 4 indicates that the proposed CORA-Net
+                                                                              Ultra sustains high discrimination at moderate
+and Holm–Bonferroni correction families. The                                  parameter/FLOP budgets, indicating feasibility for
+bundle also includes machine-readable experiment                              deployment on commodity GPUs. The scatter in Fig.
+configurations (final hyperparameters, training seeds,                        4 places CORA-Net Ultra at the frontier: Macro-F1 ≈
+and     evaluation     scripts)  and     environment                          0.982 with ~36M parameters and ~6.8
+specifications sufficient to regenerate all reported                          GFLOPs/image—a favorable trade-off compared
+tables and figures without access to protected                                with strong backbones (e.g., EfficientNet-B5, CCT-
+identifiers.                                                                  style) [2, 22]. This balance matters in clinical
+                                                                              environments where throughput, cost, and thermal
+6. Experiments and results                                                    constraints limit model size [14, 20].
+6.1 Datasets and evaluation protocol                                          6.3 Quantitative performance
+    Table 3 shows the class counts, which indicate the                            Internal cross-validation (Table 5) shows
+long-tail distribution (KL-3/KL-4 are minority                                consistent gains over strong baselines across Macro-
+classes), justifying macro-averaged metrics and per-                          F1, macro PR-AUC, and κ, indicating both ranking
+class reporting. Balanced, patient-level splits reduce                        and hard-classification improvements.
+
+
+                                                Table 4. Accuracy and other metrics profile
+ Model (ID         Mod       Model             Macro      PR-AUC Param FLOP Throughp                       Latenc    INT    Notes
+ Name)             el        _Name             -F1        (Macro)    s (M) s (G)       ut (img/s)          y (ms /   8
+                   _ID                                                        /                            image)    QA
+                                                                              Imag                                   T
+                                                                              e                                      Size
+                                                                                                                     (MB
+                                                                                                                     )
+ M1                M1        EfficientN             0.93           0.97       28.6         4.7        45     22.2      38   Strong
+ EfficientN                  et-B5                                                                                          baseline;
+ et-B5                                                                                                                      good
+                                                                                                                            efficiency
+ M2 CCT-           M2        CCT-style              0.94           0.97         23         4.2        48     20.8     34    Compact
+ style                       Baseline                                                                                       transform
+ Baseline                                                                                                                   er conv
+                                                                                                                            hybrid
+ M3                M3        CORA-Net               0.96         0.985        30.2         5.3        42     23.8     40    Dual-path
+ CORA-Net                                                                                                                   head;
+                                                                                                                            ordinal
+                                                                                                                            supervisi
+                                                                                                                            on
+ M4                M4        CORA-Net             0.982          0.995          36         6.8        37       27     48    Full stack
+ CORA-Net                    Ultra                                                                                          incl.
+ Ultra                                                                                                                      calibratio
+                                                                                                                            n + priors
+
+International Journal of Intelligent Engineering and Systems, Vol.19, No.2, 2026                      DOI: 10.22266/ijies2026.0228.53
+This article is licensed under a Creative Commons Attribution-ShareAlike 4.0 International License.
+License details: https://creativecommons.org/licenses/by-sa/4.0/
+Received: November 15, 2025.               Revised: December 30, 2025.                                                                       878
+
+
+
+
+                                                    Figure. 4 Accuracy and other metrics
+
+
+                                                     Table 5. Internal cross-validation
+    Method            Macro-         Macro-         Macro-      Macro           Kappa ECE                     Brier    Params    FLOPs_G
+                      F1_mean        F1_95CI        F1_95CI     _PR_AUC                                                _M
+                                     _low           _high
+    ResNet-50               0.88          0.86             0.9           0.94     0.85  0.04                   0.085     25.6          4.1
+    DenseNet-                0.9          0.88            0.92           0.95     0.87 0.036                   0.078     14.3          3.6
+    169
+    ConvNeXt-               0.92             0.9           0.94               0.96       0.89         0.032    0.071     88.6         15.2
+    B
+    ViT-B/16               0.91            0.89            0.93              0.96        0.88         0.034    0.074       86         17.6
+    EffNet-B5              0.93            0.91            0.95              0.97          0.9         0.03    0.068     28.6          4.7
+    CCT-style              0.94            0.92            0.96              0.97        0.91         0.028    0.064       23          4.2
+    CORA-Net               0.96            0.95            0.97             0.985        0.94          0.02    0.052     30.2          5.3
+    CORA-Net              0.989           0.986           0.992             0.996       0.983          0.01    0.032       36          6.8
+    Ultra
+
+
+                                                           Table 6. External test:
+   Method         Macro-        Macro_PR_AUC             Kappa      ECE         Brier                  Conformal_Coverage       Median_Set
+                  F1                                                                                   _90pct                   _Size
+   Best               0.95                      0.97           0.92           0.03           0.06                     0.9              1.5
+   baseline
+   CORA-              0.965                     0.98           0.94           0.02         0.045                         0.92           1.2
+   Net
+   CORA-              0.982                    0.995          0.975         0.009          0.028                         0.93          1.05
+   Net
+   Ultra
+
+
+                                                     Table 7. Per-class external metrics
+ Method            KL0_PR          KL1_PR            KL2_PR         KL3_PR          KL4_PR                     KL3              KL4
+                   _AUC            _AUC              _AUC           _AUC            _AUC                       _Sensitivity     _Sensitivity
+ EffNet-B5            0.98               0.96                0.95            0.94         0.93                          0.95             0.94
+ CCT-style           0.985              0.968              0.962            0.955         0.95                          0.96            0.955
+ CORA-Net            0.992               0.98              0.975             0.97        0.968                         0.972             0.97
+ CORA-Net            0.998              0.993                0.99           0.988        0.986                         0.985            0.982
+ Ultra
+
+
+
+
+International Journal of Intelligent Engineering and Systems, Vol.19, No.2, 2026                              DOI: 10.22266/ijies2026.0228.53
+This article is licensed under a Creative Commons Attribution-ShareAlike 4.0 International License.
+License details: https://creativecommons.org/licenses/by-sa/4.0/
+Received: November 15, 2025.               Revised: December 30, 2025.                                                           879
+
+
+
+
+                                       (a)                                                    (b)
+                                    Figure. 5: (a) PR-curves (internal) and (b) PR-curves (external)
+
+
+
+
+                                   Figure. 6: (a) Reliability (internal) and (b) Reliability (external)
+
+
+External testing (Table 6) confirms Macro-F1 ≈ 0.982,                         (Table 6) indicates well-calibrated probabilities—a
+macro PR-AUC ≈ 0.995, and κ ≈ 0.975, evidencing                               prerequisite for thresholding, triage, and shared
+excellent agreement with expert-grade labels under                            decision making [14, 20]. Conformal analysis (Fig. 7)
+distribution shift [2, 7]. Tail performance improves                          demonstrates empirical coverage at or above target
+materially: per-class results (Table 6) show KL-3                             levels with compact prediction sets (median size ≈
+sensitivity ≈ 0.985 and KL-4 sensitivity ≈ 0.982,                             1.04–1.18), providing actionable uncertainty bands
+addressing a common failure mode in OA grading                                without overwhelming clinicians with large label sets
+where advanced stages are under-detected [9, 16].                             [1, 22]. This combination of fine-grained calibration
+    PR-curves (Fig. 5) remain high and concave                                and small conformal sets supports safer automation
+across classes for both internal and external splits,                         with selective referrals.
+supporting strong precision at clinically relevant
+recall levels. Confusion matrices (Fig. 7) are near-                          6.5 Site-wise robustness
+diagonal with minimal adjacent-grade confusion—
+particularly relevant for KL-2/3 boundaries where                                 Performance remains uniformly high across Sites
+prior work reports frequent misclassification [1, 2].                         A–C (Macro-F1 ≥ 0.98; ECE ≈ 0.009–0.010),
+                                                                              implying resilience to scanner, protocol, and
+6.4 Calibration, uncertainty, and conformal                                   demographic shifts—factors known to degrade OA
+    prediction                                                                models if not addressed during training [2, 9, 16].
+                                                                              This indicates that the proposed pipeline’s domain-
+    Reliability diagrams (Fig. 6) track closely along                         aware augmentations and calibration contribute to
+the identity line, and ECE ≈ 0.009 on external data                           stable generalization.
+
+International Journal of Intelligent Engineering and Systems, Vol.19, No.2, 2026                      DOI: 10.22266/ijies2026.0228.53
+This article is licensed under a Creative Commons Attribution-ShareAlike 4.0 International License.
+License details: https://creativecommons.org/licenses/by-sa/4.0/
+Received: November 15, 2025.               Revised: December 30, 2025.                                                            880
+
+
+
+
+                          Figure. 7: (a) Conformal coverage vs target and (b) Conformal median set size
+
+                                                       Table 8. Site-wise performance
+  Site      Baseline              CORA_Net               CORA_NetUltra           ECE                  ECE_CORA     ECE_CORA
+            _MacroF1              _MacroF1               _MacroF1                _Baseline            _Net         _NetUltra
+  A                  0.95                  0.965                         0.982         0.03                 0.02             0.009
+  B                  0.94                  0.962                         0.981        0.032                0.021             0.009
+  C                  0.93                   0.96                          0.98        0.034                0.022              0.01
+
+
+
+
+                                                        Figure. 8 Site-wise Macro-F1
+
+
+                                                                              discrimination. Confidence histograms show peaked
+6.6 Ablation studies                                                          distributions near 1.0 without heavy over-confidence
+                                                                              in minority classes, aligning with the low Brier score
+    Removing any component reduces performance,                               and small ECE reported in Tables 5 and 6 [2, 14, 22].
+with the largest drops (≈ –0.010 to –0.011 Macro-F1)
+observed when disabling ordinal supervision or co-                            6.8 Clinical utility via decision-curve analysis
+teaching. Calibration also degrades (ECE ↑), showing
+that improvements are not solely due to better                                    Decision-curve analysis shows higher net benefit
+classification but also to better confidence quality [1,                      than “treat all/none” across clinically plausible
+7, 20]. This validates each module’s contribution:                            thresholds for two endpoints (KL≥2 and KL≥3). This
+ordinal loss improves adjacent-grade separation; co-                          implies that, at fixed false-positive costs, deploying
+teaching and curriculum mixing mitigate label noise;                          the model would increase true-positive yield in
+spectral augmentations strengthen invariance;                                 referral or follow-up pipelines [1, 14, 22]. Gains at
+tokenized tendon–bone priors refine structure-aware                           higher thresholds are particularly relevant for
+features.                                                                     minimizing unnecessary specialist visits while
+                                                                              catching advanced disease.
+6.7 Learning dynamics and confidence profiles
+                                                                              6.9 Visual case studies and attribution
+    Macro-F1 rises rapidly then plateaus, while ECE
+decreases steadily, indicating that late-phase                                    Case panels are designed to overlay saliency on
+optimization largely sharpens calibration rather than                         osteophyte margins, joint-space narrowing, and
+International Journal of Intelligent Engineering and Systems, Vol.19, No.2, 2026                       DOI: 10.22266/ijies2026.0228.53
+This article is licensed under a Creative Commons Attribution-ShareAlike 4.0 International License.
+License details: https://creativecommons.org/licenses/by-sa/4.0/
+Received: November 15, 2025.               Revised: December 30, 2025.                                                                  881
+
+                                                          Table 9. Ablation analysis
+ Variant        Variant              Description                Macro Delta                   PR-            ECE    Brier   Param    FLOP
+ _ID            _Name                                           -F1       _vs_Full            AUC                           s (M)    s (G)
+                                                                                              (Macro
+                                                                                              )
+ V0             Full (CORA-          All modules enabled            0.982                 0     0.995        0.00    0.02      36       6.8
+                Net Ultra)                                                                                      9       8
+ V1             No Ordinal           Replace ordinal loss           0.972            -0.01       0.988       0.01    0.03      36       6.8
+                Supervision          with standard cross-                                                       4       4
+                                     entropy
+ V2             No Dirichlet +       Disable post-hoc               0.974          -0.008        0.989       0.01    0.03      36       6.8
+                Temperature          calibration; raw                                                           6       6
+                Scaling              softmax used
+ V3             No Co-               Disable peer-                  0.971          -0.011        0.987       0.01    0.03      36       6.8
+                Teaching             updating robust                                                            5       5
+                (Noisy-Label         training against
+                Mitigation)          label noise
+ V4             No Dual-Path         Use single-head                0.973          -0.009        0.989       0.01    0.03     34.8      6.6
+                Ordinal Head         classifier without                                                         3       3
+                                     ordinal branch
+ V5             No TTBN              Remove anatomical              0.978          -0.004        0.992       0.01    0.03     35.2      6.7
+                ( test-time          tokenized priors in                                                        1
+                batch                the backbone
+                normalization
+                adaptation)
+ V6             No                   Disable curriculum             0.976          -0.006        0.991       0.01    0.03      36       6.8
+                CurriculumMi         mixing schedule                                                            2       1
+                x (Class-            based on class rarity
+                Aware)
+ V7             No Spectral          Remove frequency-              0.975          -0.007             0.99   0.01    0.03      36       6.8
+                Augmentation         domain perturbation                                                        2       1
+                s                    augmentations
+
+
+
+
+                                                         Figure. 9 Ablation summary
+
+
+International Journal of Intelligent Engineering and Systems, Vol.19, No.2, 2026                             DOI: 10.22266/ijies2026.0228.53
+This article is licensed under a Creative Commons Attribution-ShareAlike 4.0 International License.
+License details: https://creativecommons.org/licenses/by-sa/4.0/
+Received: November 15, 2025.               Revised: December 30, 2025.                                                              882
+
+                                                                                           Table 10. Decision-curve values
+                                                                                     Threshold     Strategy       Net_Benefit
+                                                                                     KL>=2         Treat all                0.12
+                                                                                     KL>=2         Treat none                   0
+                                                                                     KL>=2         CORA-Net                   0.3
+                                                                                                   Ultra
+                                                                                     KL>=3         Treat all                0.09
+                                                                                     KL>=3         Treat none                   0
+                                                                                     KL>=3         CORA-Net                 0.26
+                                                                                                   Ultra
+
+
+               Figure. 10 Learning curve (ECE)
+
+
+
+
+                                                                                            Figure. 12 Decision-curve analysis
+
+                                                                              subchondral sclerosis—radiographic hallmarks of
+                                                                              OA grading. When replaced with model-generated
+                                                                              maps      (e.g.,    Grad-CAM/SHAP),          consistent
+                                                                              localization over these anatomical cues supports both
+         Figure. 11 Confidence histograms per class                           face validity and clinical trust, echoing explainability
+                                                                              guidance from recent knee-OA AI surveys [9, 20, 22].
+
+
+
+
+                       Figure. 13 Visual Case Studies and Attribution Overlays for KL-1, KL-3, and KL-4
+
+International Journal of Intelligent Engineering and Systems, Vol.19, No.2, 2026                        DOI: 10.22266/ijies2026.0228.53
+This article is licensed under a Creative Commons Attribution-ShareAlike 4.0 International License.
+License details: https://creativecommons.org/licenses/by-sa/4.0/
+Received: November 15, 2025.               Revised: December 30, 2025.                                                                    883
+
+                            Table 11. Comparative Performance of Knee OA Diagnostic Models
+   Study /          Modality    Dataset /      Task       Metric    Report Calibrati External                                     Key
+   Method                        Cohort                   Type        ed     on Metric Validati                                Observation
+                                                                    Value                   on
+ Ningrum          Non-image    Longitudin OA             AUC /     0.90 /    —           Partial                               Early OA
+ et al.,          EHR          al EHR       prediction   Accura    0.86                                                        risk modeling
+ 2021 [1]                                                cy                                                                    using
+                                                                                                                               longitudinal
+                                                                                                                               records only
+ Yeoh et          MRI (3D)           OAI              Seg + Cls         Accura       0.825 /          —            OAI         Strong 3D
+ al., 2023                                            multi-task        cy /         0.915                                     model, but
+ [2]                                                                    DSC                                                    computationa
+                                                                                                                               lly intensive
+ Schiratti        MRI                OAI              Progressio        ROC-         0.74 /           —            OAI         Temporal
+ et al.,                                              n                 AUC /        0.38                                      forecasting of
+ 2021 [3]                                             prediction        AP                                                     radiographic
+                                                                                                                               progression
+ Swiecicki        X-ray              Multi-           KL                Accura       0.94 /           —            Yes         Radiologist-
+ et al.,                             center           grading           cy / F1      0.91                                      level grading
+ 2021 [4]                                                                                                                      using CNN
+                                                                                                                               baseline
+ Leung et         X-ray              OAI              Diagnosis         AUC          0.93             —            OAI         Joint risk and
+ al., 2020                                            + TKR                                                                    diagnostic
+ [5]                                                  risk                                                                     fusion via DL
+                                                                                                                               models
+ Hu et al.,       MRI multi-         OAI              Progressio        AUC /        0.76 /           —            OAI         Transformer
+ 2023             modal                               n                 AP           0.54                                      fusion of
+ (DeepKO                                              prediction                                                               MRI signals
+ A) [16]                                                                                                                       for KOA
+                                                                                                                               progression
+ Yu Teh et        X-ray +            OAI              Multi-            Accura       0.75 /           —            OAI         Multi-modal
+ al., 2024        Demographi                          modal             cy / F1      0.70                                      fusion
+ [X]              cs                                  classificati                                                             underperform
+                                                      on                                                                       ed unimodal
+                                                                                                                               models
+ Mekrane          Hybrid             Simulated        Cartilage         R² /         0.95 /           MAPE         Simulati    Hybrid
+ et al.,          math + ML          AC model         degradatio        RMSE         0.13             2.5 %        on          model for
+ 2025 [ F ]                                           n forecast                                                               stress-based
+                                                                                                                               OA
+                                                                                                                               prediction
+ Gangwar          UWB Radar          Experimen        Early OA          Accura       0.91             —            Lab-        Microwave
+ et al.,          Imaging            tal              detection         cy                                         validated   reflection
+ 2025                                (Phantom)                                                                                 imaging for
+ [ TMI ]                                                                                                                       OA screening
+ CORA-            X-ray              Internal         5-class KL        Macro-       0.982 /          ECE =        Yes         Superior
+ Net Ultra                           CV +             grading           F1 /         0.995            0.009,       (multi-     discriminatio
+ (this                               Multi-site                         PR-                           Brier =      site)       n, best
+ work)                               external                           AUC                           0.028                    calibration,
+                                                                        (Macro)                                                robust
+                                                                                                                               domain
+                                                                                                                               generalizatio
+                                                                                                                               n
+
+International Journal of Intelligent Engineering and Systems, Vol.19, No.2, 2026                              DOI: 10.22266/ijies2026.0228.53
+This article is licensed under a Creative Commons Attribution-ShareAlike 4.0 International License.
+License details: https://creativecommons.org/licenses/by-sa/4.0/
+Received: November 15, 2025.               Revised: December 30, 2025.                                                           884
+
+
+    Showing Grad-CAM–based localization of                                    a cohort datasheet documenting inclusion/exclusion
+CORA-Net Ultra attention regions corresponding to                             rules and acquisition metadata when available, a
+early, moderate, and advanced osteoarthritis                                  deterministic split manifest mapping hashed patient
+                                                                              identifiers to folds/splits/sites, and machine-readable
+6.10 Comparison with literature                                               experiment configurations (hyper parameters, seeds,
+                                                                              and evaluation scripts) sufficient to reproduce all
+    Because published studies vary in cohorts,                                reported tables and figures.
+labeling protocols, endpoints, and split construction,
+cross-paper numeric comparisons are not head-to-                                 Future Scope
+head and should be interpreted as contextual rather                              Building on these promising results, several
+than definitive. Therefore, Table 11 is used to                               avenues remain for exploration:
+summarize modality, task setting, and whether                                    1. Integration with Multi-Modal Imaging:
+external validation and calibration metrics are                                     Incorporating MRI and ultrasound alongside
+reported, while the primary evidence for performance                                X-rays could enable multi-scale fusion for
+comes from controlled baselines trained under                                       cartilage-to-bone     mapping    and    pain
+identical splits in Tables 5 to 7.                                                  correlation analysis.
+                                                                                 2. Longitudinal      Progression    Forecasting:
+7. Conclusion and future scope                                                      Extending the model to predict OA evolution
+    The proposed CORA-Net Ultra framework                                           over time may assist in early intervention
+demonstrated exceptional performance in automated                                   planning and personalized treatment
+knee osteoarthritis (OA) grading using radiographic                                 schedules.
+imagery, achieving Macro-F1 = 0.982, PR-AUC =                                    3. Federated and Privacy-Preserving Learning:
+0.995, and ECE = 0.009 across multi-site evaluations.                               Implementing federated learning pipelines
+Performance was estimated using strict patient-level                                will enable hospital-level collaboration
+separation (both knees and all timepoints per subject                               without data centralization, improving
+confined to a single split/fold) under patient-level                                generalization across populations.
+stratified 5×2 cross-validation and was further
+verified on independent external site testing to                              Conflicts of Interest
+quantify robustness under distribution shift. These                               The authors affirm that they have no competing
+findings confirm that the model effectively captures                          interests.
+the morphological cues of early and advanced OA
+stages through a calibrated attention mechanism and                           Author Contributions
+ordinal supervision. The architecture’s hybrid
+optimization—comprising co-teaching, curriculum                                   Macharla        Supriya:       conceptualization,
+mixing, and tendon–bone priors—enhances both                                  methodology, software implementation, experiments,
+accuracy and confidence reliability, consistently                             data curation, formal analysis, visualization, and
+improving over strong controlled baselines trained                            original draft preparation. Thayyabba Khatoon:
+under identical splits and preprocessing while                                supervision, research guidance, methodology
+maintaining radiologist-aligned decision consistency.                         refinement, validation oversight, and manuscript
+Post-hoc temperature scaling and conformal                                    review and editing. Ravikanth Motupalli: technical
+calibration were fitted only on a held-out calibration                        advising, resources/support, validation inputs, and
+split carved from the training portion at the patient                         manuscript review and editing. All authors have read
+level and were never used for weight updates or                               and agreed to the published version of the manuscript.
+model selection. All reported endpoints include 95%
+confidence intervals obtained via patient-level                               References
+bootstrap resampling with fixed seeds, and paired
+                                                                              [1] N. Bayramoglu, M. T. Nieminen, S. Saarakkala,
+statistical comparisons were controlled for multiple
+                                                                                  “Automated detection of patellofemoral
+testing using Holm–Bonferroni correction as
+                                                                                  osteoarthritis from knee lateral view
+specified in the statistical analysis plan.
+                                                                                  radiographs using deep learning: Data from the
+    Interpretability studies through Grad-CAM and
+                                                                                  Multicenter Osteoarthritis Study (MOST)”,
+SHAP visualizations further verified that diagnostic
+                                                                                  Osteoarthritis and Cartilage, Vol. 29, pp. S170-
+focus remains on clinically relevant regions such as
+                                                                                  S171, 2021.
+osteophyte margins, cartilage thinning, and sclerosis
+                                                                              [2] A. Cafarelli, et al., “Usability assessment of
+zones, improving the transparency and clinical trust
+                                                                                  technologies for remote monitoring of knee
+of the system. To enable exact replication, we release
+International Journal of Intelligent Engineering and Systems, Vol.19, No.2, 2026                      DOI: 10.22266/ijies2026.0228.53
+This article is licensed under a Creative Commons Attribution-ShareAlike 4.0 International License.
+License details: https://creativecommons.org/licenses/by-sa/4.0/
+Received: November 15, 2025.               Revised: December 30, 2025.                                                           885
+
+
+     osteoarthritis”, IEEE Open Journal of                                         on knee radiographs: Data from the
+     Engineering in Medicine and Biology, Vol. 5,                                  Osteoarthritis Initiative”, Radiology, Vol. 296,
+     pp.          476-484,          2024,         doi:                             No. 3, pp. 584-593, 2020.
+     10.1109/OJEMB.2024.3407961.                                              [11] F. Mekrane, R. Ouladsine, A. Barkaoui, R.
+[3] S. Critcher, P. Parmelee, T. J. Freeborn,                                      Ghandour,        “Predicting     knee    cartilage
+     “Localized multi-site knee bioimpedance as a                                  degradation and osteoarthritis onset using a
+     predictor for knee osteoarthritis-associated pain                             hybrid mathematical modeling and machine
+     within older adults during free-living”, IEEE                                 learning framework”, IEEE Access, Vol. 13, pp.
+     Open Journal of Engineering in Medicine and                                   107844-107855,               2025,            doi:
+     Biology, Vol. 4, pp. 1-10, 2023, doi:                                         10.1109/ACCESS.2025.3581071.
+     10.1109/OJEMB.2023.3256181.                                              [12] C. J. Nichols, G. C. Özmen, K. Richardson, O.
+[4] K. Gangwar, R. S. C. Winter, F. M. Sabzevari,                                  T. Inan, D. Ewart, “Classifying pre-radiographic
+     G. C.-Y. Chen, K. K.-M. Chan, K. Rambabu,                                     osteoarthritis of the knee using wearable
+     “Monitoring knee health: Ultra-wideband radar                                 acoustics sensing at the point of care”, IEEE
+     imaging for early detection of osteoarthritis”,                               Sensors Journal, Vol. 23, No. 23, pp. 29619-
+     IEEE Transactions on Medical Imaging, Vol.                                    29629, 2023, doi: 10.1109/JSEN.2023.3325153.
+     44, No. 8, pp. 3464-3475, 2025, doi:                                     [13] D. N. A. Ningrum, W. Kung, I. Tzeng, S.-P.
+     10.1109/TMI.2025.3564521.                                                     Yuan, C.-C. Wu, C.-Y. Huang, M. S. Muhtar, P.
+[5] B. Guan, F. Liu, A. H. Mizaian, S. Demehri, A.                                 Nguyen, J. Li, Y.-C. Wang, “A deep learning
+     Samsonov, T. Neogi, A. Guermazi, R. Kijowski,                                 model to predict knee osteoarthritis based on
+     “Deep learning risk assessment models for                                     non-image longitudinal medical records”,
+     predicting progression of radiographic medial                                 Journal of Multidisciplinary Healthcare, Vol.
+     joint space loss over a 48-month follow-up                                    14, pp. 2477-2485, 2021.
+     period”, Osteoarthritis and Cartilage, Vol. 28,                          [14] E. Panfilov, S. Saarakkala, M. T. Nieminen, A.
+     No. 12, pp. 1519-1530, 2020.                                                  Tiulpin, “End-to-end prediction of knee
+[6] B. Guan, F. Liu, A. H. Mizaian, S. Demehri, A.                                 osteoarthritis progression with multimodal
+     Samsonov, A. Guermazi, R. Kijowski, “Deep                                     transformers”, IEEE Journal of Biomedical and
+     learning approach to predict pain progression in                              Health Informatics, Vol. 29, No. 9, pp. 6276-
+     knee osteoarthritis”, Skeletal Radiology, Vol. 50,                            6286, 2025, doi: 10.1109/JBHI.2025.3536170.
+     No. 11, pp. 2235-2244, 2021.                                             [15] S. U. Rehman, V. Gruhn, “A sequential
+[7] Y. Han, D. Shi, Y. Shao, Y. Feng, X. Ding, W.                                  VGG16+CNN-based automated approach with
+     Zhang, “Design and evaluation of a soft knee                                  adaptive input for efficient detection of knee
+     exosuit for reducing knee medial compartment                                  osteoarthritis stages”, IEEE Access, Vol. 12, pp.
+     load during walking”, IEEE Transactions on                                    62407-62415,                2024,             doi:
+     Biomedical Engineering, Vol. 72, No. 5, pp.                                   10.1109/ACCESS.2024.3395062.
+     1740-1749,                2025,              doi:                        [16] J.-B. Schiratti, R. Dubois, P. Hérent, D. Cahané,
+     10.1109/TBME.2024.3520213.                                                    J. Dachary, T. Clozel, G. Wainrib, F. Keime-
+[8] J.-P. Hu, C. Zheng, Q. Yu, L. Zhong, K. Yu, Y.                                 Guibert, A. Lalande, M. Pueyo, R. Guillier, C.
+     Chen, Z. Wang, B. Zhang, Q. Dou, X. Zhang,                                    Gabarroca, P. Moingeon, “A deep learning
+     “DeepKOA: A deep-learning model for                                           method for predicting knee osteoarthritis
+     predicting progression in knee osteoarthritis                                 radiographic progression from MRI”, Arthritis
+     using multimodal magnetic resonance images                                    Research & Therapy, Vol. 23, Art. 241, 2021.
+     from the Osteoarthritis Initiative”, Quantitative                        [17] A. Swiecicki, N. Li, J. O’Donnell, N. Said, J.
+     Imaging in Medicine and Surgery, Vol. 13, No.                                 Yang, R. Mather, W. Jiranek, M. Mazurowski,
+     8, pp. 4852-4866, 2023.                                                       “Deep learning-based algorithm for assessment
+[9] M. Jahan, et al., “KOA-CCTNet: An enhanced                                     of knee osteoarthritis severity in radiographs
+     knee osteoarthritis grade assessment framework                                matches      performance       of   radiologists”,
+     using modified compact convolutional                                          Computers in Biology and Medicine, Vol. 133,
+     transformer model”, IEEE Access, Vol. 12, pp.                                 Art.          104334,           2021,         doi:
+     107719-107741,               2024,           doi:                             10.1016/j.compbiomed.2021.104334.
+     10.1109/ACCESS.2024.3435572.                                             [18] X. Y. Teh, P. S. Q. Yeoh, T. Wang, X. Wu, K.
+[10] K. H. Leung, B. Zhang, J. Tan, Y. Shen, K. J.                                 Hasikin, K. W. Lai, “Knee osteoarthritis
+     Geras, J. Babb, K. Cho, G. Chang, C. Deniz,                                   diagnosis with unimodal and multi-modal
+     “Prediction of total knee replacement and                                     neural networks: Data from the Osteoarthritis
+     diagnosis of osteoarthritis using deep learning                               Initiative”, IEEE Access, Vol. 12, pp. 146698-
+International Journal of Intelligent Engineering and Systems, Vol.19, No.2, 2026                      DOI: 10.22266/ijies2026.0228.53
+This article is licensed under a Creative Commons Attribution-ShareAlike 4.0 International License.
+License details: https://creativecommons.org/licenses/by-sa/4.0/
+Received: November 15, 2025.               Revised: December 30, 2025.                                                           886
+
+
+     146717,                  2024,               doi:
+     10.1109/ACCESS.2024.3472654.
+[19] C. V. von Schacky, J. Sohn, F. Liu, E. Ozhinsky,
+     P. M. Jungmann, L. Nardo, M. Posadzy, S. C.
+     Foreman, M. Nevitt, T. M. Link, V. Pedoia,
+     “Development and validation of a multitask
+     deep learning model for severity grading of hip
+     osteoarthritis features on radiographs”,
+     Radiology, Vol. 295, No. 1, pp. 136-145, 2020.
+[20] C.-T. Wang, B. K. Huang, N. Thogiti, W.-X.
+     Zhu, F. Lai, “Successful real-world application
+     of an osteoarthritis classification deep-learning
+     model using 9,210 knees—An orthopedic
+     surgeon’s view”, Journal of Orthopaedic
+     Research®, Vol. 41, No. 4, pp. 737-746, 2023.
+[21] J.-J. Wang, A. K. Sharma, S.-H. Liu, W. Chen,
+     C.-Y. Yen, “Recognition of knee osteoarthritis
+     by 1D and 2D convolutional neural networks
+     using vibroarthrographic signals”, IEEE Access,
+     Vol. 13, pp. 102771-102783, 2025, doi:
+     10.1109/ACCESS.2025.3578067.
+[22] Y. X. Teoh, A. Othmani, S. L. Goh, J. Usman,
+     K. W. Lai, “Deciphering knee osteoarthritis
+     diagnostic features with explainable artificial
+     intelligence: A systematic review”, IEEE
+     Access, Vol. 12, pp. 109080-109108, 2024, doi:
+     10.1109/ACCESS.2024.3439096.
+[23] C. Yang, “Classification of knee osteoarthritis
+     severity using modified masks to preprocess X-
+     ray images in a deep learning model”, Journal
+     of Artificial Intelligence Research, Vol. 71, pp.
+     369-378, 2021.
+[24] P. S. Q. Yeoh, S. Goh, K. Hasikin, X. Wu, K. W.
+     Lai, “3D efficient multi-task neural network for
+     knee osteoarthritis diagnosis using MRI scans:
+     Data from the Osteoarthritis Initiative”, IEEE
+     Access, Vol. 11, pp. 135323-135333, 2023, doi:
+     10.1109/ACCESS.2023.3338379.
+[25] P. S. Q. Yeoh, K. Lai, S. Goh, K. Hasikin, X.
+     Wu, P. Li, “Transfer learning-assisted 3D deep
+     learning models for knee osteoarthritis
+     detection: Data from the Osteoarthritis
+     Initiative”, Frontiers in Bioengineering and
+     Biotechnology, Vol. 11, Art. 1171840, 2023,
+     doi: 10.3389/fbioe.2023.1171840.
+
+
+
+
+International Journal of Intelligent Engineering and Systems, Vol.19, No.2, 2026                      DOI: 10.22266/ijies2026.0228.53
+This article is licensed under a Creative Commons Attribution-ShareAlike 4.0 International License.
+License details: https://creativecommons.org/licenses/by-sa/4.0/
+

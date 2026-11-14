@@ -1,0 +1,1071 @@
+                                               Synthesizing Bidirectional Temporal States of Knee
+                                                Osteoarthritis Radiographs with Cycle-Consistent
+                                                    Generative Adversarial Neural Networks
+                                            Fabi Prezjaa , Leevi Annalab,c , Sampsa Kiiskinena , Suvi Lahtinena,d , Timo
+
+
+
+
+arXiv:2311.05798v1 [eess.IV] 10 Nov 2023
+                                                                               Ojalaa
+                                           a
+                                             University of Jyväskylä, Faculty of Information Technology, Jyväskylä, 40014, Finland
+                                                     b
+                                                       University of Helsinki, Faculty of Science, Department of Computer
+                                                                             Science, Helsinki, Finland
+                                             c
+                                               University of Helsinki, Faculty of Agriculture and Forestry, Department of Food and
+                                                                            Nutrition, Helsinki, Finland
+                                           d
+                                             University of Jyväskylä, Faculty of Mathematics and Science, Department of Biological
+                                                             and Environmental Science, Jyväskylä, 40014, Finland
+
+
+
+
+                                           Abstract
+                                           Knee Osteoarthritis (KOA), a leading cause of disability worldwide, is chal-
+                                           lenging to detect early due to subtle radiographic indicators. Diverse, exten-
+                                           sive datasets are needed but are challenging to compile because of privacy,
+                                           data collection limitations, and the progressive nature of KOA. However,
+                                           a model capable of projecting genuine radiographs into different OA stages
+                                           could augment data pools, enhance algorithm training, and offer pre-emptive
+                                           prognostic insights. In this study, we trained a CycleGAN model to synthe-
+                                           size past and future stages of KOA on any genuine radiograph. The model
+                                           was validated using a Convolutional Neural Network that was deceived into
+                                           misclassifying disease stages in transformed images, demonstrating the Cy-
+                                           cleGAN’s ability to effectively transform disease characteristics forward or
+                                           backward in time. The model was particularly effective in synthesizing fu-
+                                           ture disease states and showed an exceptional ability to retroactively transi-
+                                           tion late-stage radiographs to earlier stages by eliminating osteophytes and
+                                           expanding knee joint space, signature characteristics of None or Doubtful
+                                           KOA. The model’s results signify a promising potential for enhancing di-
+                                           agnostic models, data augmentation, and educational and prognostic usage
+                                           in healthcare. Nevertheless, further refinement, validation, and a broader
+                                           evaluation process encompassing both CNN-based assessments and expert
+medical feedback are emphasized for future research and development.
+Keywords: Knee Osteoarthritis, Radiographic indicators, CycleGAN,
+Convolutional Neural Network, Disease stages, Prognostic insights, Data
+augmentation, Temporal States
+
+
+1. Introduction
+    The integration of artificial intelligence into the medical field has seen
+a rapid acceleration over the past decade[1, 2], due, in part, to the expan-
+sive growth of deep machine learning techniques[3]. Notable progress in the
+realms of diagnostics and disease classification has been documented, as evi-
+denced by several works[4, 5, 6, 7, 8]. One application of these developments
+is the generation and anonymization with synthetic data[9, 10, 11, 12, 13,
+14, 15, 16, 17, 18, 19], a field which has shown promise but also exposed
+challenges, particularly in the domain of Osteoarthritis (OA)[19].
+    OA, especially Knee joint osteoarthritis (KOA)[20, 21, 22, 23], is a leading
+cause of disability worldwide[24], with expected costs amounting to nearly
+2.5% of the Gross National Product in western countries[24]. Subtle radio-
+graphic indicators and the variability in disease progression hamper the early
+detection of KOA[20, 21]. In our previous study [19], synthetic radiographs
+were employed as a successful tool for data augmentation, creating additional
+diagnostic data to train deep learning models and enhancing their capacity
+to recognize diverse KOA presentations. This demonstrated a compelling use
+case for synthetic radiographs. However, it also highlighted an unmet need
+- the ability to modify existing KOA radiographs to represent past or future
+states of the disease.
+    The utility of deep learning in KOA diagnosis[25, 26, 27]is highly reliant
+on the availability of diverse and extensive datasets. However, acquiring such
+datasets can be challenging due to patient privacy[28, 29], data collection
+constraints, and the nature of OA’s progression. In this context, a tool that
+can alter existing genuine or synthetic radiographs into different OA stages
+could substantially augment the existing pool of data, making the training
+of diagnostic algorithms improved and more robust[11, 10, 30, 31, 32, 33].
+    Beyond data augmentation, another critical area of need is prognostic
+modeling. Predicting the future state of a progressive disease like OA is
+complex[34] but crucial for effective patient management. By using neural
+networks to transform current radiographs to reflect future disease states,
+
+                                       2
+we could potentially predict and visualize the disease trajectory, providing
+invaluable information for prognosis and treatment planning.
+    Building upon our previous work[19], our current study presents a novel
+approach, introducing a Cycle-Consistent Generative Adversarial Network
+(CycleGAN)[35] capable of synthesizing the progression and regression of
+KOA on authentic radiographic images. This supervised, bidirectional ap-
+proach is the first in the field to synthesize future and past states of KOA
+on existing radiographs. This study sets the stage for subsequent research
+into augmentation techniques and prognostic applications leveraging this ad-
+vanced synthesis capability.
+
+2. Methods
+    Methods are categorized into three parts: The initial part focuses on data
+collection and pre-processing. The middle section elaborates on training
+generative adversarial neural networks and convolutional neural networks.
+The concluding segment is dedicated to the realism validation of the CyGAN.
+Figure 1 summarizes and breaks down these components into small steps.
+    Our research began with the acquisition of knee joint radiograph im-
+ages from Chen 2019[36], leveraging data from the Osteoarthritis Initiative
+(OAI)[37], and the Multicenter Osteoarthritis Study (MOST) dataset[38, 39].
+These separate data sets were integrated to construct an extensive dataset
+for our training purposes. The OAI data, originating from a multi-center
+longitudinal study, involved 4796 participants aged 45 to 79 years. On
+the other hand, the MOST dataset encompassed 3026 participants at base-
+line, we constructed a new dataset based on the MOST data processed by
+Tuomikoski[40]. The new set contained adjustments for inconsistent im-
+age resolutions, contrast, antiallazing, negative radiographs, partially ob-
+strctructed radiographs, and knee false-positive radiographs (not containing
+any knee-joints). For both sets the aggregated data resulted in a dataset
+comprising of 14134 individual knee joint images, each with a size of 224 x
+224 pixel with a standardized zoom level of 0.14mm/pixel. Radiographs were
+graded using the Kellgren and Lawrence system[41]. Figure 2 illustrates an
+enhanced contrast example for each KL grade. For our study, the ground
+truth labels were categorized as ’None - Doubtful Stage’ for KL0 and KL1,
+’Mild Stage’ for KL2, and ’Moderate - Severe Stage’ for KL3 and KL4. This
+classification is also clinically relevant. In conclusion, the None-Doubtful
+
+
+                                      3
+Figure 1: Flowchart illustrating the tasks and data pertinent to the study. Data compo-
+nents are highlighted in blue and green, while model training is indicated in red. Criteria-
+based sorting is denoted in gray, and the final models are showcased in orange.Numeric
+markers indicate the order of operations.
+
+
+stage group contained 8278 images, the Mild stage group 3100 images, and
+the Moderate-Severe stage group comprised the remaining 2756 images.
+    The CycleGAN was trained on two classes: ’None - Doubtful Stage’ and
+’Moderate - Severe Stage’. We reserved the ’Mild’ middle stage images specif-
+ically for testing forward and backward propagation. Meanwhile, the CNN
+was trained using all available classes. For both the CNN and CycleGAN
+training, the data was partitioned as detailed in each respective section. Only
+previously unseen test images from both the CNN and CycleGAN were em-
+ployed for result generation. We utilized the Python libraries Tensorflow,
+Deep Fast Vision, and Numpy for the training processes. Scikit-image, an-
+other Python library, played a pivotal role in image processing tasks.
+
+2.1. Image Pre-Proceessing
+    After merging the KL levels, the subsequent phase involved a series of
+image processing steps. Initially, we performed a lateral flip on each right
+
+                                             4
+Figure 2: Random examples across all KL grades, demonstrating their primary criteria.
+From left to right, KL grades increase from 0 (no radiological signs of OA) to 4 (severe
+OA). Joint space narrowing, denoted as JSN.
+
+
+knee joint orientation, aligning it to the left. Subsequently, we identified and
+inverted negative channel images, finding 189 instances. Following the chan-
+nel inversion process, we employed contrast equalization on the histograms
+of the images. The technique is detailed in Equation 1. Given a gray-scale
+image I of dimensions m × n, we utilized its cumulative distribution function
+(cdf) and pixel value v to attain an equalized value h(v) within the range
+[0, 255]:
+
+                                         cdf(v) − cdf min
+                            h(v) = 255                                              (1)
+                                         (mn) − cdf min
+    Here, cdf min represents a non-zero minimum value of the image’s cumu-
+lative distribution, and mn indicates the total pixel count.
+
+2.2. Cycle-Consistent Generative Adversarial Neural Network
+    We employed a Cycle-Consistent Generative Adversarial Neural Network[35]
+(CycleGAN) for training, using the ’None - Doubtful Stage’ and ’Moderate
+- Severe Stage’ images as target domains. Images classified as ’Mild Stage’
+were utilized as a follow-up validation set after training. CycleGANs, are a
+specialized type of Generative Adversarial Network (GAN)[42] designed for
+mapping translation between two unpaired data domains. The unique archi-
+tecture of a CycleGAN includes two generator networks (G and F ), and two
+discriminator networks (DY and DX ). The generators (G and F ) translate
+data between one domain and the other and vice versa. In contrast, the
+
+                                           5
+discriminators (DY and DX ) distinguish real images from those generated
+in their respective domains. The CycleGAN model utilizes a combined loss
+function comprising both adversarial and cycle consistency losses. The ad-
+versarial loss ensures that the generated images appear realistic, while the
+cycle consistency loss ensures that an image translated to the other domain
+and subsequently reversed yields the original image. This is represented
+mathematically as follows:
+
+
+L(G, F, DX , DY ) = LGAN (G, DY , X, Y ) + LGAN (F, DX , Y, X) + λLcyc (G, F )
+                                                                           (2)
+   For the generators G and F , LGAN (G, DY , X, Y ) and LGAN (F, DX , Y, X),
+provide the adversarial losses. The cycle consistency loss, Lcyc (G, F ), is a
+separate term in the loss function. Here, λ represents a hyperparameter that
+controls the weight of the cycle consistency loss. The cycle consistency loss
+can be further detailed as:
+
+
+ Lcyc (G, F ) = Ex∼pdata (x) [||F (G(x)) − x||1 ] + Ey∼pdata (y) [||G(F (y)) − y||1 ] (3)
+
+    where the first term represents the consistency loss for domain X and
+the second term for domain Y . CycleGANs facilitate unpaired image-to-
+image translation tasks, which are practical for various applications in com-
+puter vision. A graphical representation of our basic architectural blocks and
+processes can be seen in Figure 3. Additionally, the specifics of our Cycle-
+GAN architecture are detailed in tables 3, 4, and 5. Each generator in our
+model was composed of 11,370,881 parameters, while the discriminators were
+slightly leaner, comprising 11,032,193 parameters each.
+
+2.2.1. Experiment Architecture and parameters.
+    The CycleGAN model was trained on 90% of the data and 10% for val-
+idation (patient aware) using the Adam optimizer (learning rate 2e-4, betas
+0.5 and 0.999) on both generators and discriminators. We used a batch
+size of 8 and underwent training for 155 epochs. The CycleGAN architec-
+ture consisted of two generators and two discriminators, with the generators
+employing downsampling, residual[43, 44], and upsampling blocks and the
+discriminators utilizing downsampling blocks. The blocks are further de-
+tailed in Table 5. The model’s loss functions included adversarial loss, cycle
+consistency loss, and identity loss, with the latter two governed by lambda
+
+                                           6
+Figure 3: In-depth depiction of the training process and structural aspects of our Cy-
+cleGAN Model. All generators and discriminators uniformly adhere to the portrayed
+architectures.
+
+
+values of 10 and 0.5, respectively. The duration of training was roughly two
+days with a P100 GPU. The model with the lowest loss for both generators
+was chosen as the final model (epoch 101). Saliency maps were generated by
+overlaying the GAN-generated image (using the the ’inferno’ Matplotlib[45]
+colormap) onto the original image (using the reversed colormap) with a 0.4
+transparency.
+
+2.3. CyGAN Validation
+    To validate our model, we employed a Convolutional Neural Network
+(CNN)[46] designed to differentiate between all classes of the Knee Osteoarthri-
+tis (KOA) problem (detailed bellow). Our ultimate aim was to fool this CNN
+into categorizing images into a class of our choice. We applied this strategy
+by using unseen ’Mild Stage’ test images, which were not used in either the
+GAN or the CNN training. Firstly, we used the CNN to rank 100 of these
+test images according to their class confidence level for belonging to the
+’Mild Stage.’ Next, we fed these top 100 images to both generators within
+our CycleGAN. The generators produced two new sets of images, reflecting
+transformations to both ends of the KOA spectrum: the ’None - Doubtful
+
+                                          7
+Stage’ and the ’Moderate - Severe Stage.’ To assess the efficacy of our Cycle-
+GAN, we used the CNN to predict the classes of these transformed images
+and subsequently analyzed the results. We repeated this procedure for GAN
+and CNN shared test images from the ’None - Doubtful Stage’ and ’Moder-
+ate - Severe Stage’ classes. We considered this a ’one-shot’ adversarial attack
+because we aimed to drastically alter the CNN’s classification with a single
+application of our CycleGAN.
+
+2.4. EfficientNetV2 Convolutional Neural Network
+    EfficientNet[47] is a novel model in the domain of deep learning that has
+earned significant acclaim for its effectiveness. The EfficientNet framework
+is engineered to uniformly scale all dimensions, including depth, width, and
+resolution. At the heart of EfficientNet lies the principle of compound scal-
+ing. This approach strives to strike a balance between the network’s depth
+(number of layers), width (the size of the layers), and resolution (size of the
+input image). A set of fixed scaling coefficients governs this balance. Specif-
+ically, for a baseline EfficientNet-B0 (4), if α, β, γ are constants to maintain
+the equilibrium, and ϕ is the coefficient defined by the user, the depth d,
+width w, and resolution r of the network can be scaled as follows:
+
+                      d = α ϕ d0 ,   w = β ϕ w0 ,   r = γ ϕ r0               (4)
+In this equation, d0 , w0 , r0 signify the base model’s depth, width, and resolu-
+tion, respectively.
+    An integral part of EfficientNet is the MBConv block, which takes inspira-
+tion from the MobileNetV2 architecture[48]. This block initiates a sequence
+of transformations: a 1×1 convolution (expansion), followed by a depth-wise
+convolution (indicated by a depth-wise separable convolution kernel D), a
+Squeeze-and-Excitation (SE) operation[49] , and another 1 × 1 convolution
+(projection). For an input image I , the transformation of the MBConv block,
+TM B , can be depicted as:
+
+                     TM B (I ) = K 2 ∗ SE(D ∗ (K 1 ∗ I ))                    (5)
+    In this formula ∗ denotes the convolution operation, K 1 and K 2 are the
+1 × 1 convolutional filters, D illustrates the depth-wise convolutional filter,
+and SE(·) stands for the Squeeze-and-Excitation operation. An activation
+function succeeds each convolution. The efficient employment of computa-
+tional resources within the MBConv block, particularly via the depth-wise
+
+                                         8
+convolution and the SE block, significantly contributes to EfficientNet’s su-
+perior performance.
+    EfficientNetV2[50] brings several pivotal changes to the original Efficient-
+Net blueprint. The depth, width, and resolution scaling remain identical to
+the original EfficientNet. However, the introduction of the Fused-MBConv
+block, which merges the initial 1 × 1 convolution and the depth-wise convolu-
+tion into a single 13 × 3 convolution operation, followed by the Squeeze-and-
+Excitation (SE) operation and a final 1 × 1 convolution, marks a significant
+adjustment.
+    The transformation of the Fused-MBConv block, TF M B , can be repre-
+sented as:
+
+                          TF M B (I ) = K 2 ∗ (SE(K f ∗ I ))                            (6)
+    In this formula, K f is the 3 × 3 convolutional filter that combines the
+initial 1×1 convolution and the depth-wise convolution, K 2 is the concluding
+1 × 1 convolutional filter, and SE(·) denotes the Squeeze-and-Excitation
+operation. Each convolution, followed by an activation, may be in a block
+with a skip connection.
+
+
+
+
+Figure 4: Integrated architecture of the base EfficientNetV2, further detailing our specific
+modifications implemented post the pooling layer.
+
+   In our study, we utilized the EfficientNetV2-M model and augmented it
+by adding a flattening layer followed by a dense layer with 256 neurons. This
+dense layer employed an Exponential Linear Unit[51] (ELU) as its activation
+function, placed before the output layer. During the training phase, we used
+Categorical Cross-Entropy Loss and conducted training over 15 epochs. We
+divided the dataset into Training, Validation, and Testing sets, allocating
+70%, 15%, and 15% respectively (patient aware). This CNN was trained
+across all three KOA stages. Early stopping was dictated by the minimum
+
+                                             9
+validation loss with a tolerance set at 4. The entire model training procedure
+was carried out using the Deep Fast Vision repository[52]. We used the
+Adam[53] optimizer for the task, with a learning rate of 2 × 10−5 and a batch
+size of 32. Furthermore, we enabled the advanced automatic augmentation
+capabilities from the library.
+
+2.5. CNN Interpretability
+    While the complexity of neural networks increases their capabilities, it
+also complicates the interpretation of their predictions[54]. Due to this com-
+plexity, these systems are often deemed as ’black boxes.’ However, the Grad-
+CAM[55] algorithm (based on the CAM[56] framework) helps demystify this
+’black box’ effect. At a high level, Grad-CAM is an algorithm that visualizes
+how a convolutional neural network makes its decisions. It creates what are
+known as ”heat maps” or ”activation maps” that highlight the areas in an
+input image that the model considers important for making its prediction.
+
+3. Results
+3.1. CyGAN Training Results
+    In this study, we developed a CycleGAN model that can synthesize os-
+teoarthritis’s progression or regression on genuine radiographs. We success-
+fully validated our model by using a Convolutional Neural Network (CNN)
+called EfficientNetV2M. Our primary objective was to effectively transform
+’Mild Stage’ osteoarthritis images using our CycleGAN model, causing the
+CNN to misclassify the stage of the disease on demand. This confirmed our
+CycleGAN model’s effectiveness in transforming images to represent either
+an earlier or later stage of the disease.
+    We divided our results into three sections for clarity. The first section
+demonstrates all model training results. The second section highlights top
+examples from the test set that were used to fool the CNN’s osteoarthri-
+tis model. Finally, we globally visualize test images via the t-distributed
+stochastic neighbor embedding method[57].
+    As illustrated in Figure 5, there was a substantial enhancement in the
+quality of the synthetically generated states as the training of the CycleGAN
+progressed. Notably, once the generators mastered the initial representation
+of the input images, we observed the emergence of more significant trans-
+formations. This suggests an effective learning result within the CycleGAN,
+
+
+                                     10
+as it appears to have first developed an understanding of the input before
+executing more complex and impactful modifications.
+
+3.2. CNN Training Results
+    Before we delve into the outcomes produced by our CycleGAN and its
+capacity to manipulate osteoarthritic radiographs, it is crucial to firstunder-
+stand the performance of our base model, the Convolutional Neural Network
+(CNN) for Knee Osteoarthritis (KOA) classification. This is the model we
+attempted to ’fool’ through synthetic images produced by the CycleGAN.
+Figure 6 presents the confusion matrix and AUCs of the model, while table
+1 presents some key metrics of its performance.
+
+Table 1: Classification report, detailing precision, recall, and F1-score for each class. It
+also provides weighted and macro averages. The overall average accuracy of the classifier
+was 0.817.
+ Metrics      None-           Mild            Moderate- Weighted             Macro
+              Doubtful        Stage           Severe    Average              Average
+              Stage                           Stage     Metric               Metric
+ Precision    0.877           0.601           0.873          0.815           0.784
+ Recall       0.882           0.584           0.884          0.817           0.784
+ F1-score     0.880           0.593           0.879          0.816           0.784
+
+
+    The classification report table 1 encapsulates our model’s effectiveness in
+identifying different stages of osteoarthritis. High precision and recall values
+for ’None - Doubtful Stage’ and ’Moderate - Severe Stage’ (approximately
+0.88) indicate accurate predictions and minimal false negatives for these cat-
+egories.
+
+3.3. Adversarial Attacks & Synthetic States
+    Table 2 in the study represents an empirical demonstration of the ef-
+fectiveness of our method in misleading the CNN classifier, EfficientNetV2.
+This was achieved by applying the adversarial attack through our Cycle-
+GAN model, which altered the test images to misrepresent the original state
+of knee osteoarthritis.The table displays the original class of the radiographs
+(None-Early Stage, Moderate - Severe Stage, and Mild Stage), the direction
+of the adversarial attack (either towards the future, simulating progression,
+or towards the past, simulating regression of the disease), and the consequent
+
+
+                                            11
+Figure 5: Results from querying the stored models using a single test image up to the
+optimal epoch. It includes outputs for both CycleGAN generators.
+
+
+
+
+                                         12
+Figure 6: Confusion matrix and ROC curves for the CNN classifier. ROC curves are
+constructed using a one-vs-all approach.
+
+
+CNN prediction across the three categories (None-Early Stage, Mild Stage,
+and Moderate - Severe Stage).
+
+Table 2: The impact of an adversarial one-shot attack on the trained classifier using test
+images. It specifically showcases the shifts in classification outcomes resulting from the
+application of CycleGAN.
+ Original Class            Adversarial   At-   CNN Prediction     CNN Prediction   CNN Prediction
+                           tack Direction      (None - Doubtful   (Mild Stage)     (Moderate - Se-
+                                               Stage)                              vere Stage)
+
+ None - Doubtful Stage     Towards Future      5.13%              11.11%           83.76%
+ Moderate - Severe Stage   Towards Past        75.61%             19.51%           4.88%
+ Mild Stage                Towards Future      -                  24.00%           76.00%
+ Mild Stage                Towards Past        31.00%             69.00%           -
+
+
+
+
+    For the ’None - Doubtful Stage’ radiographs, when the adversarial attack
+was directed towards the future, the CNN prediction was largely shifted to
+the ’Moderate - Severe Stage’ (83.76%). Only a minor fraction was identi-
+fied as ’None - Doubtful Stage’ (5.13%) or ’Mild Stage’ (11.11%), indicating
+a substantial alteration in classification due to the attack. The ’Moderate
+- Severe Stage’ radiographs displayed a similar trend. When manipulated
+towards the past, a considerable percentage (75.61%) was misclassified as
+’None - Doubtful Stage’, diverging significantly from the original classifica-
+tion. When the adversarial attack was applied to the ’Mild Stage’ images
+
+
+                                                   13
+towards the future, a majority (76.00%) was misclassified as ’Moderate -
+Severe Stage’. Conversely, when the attack was directed towards the past,
+the ’Mild Stage’ images were partly misclassified as ’None - Doubtful Stage’
+(31.00%).
+   Figures 7 and 8 present the top six test images transformed by our Cycle-
+GAN. Initially, the CNN classifier was correct and over 90% confident about
+the osteoarthritis stage represented in these images (Mild stage). However,
+the classifier was tricked into assigning them an altered stage of the disease,
+once again with more than 90% confidence in the altered stage.
+
+
+
+
+Figure 7: Top 6 adversarial examples for synthetic futures with a minimum confidence
+level above 0.9 in the desired class. The ’KOA Radiograph’ column displays the original
+test image selected for its high confidence in its initial class. The saliency map underscores
+the alterations made by our CycleGAN, with bright orange indicating additive changes
+and deep purple suggesting the reverse.
+
+    Figure 7 synthetic images presented the occurrence of joint space nar-
+rowing, a key indicator of progressing osteoarthritis. Notably, the Cycle-
+GAN model also emphasized or created osteophytes. These bony growths
+are characteristic of advanced osteoarthritis.
+    In contrast to Figure 7, figure 8 presents a marked expansion of the knee
+joint, an attribute commonly associated with no or early-stage osteoarthritic
+knees. In addition, the possible osteophytes - bony outgrowths typically
+found in osteoarthritic joints - seemed to be systematically removed by the
+
+                                             14
+Figure 8: Top 6 adversarial examples for synthetic pasts with a minimum confidence level
+above 0.9 in the desired class. The ’KOA Radiograph’ column displays the original test
+image selected for its high confidence in its initial class. The saliency map underscores
+the alterations made by our CycleGAN, with bright orange indicating pixel diminishing
+changes and deep purple suggesting the reverse.
+
+
+CycleGAN model. The presence of osteophytes and joint space reduction are
+hallmark indications of advancing osteoarthritis. Thus, their removal and the
+expansion of the joint space suggested a transition towards an earlier state
+of the disease.
+    Upon examining Figure 9, it was evident that the Convolutional Neural
+Network (CNN) model focused on key areas in the images that were modified
+by the Cycle Consistent Generative Adversarial Network (CyGAN). This
+demonstrated that the CNN based its decisions on the essential features that
+the CyGAN altered. This showed not only the effectiveness of the CyGAN
+in generating meaningful features, but also highlighted the CNN’s focus on
+the relevant regions of interest.
+
+3.4. Synthetic States Visualization
+    By leveraging the features identified by the CNN, we’ve employed t-
+SNE[57] to craft a visualization that projected both the original and trans-
+formed test images onto a shared space. Our aim with this method was to
+discern possible overlaps between synthetic and authentic radiographs.This
+
+
+                                           15
+Figure 9: Grad-CAM activations at the pre-flattening layer of the CNN, illustrating the
+top 12 adversarial images. Grad-CAM activations corresponding to the desired class are
+shown.
+
+
+mapping, depicted in Figure 10, provided a compelling visualization of the
+connections between different image states. A rasterized rendition[58, 59]
+of this t-SNE plot further refined our understanding, offering an enhanced
+view of these intricate relationships. Looking at the figure, a notable ob-
+servation was the appearance of a pseudo-linear diagonal, marking an in-
+triguing transition from early to middle, and eventually to late stages of the
+image states. This observation was particularly striking as it suggested a
+structured, semi-ordered transition. As anticipated, overlap was observed in
+the representation, indicating shared features or similarities among different
+image states. This overlap was not surprising and reaffirmed the inherent
+interconnectedness of these transformations.
+
+
+
+
+                                          16
+Figure 10: t-SNE and Rasterized TSNE visualizations of all test and original images. A
+simple linear model has been fitted to the entire t-SNE cohort for ease of analysis.
+
+
+4. Discussion
+    In our study, we created a Cycle-Consistent Generative Neural Network,
+designed to generate synthetic projections of genuine osteoarthritis radio-
+graphs into past and future disease states while maintaining key anatomical
+constraints of each radiograph. To assess its efficacy, we performed adversar-
+ial attacks on the EfficientNetV2-M architecture, trained on a comprehen-
+sive knee osteoarthritis dataset. Our results revealed our model’s capacity
+to convincingly shift authentic radiographs along the disease timeline, both
+backward and forward. The creation of this system sets the groundwork
+for further research, highlighting its potential for broadening classification
+augmentation and enhancing prognostic capabilities.
+    Regarding synthetic futures, as shown in our results, the model was the
+most effective in simulating future states. However, due to the unpaired
+training images, it’s challenging to validate the anatomical precision of these
+projections without corresponding follow-up data. Despite this, our approach
+showed great potential. This tool could become invaluable to healthcare
+professionals if forecasting accuracy can be optimized and further validated.
+It could augment datasets for classification - a crucial advantage considering
+the scarcity of late-stage radiographs - and serve educational purposes. It
+could assist new medical experts in comprehending and simulating the effects
+
+                                         17
+of osteoarthritis, further contributing to their understanding of the disease.
+    Regarding synthetic pasts, our model showed an impressive ability to
+retroactively transition late-stage radiographs to earlier stages, although it
+was somewhat less successful with mid-stage radiographs. This capability
+could significantly enhance data augmentation for classification purposes.
+Moreover, with high accuracy in future follow-up validation, the model might
+contribute to future surgical planning, such as knee replacement procedures.
+However, it is essential to note that while this ability showed promise, it
+needs further development to match the model’s proficiency in simulating
+future disease progression.
+    Regarding the limitations of CyGANs, as reflected in our results, a few
+images did not transition as anticipated, either remaining in the same class or
+not progressing as far as desired. This is inherent to the CycleGAN’s train-
+ing process[35]: the generator learns to transform source images to mimic
+the target, while striving to keep the transformation reversible (cycle con-
+sistency). This means that, if an image is similar to the target domain, the
+generator minimizes changes to maintain reversibility, sometimes resulting
+in minimal or near-identity transformations. This tendency emerges from
+the model’s objective of deceiving the discriminator while preserving cycle
+consistency. This phenomenon was evident in some of our images, where we
+saw significant texture changes and few anatomical alterations. To address
+this, a straightforward approach might involve using an Inception[60] model
+to compare pre and post-transform images. By using an Euclidean metric,
+we could detect and quantify significant anatomical changes.
+    In reviewing previous approaches, we note a singular[61] instance of an
+approximate system. This model, which trained without labels and for a
+unidirectional transform, stands out for its innovative and commendable ap-
+proach, particularly in its aim to generate synthetic follow-up radiographs
+for individual patients. However, the model’s unidirectional focus prevented
+label-based transformations in both directions, thereby limiting its potential
+as a tool for augmenting Knee Osteoarthritis (KOA) datasets and executing
+targeted transformations towards specific KOA KL-grades.
+    During our experiment, we targeted three primary stages of the disease
+based on their temporal occurrence: none-doubtfu, mild, and moderate-
+severe stages. However, there are potential benefits to be found in a more
+nuanced approach. In future work, it might be beneficial to consider a model
+capable of handling individual subclasses of the disease. This could afford a
+more detailed, fine-grained method to simulate the progression and regression
+
+                                      18
+of osteoarthritis. However, this may prove challenging due to the intrinsic
+scarcity of data for some individual stages[19]. Drawing on previous studies
+that utilized GANs for augmentation[19], this fine-grained approach could
+lead to a wider variety of synthetic images.
+    In our study, we noticed that the image data we sourced from the Os-
+teoarthritis Initiative (OAI) significantly surpassed the clarity of those from
+the Multicenter Osteoarthritis Study (MOST). This was partly evident in
+the increased requirement for anti-aliasing measures in the MOST images.
+However, a potential limitation was the use of images with a size of 224x224
+pixels. Although this is a common standard for neural network training, it
+might not be optimal in our context, as the subtle changes characterizing pre-
+Mild osteoarthritis might not be easily discernible at this resolution. This
+could lead to a less precise understanding and representation of the disease’s
+evolution in its earlier stages. In future work, We recommend potentially
+larger receptive fields and resolution, which might allow an increased capac-
+ity to pick up nuanced changes in the images.
+    Regarding validating our CycleGAN model, we successfully applied a
+’one-shot’ adversarial attack to a specialized Convolutional Neural Network
+(CNN). This method proved effective in quantifying the ability of our Cy-
+cleGAN to modify class labels associated with radiographic stages of os-
+teoarthritis. However, it’s essential to recognize that this validation tech-
+nique doesn’t substitute for the insight and expertise of medical professionals.
+Therefore, it’s essential that its predictions align not only with CNN-based
+assessments, but also with the judgments of medical experts who understand
+the broader context of patient health and disease manifestation[19]. In fu-
+ture iterations, we intend to include a more comprehensive validation process.
+This will involve acquiring feedback and validation from medical profession-
+als, alongside our existing CNN-based evaluations. This integrated validation
+approach could help develop a more resilient and clinically applicable tool,
+enhancing osteoarthritis diagnosis, prognosis, and management.
+
+5. Conclusions
+   Our research successfully leveraged a Cycle-Consistent Generative Neural
+Network to synthesize both past and future KOA disease states in genuine
+radiographs. The model showcased significant potential in simulating fu-
+ture disease states, though it faced challenges with unpaired training images.
+When attempting to revert to earlier disease phases, the model demonstrated
+
+                                      19
+promise, particularly with advanced OA radiographs. To validate our Cycle-
+GAN model, we utilized a ’one-shot’ adversarial attack on a CNN, effectively
+assessing its ability to modify osteoarthritis radiograph labels. While this
+method is insightful, it cannot replace medical expertise. Moving forward,
+we aim to combine this approach with feedback from medical experts.
+
+Data Availability
+   The trained models and synthetic images from the current study are
+available in the Google drive repository.
+   The Deep Fast Vision library is available at: https://github.com/
+fabprezja/deep-fast-vision
+
+References
+ [1] F. Wang, L. P. Casalino, D. Khullar, Deep learning in
+     medicine—promise, progress, and challenges, JAMA internal medicine
+     179 (3) (2019) 293–294.
+
+ [2] A. L. Beam, I. S. Kohane, Big data and machine learning in health care,
+     Jama 319 (13) (2018) 1317–1318.
+
+ [3] Y. LeCun, Y. Bengio, G. Hinton, Deep learning, nature 521 (7553)
+     (2015) 436–444.
+
+ [4] A. Esteva, B. Kuprel, R. A. Novoa, J. Ko, S. M. Swetter, H. M. Blau,
+     S. Thrun, Dermatologist-level classification of skin cancer with deep
+     neural networks, nature 542 (7639) (2017) 115–118.
+
+ [5] Z. Han, B. Wei, Y. Zheng, Y. Yin, K. Li, S. Li, Breast cancer multi-
+     classification from histopathological images with structured deep learn-
+     ing model, Scientific reports 7 (1) (2017) 1–10.
+
+ [6] M. Bakator, D. Radosav, Deep learning and medical diagnosis: A review
+     of literature, Multimodal Technologies and Interaction 2 (3) (2018) 47.
+
+ [7] F. Prezja, S. Äyrämö, I. Pölönen, T. Ojala, S. Lahtinen, P. Ruusuvuori,
+     T. Kuopio, Improved accuracy in colorectal cancer tissue decomposi-
+     tion through refinement of established deep learning solutions, Scientific
+     Reports 13 (1) (2023) 15879.
+
+                                       20
+ [8] F. Prezja, L. Annala, S. Kiiskinen, S. Lahtinen, T. Ojala, P. Ruusuvuori,
+     T. Kuopio, Improving performance in colorectal cancer histology de-
+     composition using deep and ensemble machine learning, arXiv preprint
+     arXiv:2310.16954 (2023).
+ [9] M. J. M. Chuquicusma, S. Hussein, J. Burt, U. Bagci, How to fool
+     radiologists with generative adversarial networks? A visual turing test
+     for lung cancer diagnosis, in: 2018 IEEE 15th international symposium
+     on biomedical imaging (ISBI 2018), IEEE, 2018, pp. 240–244.
+[10] F. Calimeri, A. Marzullo, C. Stamile, G. Terracina, Biomedical data
+     augmentation using generative adversarial neural networks, in: Inter-
+     national conference on artificial neural networks, Springer, 2017, pp.
+     626–634.
+[11] M. Frid-Adar, I. Diamant, E. Klang, M. Amitai, J. Goldberger,
+     H. Greenspan, GAN-based synthetic medical image augmentation for
+     increased CNN performance in liver lesion classification, Neurocomput-
+     ing 321 (2018) 321–331.
+[12] V. Thambawita, J. L. Isaksen, S. A. Hicks, J. Ghouse, G. Ahlberg,
+     A. Linneberg, N. Grarup, C. Ellervik, M. S. Olesen, T. Hansen, others,
+     DeepFake electrocardiograms using generative adversarial networks are
+     the beginning of the end for privacy issues in medicine, Scientific reports
+     11 (1) (2021) 1–8.
+[13] L. Annala, N. Neittaanmäki, J. Paoli, O. Zaar, I. Pölönen, Generating
+     hyperspectral skin cancer imagery using generative adversarial neural
+     network, in: 2020 42nd Annual International Conference of the IEEE
+     Engineering in Medicine \& Biology Society (EMBC), IEEE, 2020, pp.
+     1600–1603.
+[14] H.-C. Shin, N. A. Tenenholtz, J. K. Rogers, C. G. Schwarz, M. L. Sen-
+     jem, J. L. Gunter, K. P. Andriole, M. Michalski, Medical image synthesis
+     for data augmentation and anonymization using generative adversarial
+     networks, in: International workshop on simulation and synthesis in
+     medical imaging, Springer, 2018, pp. 1–11.
+[15] J. Yoon, L. N. Drumright, M. Van Der Schaar, Anonymization through
+     data synthesis using generative adversarial networks (ads-gan), IEEE
+     journal of biomedical and health informatics 24 (8) (2020) 2378–2388.
+
+                                      21
+[16] A. Torfi, E. A. Fox, C. K. Reddy, Differentially private synthetic medi-
+     cal data generation using convolutional gans, Information Sciences 586
+     (2022) 485–500.
+
+[17] S. N. Kasthurirathne, G. Dexter, S. J. Grannis, Generative Adversarial
+     Networks for Creating Synthetic Free-Text Medical Data: A Proposal
+     for Collaborative Research and Re-use of Machine Learning Models, in:
+     AMIA Annual Symposium Proceedings, Vol. 2021, American Medical
+     Informatics Association, 2021, p. 335.
+
+[18] F. Prezja, J. Paloneva, I. Pölönen, E. Niinimäki, S. Äyrämö, Synthetic
+     (DeepFake) Knee Osteoarthritis X-ray Images from Generative Adver-
+     sarial Neural Networks, Mendeley Data, V3 (2022). doi:10.17632/
+     fyybnjkw7v.3.
+
+[19] F. Prezja, J. Paloneva, I. Pölönen, E. Niinimäki, S. Äyrämö, Deep-
+     Fake knee osteoarthritis X-rays from generative adversarial neural net-
+     works deceive medical experts and offer augmentation potential to au-
+     tomatic classification, Scientific Reports 12 (1) (2022) 1–16. doi:
+     10.1038/s41598-022-23081-4.
+
+[20] D. J. Hunter, S. Bierma-Zeinstra, Osteoarthritis, The Lancet
+     393 (10182) (2019) 1745–1759.  doi:https://doi.org/10.1016/
+     S0140-6736(19)30417-9.
+     URL      https://www.sciencedirect.com/science/article/pii/
+     S0140673619304179
+
+[21] P. S. Q. Yeoh, K. W. Lai, S. L. Goh, K. Hasikin, Y. C. Hum, Y. K.
+     Tee, S. Dhanalakshmi, Emergence of deep learning in knee osteoarthritis
+     diagnosis, Computational intelligence and neuroscience 2021 (2021).
+
+[22] S. Saarakkala, P. Julkunen, P. Kiviranta, J. Mäkitalo, J. S. Jurvelin,
+     R. K. Korhonen, Depth-wise progression of osteoarthritis in human ar-
+     ticular cartilage: investigation of composition, structure and biomechan-
+     ics, Osteoarthritis and Cartilage 18 (1) (2010) 73–81.
+
+[23] M. S. Laasanen, J. Töyräs, R. K. Korhonen, J. Rieppo, S. Saarakkala,
+     M. T. Nieminen, J. Hirvonen, J. S. Jurvelin, Biomechanical properties
+     of knee articular cartilage, Biorheology 40 (1, 2, 3) (2003) 133–140.
+
+
+                                       22
+[24] J. Hermans, M. A. Koopmanschap, S. M. A. Bierma-Zeinstra, J. H. van
+     Linge, J. A. N. Verhaar, M. Reijman, A. Burdorf, Productivity costs and
+     medical costs among working patients with knee osteoarthritis, Arthritis
+     care \& research 64 (6) (2012) 853–861.
+[25] A. Tiulpin, S. Klein, S. M. A. Bierma-Zeinstra, J. Thevenot, E. Rahtu,
+     J. v. Meurs, E. H. G. Oei, S. Saarakkala, Multimodal machine learning-
+     based knee osteoarthritis progression prediction from plain radiographs
+     and clinical data, Scientific reports 9 (1) (2019) 20038.
+[26] A. Tiulpin, J. Thevenot, E. Rahtu, P. Lehenkari, S. Saarakkala, Au-
+     tomatic knee osteoarthritis diagnosis from plain radiographs: a deep
+     learning-based approach, Scientific reports 8 (1) (2018) 1727.
+[27] A. Tiulpin, S. Saarakkala, Automatic grading of individual knee os-
+     teoarthritis features in plain radiographs using deep convolutional neural
+     networks, Diagnostics 10 (11) (2020) 932.
+[28] C. for Disease Control, Prevention, others, HIPAA privacy rule and
+     public health. Guidance from CDC and the US Department of Health
+     and Human Services, MMWR: Morbidity and mortality weekly report
+     52 (Suppl 1) (2003) 1–17.
+[29] P. Voigt, A. dem Bussche, The eu general data protection regulation
+     (gdpr), A Practical Guide, 1st Ed., Cham: Springer International Pub-
+     lishing 10 (3152676) (2017) 10–5555.
+[30] C. Ge, I. Y.-H. Gu, A. S. Jakola, J. Yang, Cross-modality augmenta-
+     tion of brain MR images using a novel pairwise generative adversarial
+     network for enhanced glioma classification, in: 2019 IEEE International
+     Conference on Image Processing (ICIP), IEEE, 2019, pp. 559–563.
+[31] T. C. W. Mok, A. Chung, Learning data augmentation for brain tu-
+     mor segmentation with coarse-to-fine generative adversarial networks,
+     in: International MICCAI Brainlesion Workshop, Springer, 2018, pp.
+     70–80.
+[32] C. Bowles, L. Chen, R. Guerrero, P. Bentley, R. Gunn, A. Hammers,
+     D. A. Dickie, M. V. Hernández, J. Wardlaw, D. Rueckert, Gan augmen-
+     tation: Augmenting training data using generative adversarial networks,
+     arXiv preprint arXiv:1810.10863 (2018).
+
+                                      23
+[33] A. Madani, M. Moradi, A. Karargyris, T. Syeda-Mahmood, Chest x-
+     ray generation and data augmentation for cardiovascular abnormality
+     classification, in: Medical Imaging 2018: Image Processing, Vol. 10574,
+     International Society for Optics and Photonics, 2018, p. 105741M.
+
+[34] M. C. Hochberg, Prognosis of osteoarthritis., Annals of the rheumatic
+     diseases 55 (9) (1996) 685.
+
+[35] J.-Y. Zhu, T. Park, P. Isola, A. A. Efros, Unpaired image-to-image trans-
+     lation using cycle-consistent adversarial networks, in: Proceedings of the
+     IEEE international conference on computer vision, 2017, pp. 2223–2232.
+
+[36] P. Chen, L. Gao, X. Shi, K. Allen, L. Yang, Fully automatic knee os-
+     teoarthritis severity grading using deep neural networks with a novel
+     ordinal loss, Computerized Medical Imaging and Graphics 75 (2019)
+     84–92.
+
+[37] M. Nevitt, D. Felson, G. Lester, The osteoarthritis initiative, Protocol
+     for the cohort study 1 (2006).
+
+[38] N. A. Segal, M. C. Nevitt, K. D. Gross, J. Hietpas, N. A. Glass, C. E.
+     Lewis, J. C. Torner, The Multicenter Osteoarthritis Study (MOST):
+     opportunities for rehabilitation research, PM \& R: the journal of injury,
+     function, and rehabilitation 5 (8) (2013).
+
+[39] N. A. Segal, M. C. Nevitt, K. D. Gross, J. Hietpas, N. A. Glass, C. E.
+     Lewis, J. C. Torner, The Multicenter Osteoarthritis Study: Opportuni-
+     ties for Rehabilitation Research (vol 8, pg 647, 2013), PM\&R 5 (11)
+     (2013) 987.
+
+[40] J. Tuomikoski, Unsupervised feature analysis of real and synthetic knee
+     x-ray images, Master’s thesis, University of Jyväskylä (2023).
+
+[41] J. H. Kellgren, J. Lawrence, Radiological assessment of osteo-arthrosis,
+     Annals of the rheumatic diseases 16 (4) (1957) 494.
+
+[42] I. Goodfellow, J. Pouget-Abadie, M. Mirza, B. Xu, D. Warde-Farley,
+     S. Ozair, A. Courville, Y. Bengio, Generative adversarial nets, Advances
+     in neural information processing systems 27 (2014).
+
+
+
+                                      24
+[43] K. He, X. Zhang, S. Ren, J. Sun, Deep residual learning for image
+     recognition, in: Proceedings of the IEEE conference on computer vision
+     and pattern recognition, 2016, pp. 770–778.
+
+[44] S. Targ, D. Almeida, K. Lyman, Resnet in resnet: Generalizing residual
+     architectures, arXiv preprint arXiv:1603.08029 (2016).
+
+[45] J. D. Hunter, Matplotlib: A 2D graphics environment, Computing in
+     science \& engineering 9 (03) (2007) 90–95.
+
+[46] Y. LeCun, Y. Bengio, others, Convolutional networks for images, speech,
+     and time series, The handbook of brain theory and neural networks
+     3361 (10) (1995) 1995.
+
+[47] M. Tan, Q. Le, Efficientnet: Rethinking model scaling for convolu-
+     tional neural networks, in: International conference on machine learning,
+     PMLR, 2019, pp. 6105–6114.
+
+[48] M. Sandler, A. Howard, M. Zhu, A. Zhmoginov, L.-C. Chen, Mo-
+     bilenetv2: Inverted residuals and linear bottlenecks, in: Proceedings of
+     the IEEE conference on computer vision and pattern recognition, 2018,
+     pp. 4510–4520.
+
+[49] J. Hu, L. Shen, G. Sun, Squeeze-and-excitation networks, in: Proceed-
+     ings of the IEEE conference on computer vision and pattern recognition,
+     2018, pp. 7132–7141.
+
+[50] M. Tan, Q. Le, Efficientnetv2: Smaller models and faster training, in:
+     International conference on machine learning, PMLR, 2021, pp. 10096–
+     10106.
+
+[51] D.-A. Clevert, T. Unterthiner, S. Hochreiter, Fast and accurate deep
+     network learning by exponential linear units (elus), arXiv preprint
+     arXiv:1511.07289 (2015).
+
+[52] F. Prezja, Deep Fast Vision: Accelerated Deep Transfer Learning Vision
+     Prototyping and Beyond, \url{https://github.com/fabprezja/deep-fast-
+     vision} (4 2023). doi:10.5281/zenodo.7865289.
+     URL https://doi.org/10.5281/zenodo.7865289
+
+
+
+                                     25
+[53] D. P. Kingma, J. Ba, Adam: A method for stochastic optimization,
+     arXiv preprint arXiv:1412.6980 (2014).
+
+[54] F. Prezja, The Importance of Explainability in CNN-Based DCE-MRI
+     Breast Cancer Detection, AAAS Science Translational Medicine (eLet-
+     ter) (2 2023).
+     URL          https://www.science.org/doi/10.1126/scitranslmed.
+     abo4802#elettersSection
+
+[55] R. R. Selvaraju, M. Cogswell, A. Das, R. Vedantam, D. Parikh, D. Batra,
+     Grad-cam: Visual explanations from deep networks via gradient-based
+     localization, in: Proceedings of the IEEE international conference on
+     computer vision, 2017, pp. 618–626.
+
+[56] M. Oquab, L. Bottou, I. Laptev, J. Sivic, Is Object Localization for Free?
+     - Weakly-Supervised Learning With Convolutional Neural Networks, in:
+     Proceedings of the IEEE Conference on Computer Vision and Pattern
+     Recognition (CVPR), 2015.
+
+[57] L. der Maaten, G. Hinton, Visualizing data using t-SNE., Journal of
+     machine learning research 9 (11) (2008).
+
+[58] G. Kogan, ofxTSNE, \url{https://github.com/genekogan/ofxTSNE}
+     (2016).
+
+[59] M. Klingemann, RasterFairy-Py3, \url{https://github.com/Quasimondo/RasterFairy}
+     (2016).
+
+[60] C. Szegedy, V. Vanhoucke, S. Ioffe, J. Shlens, Z. Wojna, Rethinking
+     the inception architecture for computer vision, in: Proceedings of the
+     IEEE conference on computer vision and pattern recognition, 2016, pp.
+     2818–2826.
+
+[61] T. Han, J. N. Kather, F. Pedersoli, M. Zimmermann, S. Keil, M. Schulze-
+     Hagen, M. Terwoelbeck, P. Isfort, C. Haarburger, F. Kiessling, others,
+     Image prediction of disease progression by style-based manifold extrap-
+     olation, arXiv preprint arXiv:2111.11439 (2021).
+
+
+
+
+                                      26
+Acknowledgements
+   The authors extend their sincere gratitude to Kimmo Riihiaho, Rodion
+Enkel and Leevi Lind.
+
+Author contributions statement
+   Conceptualization: F. P.; Methodology: F. P.; Investigation: F. P.; Data
+curation: All authors; Formal analysis: All authors; Writing – original draft:
+F. P.; Writing – review & editing: All authors.
+
+Additional information
+    Competing interests All authors declare that they have no conflicts of
+interest.
+
+6. Appendix
+
+
+
+
+                                     27
+Table 3: Generator architecture of our model, detailing each layer’s type, output shape,
+number of parameters, filters, kernel size, strides, padding, and activation function.
+ Layer Type              Output         Parameter   Filters    Kernel   Strides   Padding   Activation
+                         Shape          Count                  Size
+
+ InputLayer              (224,   224,   0           -          -        -         -         -
+                         1)
+ ReflectionPadding2D     (230,   230,   0           -          -        -         -         -
+                         1)
+ Conv2D                  (224,   224,   3136        64         (7, 7)   (1, 1)    valid     Linear
+                         64)
+ InstanceNormalization   (224,   224,   128         -          -        -         -         -
+                         64)
+ Activation              (224,   224,   0           -          -        -         -         ReLU
+                         64)
+ Conv2D                  (112,   112,   73728       128        (3, 3)   (2, 2)    same      Linear
+                         128)
+ InstanceNormalization   (112,   112,   256         -          -        -         -         -
+                         128)
+ Activation              (112,   112,   0           -          -        -         -         ReLU
+                         128)
+ Conv2D                  (56,     56,   294912      256        (3, 3)   (2, 2)    same      Linear
+                         256)
+ InstanceNormalization   (56,     56,   512         -          -        -         -         -
+                         256)
+ Activation              (56,     56,   0           -          -        -         -         ReLU
+                         256)
+ ReflectionPadding2D     (58,     58,   0           -          -        -         -         -
+                         256)
+ Conv2D                  (56,     56,   589824      256        (3, 3)   (1, 1)    valid     Linear
+                         256)
+ InstanceNormalization   (56,     56,   512         -          -        -         -         -
+                         256)
+ Activation              (56,     56,   0           -          -        -         -         ReLU
+                         256)
+ ReflectionPadding2D     (58,     58,   0           -          -        -         -         -
+                         256)
+ Conv2D                  (56,     56,   589824      256        (3, 3)   (1, 1)    valid     Linear
+                         256)
+ InstanceNormalization   (56,     56,   512         -          -        -         -         -
+                         256)
+ Add (Skip Connection)   (56,     56,   0           -          -        -         -         -
+                         256)
+ ReflectionPadding2D     (58,     58,   0           -          -        -         -         -
+                         256)
+ Conv2D                  (56,     56,   589824      256        (3, 3)   (1, 1)    valid     Linear
+                         256)
+ InstanceNormalization   (56,     56,   512         -          -        -         -         -
+                         256)
+ Activation              (56,     56,   0           -          -        -         -         ReLU
+                         256)
+ ReflectionPadding2D     (58,     58,   0           -          -        -         -         -
+                         256)
+ Conv2D                  (56,     56,   589824      256        (3, 3)   (1, 1)    valid     Linear
+                         256)
+ InstanceNormalization   (56,     56,   512         -          -        -         -         -
+                         256)
+ Add (Skip Connection)   (56,     56,   0           -          -        -         -         -
+                         256)
+ ReflectionPadding2D     (58,     58,   0           -          -        -         -         -
+                         256)
+ Conv2D                  (56,     56,   589824      256        (3, 3)   (1, 1)    valid     Linear
+                         256)
+ InstanceNormalization   (56,     56,   512         -          -        -         -         -
+                         256)
+ Activation              (56,     56,   0           -          -        -         -         ReLU
+                         256)
+ ReflectionPadding2D     (58,     58,   0           -          -        -         -         -
+                         256)
+ Conv2D                  (56,     56,   589824      256        (3, 3)   (1, 1)    valid     Linear
+                         256)
+ InstanceNormalization   (56,     56,   512         -          -        -         -         -
+                         256)
+ Add (Skip Connection)   (56,     56,   0           -          -        -         -         -
+                         256)
+ Conv2DTranspose         (112,   112,   294912      128        (3, 3)   (2, 2)    same      Linear
+                         128)
+ InstanceNormalization   (112,   112,   256         -          -        -         -         -
+                         128)
+ Activation              (112,   112,   0           -          -        -         -         ReLU
+                         128)
+ Conv2DTranspose         (224,   224,   73728       64         (3, 3)   (2, 2)    same      Linear
+                         64)
+ InstanceNormalization   (224,   224,   128         -          -        -         -         -
+                         64)
+ Activation              (224,   224,   0           -          -        -         -         ReLU
+                         64)
+ ReflectionPadding2D     (230,   230,   0           -          -        -         -         -
+                         64)
+ Conv2D                  (224,   224,   3137        1          (7, 7)   (1, 1)    valid     Tanh
+                         1)
+
+
+
+
+                                                          28
+Table 4: Discriminator architecture of our model, detailing each layer’s type, output shape,
+number of parameters, kernel size, strides, padding, and activation function.
+ Layer Type              Output        Parameter Kernel        Strides     Padding    Activation
+                         Shape         Count     Size
+ InputLayer              (224, 224,    0          -            -           -          -
+                         1)
+ Conv2D                  (112, 112,    2176       (4, 4)       (2, 2)      same       Linear
+                         128)
+ Activation              (112, 112,    0          -            -           -          LeakyReLU
+                         128)
+ Conv2D                  (56,    56,   524288     (4, 4)       (2, 2)      same       Linear
+                         256)
+ InstanceNormalization   (56,    56,   512        -            -           -          -
+                         256)
+ Activation              (56,    56,   0          -            -           -          LeakyReLU
+                         256)
+ Conv2D                  (28,    28,   2097152    (4, 4)       (2, 2)      same       Linear
+                         512)
+ InstanceNormalization   (28,    28,   1024       -            -           -          -
+                         512)
+ Activation              (28,    28,   0          -            -           -          LeakyReLU
+                         512)
+ Conv2D                  (28,    28,   8388608    (4, 4)       (1, 1)      same       Linear
+                         1024)
+ InstanceNormalization   (28,    28,   2048       -            -           -          -
+                         1024)
+ Activation              (28,    28,   0          -            -           -          LeakyReLU
+                         1024)
+ Conv2D                  (28, 28, 1)   16385      (4, 4)       (1, 1)      same       Linear
+
+
+
+
+Table 5: Architecture blocks (Residual, Downsampling, Upsampling) used to construct
+both generator and discriminator architectures.
+ Block Type      Layer (type)          Padding             Kernel / Stride     Activation
+ Residual        Conv2D               Same                 (3,3) / (1,1)       -
+                 InstanceNormalization-                    -                   -
+                 ReLU                 -                    -                   ReLU
+                 Conv2D               Same                 (3,3) / (1,1)       -
+                 InstanceNormalization-                    -                   -
+                 Add (Skip Con-       -                    -                   -
+                 nection)
+ Downsampling    Conv2D               Same                 (3,3) / (2,2)       -
+                 InstanceNormalization-                    -                   -
+                 ReLU                 -                    -                   ReLU
+ Upsampling      Conv2DTranspose      Same                 (3,3) / (2,2)       -
+                 InstanceNormalization-                    -                   -
+                 ReLU                 -                    -                   ReLU
+
+
+
+
+                                                 29
+

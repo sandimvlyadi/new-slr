@@ -1,0 +1,406 @@
+      Radiographic Evaluation for KNEEXNET Using
+                    Ensemble Models
+
+                   P. Pal1(B) , R. Dhara2 , A. Bal3 , and R. Bhattacharya4
+     1 Department of Electronics and Communication Engineering, St Thomas College of
+                        Engineering and Technology, Kolkata, India
+                              prashnatitap@gmail.com
+2 Department of Surgical and Interventional Engineering, King’s College London, London, UK
+  3 Department of Computer Science and Engineering, St Thomas College of Engineering and
+                                 Technology, Kolkata, India
+ 4 Department of Computer Science and Engineering, Techno India University, Kolkata, India
+
+
+
+
+       Abstract. Osteoarthritis (OA) of the knee is the most prevalent joint disease that
+       may cause disability. The Kellgren-Lawrence rating system is widely used to
+       classify the severity of OA and is often used to diagnose it by interpreting X-ray
+       imaging. The goal of this research was to create a model that uses deep learning that
+       could automatically identify the degree of severity of knee OA, since diagnosing
+       the condition required expertise and time. First, we examined the performance of
+       10 cutting-edge deep learning models. Individual state-of-the-art models were able
+       to obtain the maximum accuracy of 0.69. Second, to solve the class imbalance,
+       we adjusted the training technique, which increased the accuracy to 0.70. Lastly,
+       shallow neural networks and majority voting were used in ensemble models. Our
+       ensemble model Knee X-Net produced the best accuracy, delivering a precision
+       of 0.72 that compares well with the most advanced techniques.
+
+       Keywords: — Knee osteoarthritis · Kellgren-Lawrence grading system ·
+       ensemble learning
+
+
+1 Introduction
+Osteoarthritis (OA) is a degenerative joint disorder. It is one of the most common causes
+leading to disability especially in the elderly [1]. Moreover, the knee joint is the most
+common joint that is affected by OA [2], with the global prevalence of knee OA being
+22.9% in people aged 40 years old and over [3]. There are also other factors apart
+from age that contribute to knee OA, including gender, genetic factors, obesity, injury,
+inactivity, and daily activities [1, 2, 4, 5]. Individuals with osteoarthritis (OA) may have
+knee discomfort, stiffness of the joints joint swelling, and challenges doing regular tasks
+[4, 5]. In the worst case, knee OA can lead to disability [6]. There are many imaging
+techniques that can be used to diagnose knee OA, but X-ray is the most common method
+owing to its low cost and wide accessibility [6]. The features of the knee OA disease
+are joint space narrowing, osteophyte formation, cyst formation, subchondral sclerosis,
+and coronal tibiofemoral subluxation [5]. The severity is usually classified into 5 grades,
+ac- cording to Kellgren-Lawrence (KL) grading system. This includes None (Grade
+
+© The Author(s), under exclusive license to Springer Nature Switzerland AG 2025
+M. Malhotra (Ed.): IETCIT 2024, CCIS 2126, pp. 77–86, 2025.
+https://doi.org/10.1007/978-3-031-80842-5_7
+78       P. Pal et al.
+
+0), Doubtful (Grade 1), Minimal (Grade 2), Moderate (Grade 3), and Severe (Grade
+4) [7]. Each stage of OA requires different treatment e.g., for early stage, exercise is
+recommended [4], but for severe stage, a joint re- placement is needed [1]. To prevent
+the progression of the disease and develop a treatment strategy, early diagnosis and
+detection are crucial [4]. Although diagnostic imaging can be carried out many times, the
+diagnosis requires an expert to interpret the data, and it is time-consuming. Additionally,
+given that the subtle changes maybe manifested by OA, grading OA is a challenging
+task. If the diagnosis does not happen in the early stage, the joint damage may progress
+to an irreversible stage [6]. Hence, this project aims to develop a deep learning model to
+automatically classify the severity of knee OA in order to support readings of the knee
+radiographs.
+    One of the most prevalent orthopedic disorders brought on by ageing is osteoarthritis
+(OA), which causes structural alterations in the afflicted joints as well as inflammation
+of the bursa ligaments, synovial membranes, and cartilage [7]. It strains the healthcare
+system in addition to causing a significant health burden [8]. Over time, OA may lead
+to impairment since its prevalence and incidence rise annually in the population. The
+number of people with osteoarthritis in the hip and knee (OAK) grew to almost 300 mil-
+lion worldwide in 2019 [9]. Hip and knee OA is ranked eleventh globally among causes
+contributing to disability. Years spent with disabilities (YLDs) [10] are the main metric
+used to quantify this incapacitating impact. Given that the knee is the biggest joint in the
+human body, it is significant to highlight that knee OA is among the most prevalent kinds
+of OA [11–13]. Furthermore, in advanced stages of knee OA, joint replacements may
+become necessary [14–16]. As China’s population ages, osteoarthritis (OA) is expected
+to rank among the primary causes of impairment and social expenses for the elderly
+[17]. The Global Cost of Disease (GBD) Report 2019 reports that China’s incidence
+of osteoarthritis (OA) increased by 128.7% from 1990 to 2019 to 84.258/100,000 [18].
+Concerns with knee OA are growing [19]. Researchers discovered that weight, age, and
+gender are separate risk factors for knee OA. Among these, obesity raised the likelihood
+of OA by three times [20–22], and knee OA is highly correlated with an increase in BMI
+[23]. A review of the literature [24] also revealed a 35% greater incidence of knee OA
+was linked to a 5-unit rise in body BMI. Obesity and overweight have become major
+public health issues on a global scale. There were 603.7 million obese people in 2015
+[25]. When a person’s body mass index (BMI) falls between 25 and 29.9 kg/m2, they
+are considered overweight; when their BMI is more than 30, they are considered obese.
+A BMI of ≥25 kg/m2 is considered high [26]. YLDs and life years adjusted for dis-
+ability are the main metrics used to assess the effects of knee OA (DALYs). High BMI
+is the reason that sticks out the most among the 15 most prevalent causes of DALYs
+worldwide from 2010 to 2019, and it has the largest change rate [27]. Between 1990
+and 2017, there was a notable global rise in the YLDs linked to high BMI [27]. China’s
+obesity rate rose from 60th place in the world in 1975 to second place in 2014 [22].
+Numerous studies [15, 29–31] investigated the relationship between high BMI and knee
+OA burden. Nevertheless, there isn’t much research comparing the impact of knee OA
+in China with other countries or regions, nor are there many studies analysing the cost
+of knee OA brought on by high BMI in China. Moreover, there is no evidence of its
+correlation with the Chinese sociodemographic index, age, or gender. To get around
+                 Radiographic Evaluation for KNEEXNET Using Ensemble Models            79
+
+these problems, up-to-date datasets from GBD 2019 were carefully collected in order to
+find the average annual percentage shift (AAPC) of YLDs for knee OA linked to high
+BMI. Additionally, the impacts of high BMI on knee OA were examined using the age-
+period-cohort (APC) model. It is anticipated that this research will help evidence-based
+preventive programmes in China address the disease burden of high BMI-related knee
+OA.
+    Contributions of our work can be summarized as follows. We first investigated the
+performance of 10 state-of-the-art deep learning methods on publicly available knee
+OA X-ray data set. Given significant class imbalance, we improved training strategy by
+implementing the weighting strategy. Finally, to improve the performance of the models,
+we investigated ensemble techniques: majority voting and shallow neural network. The
+ensemble methods demonstrated their potential for use in OA grading, improving the
+overall accuracy to 0.72, which compares favorably with the baseline models.
+
+2 Method
+2.1 Dataset
+We employed the Osteoarthritis Initiative (OAI) dataset [33] in this study, which con-
+tained 5 classes according to the KL grading system. The data was split into train,
+validation, and test sets with a ratio of 7:1:2, resulting in 5778, 826, and 1656 images
+in the three sets respectively. The models developed in this study were evaluated on
+the same unseen test set. The size of the images was of 224 × 224. The distribution of
+samples in each class for train, validation, and test sets is shown in Fig. 1. One can see
+that the dataset exhibits severe class imbalance, which is a common problem in medical
+image analysis.
+
+2.2 Baseline Models
+This project compared the performance among 10 models including GoogLeNet,
+ResNet-34, ResNet-50 [34], VGG-16, VGG-19 [35], Mobile Net [36], DenseNet-121,
+DenseNet-161 [37], Efficient Net [38], and ResNet-18, [39]. All models were pretrained
+with ImageNet dataset before being trained with the knee OA dataset. The models were
+trained with 30 epochs and a batch size of 28. The optimizer was Adam with an ini-
+tial learning rate of 0.0001, and it was reduced by a factor of 10 every 5 epochs. In
+addition, augmentation techniques were used to increase the variety of training images.
+This included random horizontal flipping with a probability of 0.5, adjusting brightness
+factor from 0.5 and 1.2, adjusting saturation factor between 0.5 and 1.5, rotation within
+5 degrees, and random translation within a range of 0.1 of the image size.
+     Two experiments were carried out to study the model performance for OA grading.
+Experiment 1 compared the performance of 10 state-of-the-art models, trained with
+cross entropy loss. In Experiment 2, to address class imbalance problem in this data
+set, a weighted sampling strategy was added during training the baseline models. This
+sampling method assigned probability to each class, which was inversely proportional
+to the sample size of each training class. Each model was trained and tested for 3 times.
+Precision, recall, F1 score, and test accuracy were recorded.
+80       P. Pal et al.
+
+2.3 Ensemble Models
+All 10 models in each experiment were combined to form an ensemble model. We used
+two strategies: majority voting and shallow neural network.
+    In majority voting, we passed the inputs to each model, and each model output 5
+logits corresponding to class 0 to class 4. These logits were then passed through a softmax
+function which output probabilities of each class. The probabilities of the same class in
+10 models were added, and the ensemble model returned the class with the highest value
+as the final prediction.
+    In the shallow neural network method, we designed a 2- layer fully connected neural
+network (FCN) for ensembling. We first input the image to the 10 trained models and
+con- catenated the logits from each model into a 50-dimensional vector, which was fed
+into the FCN for prediction. The FCN was trained for 30 epochs using cross entropy
+loss, with the same training parameters as baseline models. The training and testing were
+repeated 3 times.
+
+3 Results
+3.1 Experiment 1: Comparison of the baseline models
+Firstly, we trained 10 models with cross-entropy loss to study the performance of each
+model. As shown in Fig. 2, the highest accuracy of 0.69 was achieved by ResNet-34,
+ResNet-50, VGG-16, VGG-19, DenseNet-121, and DenseNet-161.
+
+
+
+
+        Fig. 1. Distribution of samples in each class in train, validation, and test sets.
+
+
+    Furthermore, from Fig. 3, we observe that the F1-score of class 0 tended to be higher
+than class 1 and class 2, which may be resulting from class imbalance of the dataset, as
+illustrated in Fig. 1. Note that class 3 and class 4 had the highest F1 scores in all models
+since severe conditions were easier to classify although the number of images available
+for those classes were small.
+
+3.2 Experiment 2: The Baseline Models with the Weighted Sampling Strategy
+Since most models in Experiment 1 had low F1 scores in class 1 potentially due to the
+class imbalance problem, we investigated whether the weighted sampling method would
+improve the model performance. As shown in Fig. 2, among all the models, DenseNet-
+161 achieved the best accuracy (0.70 ± 0.01), which was higher than the best model in
+                 Radiographic Evaluation for KNEEXNET Using Ensemble Models           81
+
+
+
+
+                           Fig. 2. Test accuracy of each model
+
+
+Experiment 1. However, most models yielded slightly lower accuracy than the results in
+Experiment 1.
+    Moreover, the F1 scores of class 1 in all models were higher than those of Experiment
+1 although the F1 scores in some other classes slightly decreased. This showed that the
+weighted sampling method could help with the class imbalance problem for this dataset
+(Fig. 4).
+
+
+
+
+           Fig. 3. F1 scores of each model in Experiment 1 (the baseline models)
+
+
+
+
+3.3 Ensemble Model from Experiment 1
+To improve the overall model performance, two ensemble techniques were used and
+compared. All 10 trained models from Experiment 1 were concatenated to form an
+ensemble model. Using the majority voting technique, the test accuracy was 0.70, which
+was slightly higher than the best model in Experiment 1. The F1 scores of each class were
+0.81, 0.21, 0.70, 0.80, and 0.76 respectively. The F1 scores of class 1 did not improve
+compared to Experiment 1. Since none of the models was effective at identifying class
+82       P. Pal et al.
+
+
+
+
+      Fig. 4. F1 scores of each model in Experiment 2 (the weighted sampling strategy).
+
+
+
+
+Fig. 5. Visualizations of the region that influences the model prediction using Smooth Grad-
+CAM++.
+
+
+1 images (Doubtful class), the ensemble model did not improve the model performance
+in this class.
+    These 10 models were further ensembled with a shallow neural network. The test
+accuracy was 0.72 ± 0.01, which was higher than the result from majority voting. The
+F1 scores were 0.82 ± 0.01, 0.23 ± 0.07, 0.71 ± 0.01, 0.84 ± 0.00, and 0.88 ± 0.01.
+The F1 score of all classes except class 1 improved when compared to the individual
+models presented in Experiment 1.
+
+
+3.4 Ensemble Model from Experiment 2
+
+The same ensemble strategies were employed for the 10 trained models from Experiment
+2. With majority voting, the test accuracy of the second ensemble was 0.64. The F1 score
+of each class were 0.75, 0.33, 0.62, 0.76, and 0.82. The performance of this model was
+lower than most single models in Experiment 2.
+    Furthermore, the outputs of the 10 models were further fused with a shallow neural
+network. This gave an accuracy of 0.70 ± 0.01, which was better than the majority voting
+technique. In addition, this was equal to DenseNet-161 in Experiment 2. The F1 score
+of each class were 0.80 ± 0.01, 0.37 ± 0.03, 0.68 ± 0.01, 0.84 ± 0.01, and 0.88 ± 0.01.
+The F1 score of class 1 of this ensemble model was higher than that of the ensemble
+model from Experiment 1 by 0.14; however, the overall accuracy was lower by 0.02.
+                  Radiographic Evaluation for KNEEXNET Using Ensemble Models                    83
+
+3.5 Explainability of the Model
+Finally, to assess the usefulness of the prediction, Smooth- Grad CAM++ [15] was
+applied to the best-performing model to visualize the region of the image that influenced
+the model to make a prediction. DenseNet-161 trained with the weighted sampling
+strategy, which was a single model with the highest accuracy, was selected to study
+the explain- ability of the model. Figure 5 showed that the model focused on the field
+between the bones (joint space narrowing), which is one of the areas used to classify
+OA severity [5].
+
+
+4 Discussion and Conclusion
+The performance of ten cutting-edge models for classifying knee osteoarthritis and
+automating the evaluation of X-ray images using the Kellgren-Lawrence (KL) evalu-
+ation method was examined, and the findings were published in this publication. The
+highest accuracy of 0.69 was achieved by ResNet-50, VGG-16, VGG-19, DenseNet-
+161, ResNet-34, DenseNet-121, with the last two being the most robust models due to
+their small standard deviation (0.01). However, the individual model was not effective
+in classifying images of class 1 potentially due to the class imbalance problem. Hence,
+a different sampling method, the weighted sampling strategy was investigated during
+model training. This strategy was shown to improve the F1 score of class 1; however, the
+overall accuracy did not in- crease. The best model trained with this sampling strategy
+was DenseNet-161, achieving an accuracy of 0.70 ± 0.01.
+    Moreover, ensemble techniques including majority voting and shallow neural net-
+work were used to improve the overall model performance. The ensemble model, fusing
+the models trained without the weighted sampling strategy and trained with a shallow
+neural network yielded the highest accuracy (0.72 ± 0.01). This result was higher than
+another work using an ensemble model of three DenseNet-121 trained with different
+random seeds, which achieved an average multiple-class accuracy of 0.71 [40].
+    We believe this project can help clinicians to diagnose knee OA easily and effi-
+ciently. In addition, it is expected to be particularly useful in hospitals where there are
+no specialists in reading knee radiographs.
+
+
+5 Compliance with Ethical Standard
+This research makes use of the publicly accessible Osteoarthritis Initiative (OAI) dataset
+[33]. The license associated to the freely accessible data states that ethical clearance was
+not required.
+
+
+References
+ 1. Mora, J.C., Przkora, R., Cruz-Almeida, Y.: Knee osteoarthritis: pathophysiology and current
+    treatment modalities. J. Pain Res. 11 (2018)
+ 2. Long, H., et al.: Prevalence trends of site-specific osteoarthritis from 1990 to 2019: Findings
+    from the global burden of disease study 2019. Arthritis Rheumatol.atol. 74(7), 2022 (2022)
+84         P. Pal et al.
+
+ 3. Cui, A., Li, H., Wang, D., Zhong, J., Chen, Y., Lu, H.: Global, regional prevalence, incidence
+    and risk factors of knee osteoarthritis in population-based studies. EClinicalMedicine (2020)
+ 4. Roos, E., Arden, N.: Strategies for the prevention of knee osteoarthritis. Nat. Rev. Rheumatol.
+    12 (2016)
+ 5. Swagerty, D.L., Jr., Hellinger, D.: Radiographic assessment of osteoarthritis. Am. Fam.
+    Physician 64(2), 279–287 (2001)
+ 6. Shapiro, L.M., McWalter, E.J., Son, M.S., Levenston, M., Hargreaves, B.A., Gold, G.E.:
+    Mechanisms of osteoarthritis in the knee: Mr imaging appearance. J. Magn. Reson. Imaging
+    39(6), 1346–1356 (2014)
+ 7. Cross, M., et al.: The global burden of hip and knee osteoarthritis: estimates from the global
+    burden of disease 2010 study. Ann. Rheum. Dis. 73, 1323–1330 (2014). https://doi.org/10.
+    1136/annrheumdis-2013-204763
+ 8. Hunter, D.J., Schofield, D., Callander, E.: The individual and socioeconomic impact of
+    osteoarthritis. Nat. Rev. Rheumatol. 10, 437–441 (2014). https://doi.org/10.1038/nrrheum.
+    2014.44
+ 9. Safiri, S., et al.: Global, regional and national burden of osteoarthritis 1990–2017: a systematic
+    analysis of the global burden of disease study 2017. Ann. Rheum. Dis. 79, 819–828 (2020).
+    https://doi.org/10.1136/annrheumdis-2019-216515
+10. Giorgino, R., Albano, D., Fusco, S., Peretti, G.M., Mangiavini, L., Messina, C.: Knee
+    osteoarthritis: epidemiology, pathogenesis, and mesenchymal stem cells: what else is new?
+    An update. Int. J. Mol. Sci. 24, 6405 (2023). https://doi.org/10.3390/ijms24076405
+11. GBD 2015 Disease and Injury Incidence and Prevalence Collaborators: Global, regional, and
+    national incidence, prevalence, and years lived with disability for 310 diseases and injuries,
+    1990–2015: a systematic analysis for the global burden of disease study 2015. Lancet (London,
+    England) 388, 1545–1602 (2016). https://doi.org/10.1016/S0140-6736(16)31678-6
+12. Simão, A.P., et al.: Whole body vibration training on muscle strength and brain-derived
+    neurotrophic factor levels in elderly woman with knee osteoarthritis: a randomized clinical
+    trial study. Front. Physiol. 10, 756 (2019). https://doi.org/10.3389/fphys.2019.00756
+13. Freijo, V., Navarro, C., Molina, B., Villalba, J.: Low correlation between gait and quality of
+    life in advanced knee osteoarthritis. J Funct Morphol Kinesiol. 8, 77 (2023). https://doi.org/
+    10.3390/jfmk8020077
+14. Caiado, V.S., et al.: Effects of physical exercises alone on the functional capacity of individuals
+    with obesity and knee osteoarthritis: a systematic review. Biology. 11, 1391 (2022). https://
+    doi.org/10.3390/biology11101391
+15. Tan, G.J., et al.: Physical and psychosocial characteristics differ between individuals with knee
+    pain and different knee osteoarthritis diagnostic criteria. Postgrad. Med. J. (2023). https://doi.
+    org/10.1093/postmj/qgad049
+16. Young, J.J., Pedersen, J.R., Bricca, A.: Exercise therapy for knee and hip osteoarthritis: is
+    there an ideal prescription? Curr Treatm Opt Rheumatol. 20, 1–17 (2023). https://doi.org/10.
+    1007/s40674-023-00205-z
+17. Cai, X., Yuan, S., Zeng, Y., Wang, C., Yu, N., Ding, C.: New trends in pharmacological
+    treatments for osteoarthritis. Front. Pharmacol. 12, 645842 (2021). https://doi.org/10.3389/
+    fphar.2021.645842
+18. Xiaoqing, F., Daozhang, C., Xinglei, Y., Shijie, Z., Wen, J.: Current status and trend analysis
+    of disease burden of knee osteoarthritis in China based on GBD big data. Mod. Prev. Med.
+    49, 1753–1760 (2022)
+19. He, Y., Zheng, C., He, M.H., Huang, J.R.: The causal relationship between body mass index
+    and the risk of osteoarthritis. Int J Gen Med. 14, 2227–2237 (2021). https://doi.org/10.2147/
+    IJGM.S314180
+20. Allen, K.D., Thoma, L.M., Golightly, Y.M.: Epidemiology of osteoarthritis. Osteoarthr. Cartil.
+    30, 184–195 (2022). https://doi.org/10.1016/j.joca.2021.04.020
+                   Radiographic Evaluation for KNEEXNET Using Ensemble Models                        85
+
+21. Jiang, L., et al.: Body mass index and susceptibility to knee osteoarthritis: a systematic review
+    and meta-analysis. Joint Bone Spine 79, 291–297 (2012). https://doi.org/10.1016/j.jbspin.
+    2011.05.015
+22. Zheng, H., Chen, C.: Body mass index and risk of knee osteoarthritis: systematic review and
+    meta-analysis of prospective studies. BMJ Open 5, e007568 (2015). https://doi.org/10.1136/
+    bmjopen-2014-007568
+23. Reyes, C., Leyland, K.M., Peat, G., Cooper, C., Arden, N.K., Prieto-Alhambra, D.: Associ-
+    ation between overweight and obesity and risk of clinically diagnosed knee, hip, and hand
+    osteoarthritis: a population-based cohort study. Arthritis Rheumatol. 68, 1869–1875 (2016).
+    https://doi.org/10.1002/art.39707
+24. Gadde, K.M., Martin, C.K., Berthoud, H.R., Heymsfield, S.B.: Obesity: pathophysiology and
+    management. J. Am. Coll. Cardiol. 71, 69–84 (2018). https://doi.org/10.1016/j.jacc.2017.
+    11.011
+25. GBD 2015 Obesity Collaborators: Health effects of overweight and obesity in 195 countries
+    over 25 years. New Engl. J. Med. 377, 13–27 (2017). https://doi.org/10.1056/NEJMoa161
+    4362
+26. GBD 2019 Viewpoint Collaborators: Five insights from the global burden of disease study
+    2019. Lancet 396, 1135–1159 (2020). https://doi.org/10.1016/S0140-6736(20)31404-5
+27. Dai, H., Alsalhe, T.A., Chalghaf, N., Riccò, M., Bragazzi, N.L., Wu, J.: The global burden of
+    disease attributable to high body mass index in 195 countries and territories, 1990–2017: an
+    analysis of the global burden of disease study. PLoS Med. 17, e1003198 (2020). https://doi.
+    org/10.1371/journal.pmed.1003198
+28. NCD Risk Factor Collaboration (NCD-RisC): Trends in adult body-mass index in 200 coun-
+    tries from 1975 to 2014: a pooled analysis of 1698 population-based measurement studies
+    with 19·2 million participants. Lancet (London, England) 387, 1377–1396 (2016). https://doi.
+    org/10.1016/S0140-6736(16)30054-X
+29. Badley, E.M., Zahid, S., Wilfong, J.M., Perruccio, A.V.: Relationship between body mass
+    index and osteoarthritis for single and multisite osteoarthritis of the hand, hip, or knee: findings
+    from a Canadian longitudinal study on aging. Arthritis Care Res. 74, 1879–1887 (2021).
+    https://doi.org/10.1002/acr.24729
+30. Raud, B., et al.: Level of obesity is directly associated with the clinical and functional con-
+    sequences of knee osteoarthritis. Sci. Rep. 10, 3601 (2020). https://doi.org/10.1038/s41598-
+    020-60587-1
+31. Kellgren, J.H., Lawrence, J.S.: Radiological assessment of osteo-arthrosis. Ann. Rheum. Dis.
+    16(4), 494–502 (1957)
+32. Chen, P.: Knee osteoarthritis severity grading dataset. Mendeley Data 1 (2018)
+33. He, K., Zhang, X., Ren, S., Sun, J.:Deep residual learning for image recognition. In: 2016
+    IEEE Conference on Computer Vision and Pattern Recognition (CVPR), pp. 770–778 (2016)
+34. Simonyan, K., Zisserman, A.: Very deep convolutional networks for large-scale image
+    recognition. In: International Conference on Learning Representations (2015)
+35. Howard, A.G., et al.: Mobilenets: efficient convolutional neural networks for mobile vision
+    applications. CoRR arXiv:1704.04861 (2017)
+36. Huang, G., Liu, Z., van der Maaten, L., Weinberger, K.Q.: Densely connected convolutional
+    networks. In: 2017 IEEE Conference on Computer Vision and Pattern Recognition (CVPR),
+    pp. 2261–2269 (2017)
+37. Tan, M., Le, Q.V.: Efficientnet: rethinking model scaling for convolutional neural networks.
+    CoRR arXiv:1905.11946 (2019)
+38. Szegedy, C., et al.: Going deeper with convolutions. In: 2015 IEEE Conference on Computer
+    Vision and Pattern Recognition (CVPR), pp. 1–9 (2015)
+86        P. Pal et al.
+
+39. Omeiza, D., Speakman, S., Cintas, C., Welder- mariam, K.: Smooth grad-cam++: an enhanced
+    inference level visualization technique for deep convolutional neural network models. CoRR
+    arXiv:1908.01224 (2019)
+40. Mikhaylichenko, A., Demyanenko, Y.: Automatic grading of knee osteoarthritis from plain
+    radiographs using densely connected convolutional networks. In: Recent Trends in Analysis
+    of Images, Social Networks and Texts, pp. 149–161, Springer (2021)
+

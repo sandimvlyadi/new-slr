@@ -1,0 +1,302 @@
+   APPLICATION OF VISION-LANGUAGE MODELS FOR ASSESSING OSTEOARTHRITIS
+                             DISEASE SEVERITY
+
+                             Banafshe Felfeliyan, Yuyue Zhou, Shrimanti Ghosh, Shaobo Liu,
+                                     Abhilash Hareendranathan, Jacob L. Jaremko
+
+      Department of Radiology & Diagnostic Imaging, University of Alberta, Edmonton, AB, Canada
+
+
+                           ABSTRACT                                   However, KL grades are subject to intra/inter-reader vari-
+                                                                 ability and take a considerable amount of time which can
+    Osteoarthritis (OA) poses a global health challenge, de-
+                                                                 have significant implications for patients and their diagnoses.
+manding precise diagnostic methods. Current radiographic         Therefore, the need for an automatic method for evaluating
+assessments are time-consuming and prone to variability,
+                                                                 X-rays of individual OA patients has become more evident
+prompting the need for automated solutions. The exist-           over the last few years [5]. Such a method would facilitate
+ing deep learning models for OA assessment are unimodal
+                                                                 more precise tracking of their disease progression.
+single-task systems and they don’t incorporate relevant text
+                                                                      Over the past decade, different studies have deployed and
+information such as patient demographics, disease history, or
+                                                                 developed numerous deep-learning (DL) methods to assess
+physician reports. This study investigates employing Vision-
+                                                                 the severity of OA in different imaging modalities [6–8]. Dif-
+Language Processing (VLP) models to predict OA severity
+                                                                 ferent approaches have been proposed to predict KL grade
+using X-ray images and corresponding reports. Our method
+                                                                 from the X-ray images using deep-deep learning and gener-
+leverages X-ray images of the knee and diverse report tem-
+                                                                 ated relatively accurate results [5].
+plates generated from tabular OA scoring values to train a
+                                                                      Despite the progress of DL methods, most of the mod-
+CLIP (Contrastive Language-Image Pre-Training) style VLP
+                                                                 els that are developed for OA assessment or other biomedical
+model. Furthermore, we incorporate additional contrasting
+                                                                 domains are unimodal single-task systems and they cannot in-
+captions to enforce the model to discriminate between posi-
+                                                                 corporate relevant information such as patient demographics
+tive and negative reports. Results demonstrate the efficacy of
+                                                                 and disease history [9], which can bound their performance in
+these models in learning text-image representations and their
+                                                                 real-world applications.
+contextual relationships, showcase potential advancement in
+                                                                      To address this problem, different studies have begun
+OA assessment, and establish a foundation for specialized
+                                                                 to incorporate Vision-Language Processing (VLP) models,
+vision-language models in medical contexts. Index Terms—
+                                                                 which integrate both visual and textual information, using
+Vision-Language, Multi-modal Representation Learning, Os-        medical images and corresponding text reports data [10–12].
+teoarthritis, Radiology Report                                   Vision-language models have explored their effectiveness
+                                                                 on a variety of downstream tasks [9, 13] and have demon-
+                                                                 strated that cross-modal supervision can offer a more robust
+                     1. INTRODUCTION
+                                                                 signal for training both images [14] and text [15] models,
+Osteoarthritis (OA), a progressive degenerative disease,         demonstrating considerable potential in various medical ap-
+stands as a leading cause of pain and disability among adults,   plications. The majority of methods primarily concentrate
+causing a substantial burden on public health [1]. Moreover,     on vision-language pre-training specifically for chest X-rays.
+OA holds the distinction of being the most prevalent joint       The utilization of these models holds promise in health, par-
+disease worldwide, affecting over 500 million people [2] and     ticularly in the realm of assessing osteoarthritis (OA) disease
+the number of people affected worldwide has increased by         severity, presenting an area ripe for their effective applica-
+48% from 1990 to 2019 [2]. Imaging plays an important            tion. To the best of our knowledge, there is no work for a
+role in the diagnosis and feature characterization of OA [3].    multi-modal DL model in the OA domain.
+Currently, the common clinical approach to diagnose and               Motivated by these observations, in this paper, we pro-
+monitor the long-term progression is measuring the joint         pose to deploy a CLIP-style VLP model to predict the severity
+space narrowing (JSN) and assessing OA features using the        of OA in X-ray images. The proposed method is developed
+Kellgren-Lawrence (KL) scoring in the planar radiograph          based on tabular medical scores data by increasing the data ef-
+(X-ray) [4].                                                     ficiency during vision-language modeling by deploying mul-
+                                                                 tiple caption styles. Additionally, the proposed method in-
+   Corresponding author: B.F., email: banfel@ualberta.ca         troduces an OA X-ray domain-specific vision-language pre-
+trained model that can be used in other different supervised
+and unsupervised downstream tasks. Our contributions can
+be summarized as follows:
+ • We investigate CLIP’s potential with OA images and as-
+   sess its zero-shot transfer capabilities.
+ • We generate diverse radiology report templates derived
+   from tabular scoring values.
+ • Our proposal involves employing additional contrasting          Fig. 1. Examples of knee OA with different KL, JSN, and
+   captions to prompt the network to diminish the similar-         osteophyte grades. JSN is assessed separately for lateral and
+   ity between positive and negative reports by reducing the       medial compartments. Osteophytes are assessed separately
+   cosine similarity within their embedding space.
+
+
+
+
+      2. RELATED WORKS (VISION-TEXT
+ REPRESENTATION LEARNING IN THE MEDICAL
+                 DOMAIN)
+
+
+The availability of large-scale paired image-text datasets pre-    Fig. 2. X-ray image and example of 3 corresponding captions
+sented a significant opportunity for the fast development of       1) based on abnormality, 2) based on location, and 3) overall
+VLP models to develop rapidly for general-purpose appli-           insight
+cations with different supervised and self-supervised objec-
+tives [16]. CLIP [17] is known as one of the groundbreaking
+large-scale vision-language pretraining (VLP) models, which                    3. MATERIAL AND METHODS
+utilized contrast learning to learn image representations on
+a dataset of 400 million pairs (image, text) from scratch. It      3.1. Data
+can be used for image-text similarity and for zero-shot image
+                                                                   Data were retrieved from the publicly available Osteoarthritis
+classification. CLIP uses a ViT-like transformer to get visual
+                                                                   Initiative (OAI) dataset. OAI dataset is a multicenter, lon-
+features and a causal language model to get text features.
+                                                                   gitudinal, prospective observational study of 4796 individu-
+    In the medical field, some research has incorporated prin-     als with or at risk of developing knee OA. OAI contains bi-
+ciples from general-domain Vision-Language Pre-trained             lateral fixed flexion plain X-ray images of the knee, as well
+(VLP) models by harnessing automated label extraction              as demographic and clinical information with, and KL and
+techniques from clinical reports, including the CLIP-style         OARSI scores. The KL grading incorporates multiple fea-
+cross-modal contrastive objective [18].                            tures to establish an OA score of 0-4, and is the current ac-
+                                                                   cepted standard scoring method for radiographic knee OA di-
+    Wang et al. introduced MedCLIP [12], diverging from
+                                                                   agnosis [21]. Furthermore, this study used the Osteoarthritis
+the CLIP model by incorporating a semantic matching loss
+                                                                   Research Society International (OARSI) atlas criteria scoring
+instead of InfoNCE. This alteration aims to treat text as a soft
+                                                                   which grades various aspects of osteoarthritis [22] (Fig. 1).
+target, reducing false negatives. MedCLIP’s training involves
+                                                                       This study utilized 5204 bilateral X-ray images from
+570,000 image-text pairs and requires supplementary anno-
+                                                                   2604 subjects, each paired with their respective KL grade and
+tated data to define its objective function.
+                                                                   OARSI scores, resulting in the generation of 10408 single-
+    CLIPath proposed by Lai et al, [19] was proposed to en-        limb images.
+hance the classification accuracy of pathology images using
+limited labeled data. This approach integrates a Residual Fea-
+                                                                   3.1.1. Caption Preparation
+ture Connection (RFC) to fine-tune CLIP, effectively optimiz-
+ing with a minimal number of trainable parameters. Stem-           The patient’s data and OA scores are stored in a numerical
+ber et al. [20], trained an SBERT (sentence BERT) using a          tabular format. Given the debates on the ability of language
+limited number of radiology reports. They subsequently em-         models to understand measurements [23] in this study, we
+ployed the reports generated by the trained SBERT model and        only used qualitative scoring results and mapped them into
+40 images to train an RL-based classifier. They demonstrated       descriptive words (example: 0=no, 1=early, 2=mild, 3=mod-
+achieving a higher accuracy using with using language and          erate, and 4=severe). This study used patient age and sex,
+vision representation.                                             knee alignment, KL grad, OARSI grades (for attrition, scle-
+rosis, and osteophytes) as well as the presence of cysts and        224 × 224. We limited the maximum epochs to 20 with batch
+chondrocalcinosis.                                                  size 32 and used the Adam optimizer with a weight decay pa-
+    For each image, distinct sets of caption templates were de-     rameter of 1e-3. The learning rate for the image encoder, text
+signed in order to obtain multiple captions for each. The cap-      encoder, and projection head respectively was 1e-4, 1e-6, and
+tions are produced based on three templates, 1) based on ab-        1e-3.
+normality, 2) based on location, and 3) overall insight. During
+the training process, for each image, the corresponding cap-                   4. EXPERIMENTS AND RESULTS
+tion was randomly selected from the bag of captions. Then
+another view of the selected caption was augmented using            4.1. Model Interpretation
+sentence shuffling [24]. An example of different captions is
+                                                                    Gradient-weighted Class Activation Mapps (GRAD-CAM)
+presented in Fig. 2.
+                                                                    [26] were generated (Fig. 3) to interpret the model’s capac-
+    For designing the negative captions for each score, we
+                                                                    ity in associating text with image features. Maps highlight
+randomly selected scores that were at least 2 levels different
+                                                                    crucial regions influenced by text input, showcasing CLIP’s
+than the positive scores. The reason for selecting the 2-level
+                                                                    attempt to identify diverse OA features and employ compre-
+threshold instead of the 1-level threshold is to reduce the read-
+                                                                    hensive image details. In particular, intercondylar tubercles
+ers’ uncertaintydiscrepancy effect.
+                                                                    and joint margins are prominently featured on activation
+                                                                    maps, indicating the model’s ability to link textual prompts to
+3.2. Vision-Language Processing                                     visual representations.
+Similar to CLIP, the proposed model is constructed from a
+Text encoder, an Image encoder, and a projection head. Dur-         4.2. Image classification
+ing training for each image, one caption is randomly selected
+                                                                    The accuracy of the proposed pertained image encoders for
+from the caption-bag. Corresponding text and images are
+                                                                    zero-shot classification on KL grade scoring was 55% which
+forwarded to text and image encoders to obtain image em-
+                                                                    is 10% higher than the original CLIP model.
+bedding (= I) and text embedding’s (= T ). Next, it com-
+putes cosine similarities between projected Image and Text
+embedding’s is calculated and is used to calculate an InfoLoss      4.3. Image-Text Retrieval
+adapted for contrastive (text, image) representation [16]. In       In this experiment, textual information was retrieved for each
+this paper, we proposed the incorporation of an additional          image query in the test set, few examples are presented in
+loss function to reduce the similarity between each caption         Fig. 4. Quality of the retrieved captions was evaluated by
+and its corresponding negative version, by minimizing the co-       BLEU [27] which is an established metric commonly used in
+sine similarity between the un-projected embeddings of these        image captioning. The BLEU4 value of the test dataset in our
+paired captions.                                                    proposed method was 0.7 and for the original CLIP model
+    In this study, a pre-trained CXR-BERT-general from              0.67.
+the [15] was used as the backbone text encoder, which was
+pre-trained on PubMed abstracts and clinical notes from two
+                                                                             5. DISCUSSION AND CONCLUSION
+other publicly available datasets (MIMIC-IIICXR). Further-
+more, the ResNet50 [25] was used to serve as the image              This paper explored the application of VLP models on OA
+encoder.                                                            images, transforming tabular data into various styles of text
+                                                                    captions. Activation maps highlighted the areas related to
+3.3. Implementation Details                                         OA features. This is a showcase of the capability of these
+In this study a pre-trained CXR-BERT-general from the [15]          models to establish connections between contextual (scoring)
+was used as the backbone text encoder which was pre-trained         representations in OA X-ray images. Additionally, the intro-
+on PubMed abstracts and clinical notes from two other pub-          duced additional loss function enhanced zero-shot classifica-
+licly available datasets.                                           tion by compelling the model to create separation between
+    From the 10400 image instances, 8,430 were used for             positive and negative captions in embedding space. The re-
+training, 936 for validation, and 1,040 for testing. In each        search highlighted VLP’s potential to align visual and textual
+epoch, we randomly excluded training images with similar            data, promising improved diagnostic accuracy and personal-
+scores (captions) to avoid competitive contrastive learning         ized treatment approaches.
+among similar examples, which yielded 7500 images for
+training.                                                                          6. ACKNOWLEDGMENTS
+    The proposed method was implemented in Pytorch and
+trained on an NVIDIA V100 GPU using Compute Canada re-              Academic time for JJ is made available by Medical Imaging
+sources. The dimensions of input images were configured to          Consultants (MIC), Edmonton, Canada. JJ is supported by
+Fig. 3. Examples of activation maps for different given prompts. Results show model emphasis on the medial and lateral joint
+margins, as well as the intercondylar tubercles, indicating that the model was able to relate text and image representations.
+
+
+                                                                      cial Issue: Osteoarthritis / Coordinated by Emmanuel
+                                                                      Coudeyre and Franc¸ois Rannou.
+
+                                                                  [4] Heidi L Oksendahl, Nigel Gomez, Colleen S Thomas,
+                                                                      Gary D Badger, Michael J Hulstyn, Paul D Fadale, and
+                                                                      Braden C Fleming, “Digital radiographic assessment
+                                                                      of tibiofemoral joint space width–a variance component
+                                                                      analysis,” The journal of knee surgery, vol. 22, no. 03,
+                                                                      pp. 205–212, 2009.
+
+                                                                  [5] Kevin A Thomas, Lukasz Kidzin´ski, Eni Halilaj, Scott L
+                                                                      Fleming, Guhan R Venkataraman, Edwin HG Oei,
+                                                                      Garry E Gold, and Scott L Delp, “Automated classi-
+                                                                      fication of radiographic knee osteoarthritis severity us-
+Fig. 4. Example of Retrieved captions for the quarry images
+                                                                      ing deep neural networks,” Radiology: Artificial Intelli-
+                                                                      gence, vol. 2, no. 2, pp. e190065, 2020.
+a Canada CIFAR AI Chair. BF is supported by an Alberta
+Innovates scholarship.                                            [6] Banafshe Felfeliyan, Abhilash Hareendranathan, Gre-
+                                                                      gor Kuntze, Stephanie Wichuk, Nils D Forkert, Jacob L
+                                                                      Jaremko, and Janet L Ronsky, “Weakly supervised med-
+                    7. REFERENCES                                     ical image segmentation with soft labels and noise ro-
+                                                                      bust loss,” arXiv preprint arXiv:2209.08172, 2022.
+ [1] David J Hunter, Deborah Schofield, and Emily Callan-
+     der, “The individual and socioeconomic impact of os-         [7] Banafshe Felfeliyan, Nils D Forkert, Abhilash Ha-
+     teoarthritis,” Nature Reviews Rheumatology, vol. 10, no.         reendranathan, David Cornel, Yuyue Zhou, Gregor
+     7, pp. 437–441, 2014.                                            Kuntze, Jacob L Jaremko, and Janet L Ronsky, “Self-
+                                                                      supervised-rcnn for medical image segmentation with
+ [2] David J Hunter, Lyn March, and Mabel Chew, “Os-                  limited data annotation,” Computerized Medical Imag-
+     teoarthritis in 2020 and beyond: a lancet commission,”           ing and Graphics, vol. 109, pp. 102297, 2023.
+     The Lancet, vol. 396, no. 10264, pp. 1711–1712, 2020.
+                                                                  [8] Valentina Pedoia and Sharmila Majumdar, “Translation
+ [3] D. Hayashi, F.W. Roemer, and A. Guermazi, “Imaging               of morphological and functional musculoskeletal imag-
+     for osteoarthritis,” Annals of Physical and Rehabilita-          ing,” Journal of Orthopaedic Research®, vol. 37, no. 1,
+     tion Medicine, vol. 59, no. 3, pp. 161–169, 2016, Spe-           pp. 23–34, 2019.
+ [9] Tao Tu, Shekoofeh Azizi, Danny Driess, Mike Schaek-              “Learning transferable visual models from natural lan-
+     ermann, Mohamed Amin, Pi-Chuan Chang, Andrew                     guage supervision,” in International conference on ma-
+     Carroll, Chuck Lau, Ryutaro Tanno, Ira Ktena, et al.,            chine learning. PMLR, 2021, pp. 8748–8763.
+     “Towards generalist biomedical ai,” arXiv preprint
+     arXiv:2307.14334, 2023.                                     [18] Yuhao Zhang, Hang Jiang, Yasuhide Miura, Christo-
+                                                                      pher D Manning, and Curtis P Langlotz, “Contrastive
+[10] Yimu Pan, Tongan Cai, Manas Mehta, Alison D                      learning of medical visual representations from paired
+     Gernand, Jeffery A Goldstein, Leena Mithal, Delia                images and text,” in Machine Learning for Healthcare
+     Mwinyelle, Kelly Gallagher, and James Z Wang, “En-               Conference, pp. 2–25.
+     hancing automatic placenta analysis through distribu-
+     tional feature recomposition in vision-language con-        [19] Zhengfeng Lai, Zhuoheng Li, Luca Cerny Oliveira,
+     trastive learning,” in International Conference on Medi-         Joohi Chauhan, Brittany N Dugger, and Chen-Nee
+     cal Image Computing and Computer-Assisted Interven-              Chuah, “Clipath: Fine-tune clip with visual feature fu-
+     tion. Springer, 2023, pp. 116–126.                               sion for pathology image analysis towards minimizing
+                                                                      data collection efforts,” in Proceedings of the IEEE/CVF
+[11] Xinquan Yang, Jinheng Xie, Xuguang Li, Xuechen Li,               International Conference on Computer Vision, 2023, pp.
+     Xin Li, Linlin Shen, and Yongqiang Deng, “Tceip:                 2374–2380.
+     Text condition embedded regression network for den-
+     tal implant position prediction,” arXiv preprint            [20] Joseph Nathaniel Stember and Hrithwik Shalu, “Deep
+     arXiv:2306.14406, 2023.                                          reinforcement learning with automated label extraction
+                                                                      from clinical reports accurately classifies 3d mri brain
+[12] Zifeng Wang, Zhenbang Wu, Dinesh Agarwal, and                    volumes,” Journal of digital imaging, vol. 35, no. 5, pp.
+     Jimeng Sun, “Medclip: Contrastive learning from                  1143–1152, 2022.
+     unpaired medical images and text,” arXiv preprint
+     arXiv:2210.10163, 2022.                                     [21] Frank W Roemer, Shadpour Demehri, Patrick Omoumi,
+                                                                      Thomas M Link, Richard Kijowski, Simo Saarakkala,
+[13] Yikuan Li, Hanyin Wang, and Yuan Luo, “A compari-                Michel D Crema, and Ali Guermazi, “State of the art:
+     son of pre-trained vision-and-language models for mul-           Imaging of osteoarthritis—revisited 2020,” Radiology,
+     timodal representation learning across medical images            vol. 296, no. 1, pp. 5–21, 2020.
+     and reports,” in 2020 IEEE international conference on
+     bioinformatics and biomedicine (BIBM). IEEE, 2020,          [22] Roy D Altman and GE Gold, “Atlas of individual radio-
+                                                                      graphic features in osteoarthritis, revised,” Osteoarthri-
+     pp. 1999–2004.
+                                                                      tis and cartilage, vol. 15, pp. A1–A56, 2007.
+[14] Karan Desai and Justin Johnson, “Virtex: Learning vi-
+                                                                 [23] Sungjin Park, Seungwoo Ryu, and Edward Choi, “Do
+     sual representations from textual annotations,” in Pro-
+                                                                      language models understand measurements?,” arXiv
+     ceedings of the IEEE/CVF conference on computer vi-
+                                                                      preprint arXiv:2210.12694, 2022.
+     sion and pattern recognition, 2021, pp. 11162–11173.
+                                                                 [24] Rhydian Windsor, Amir Jamaludin, Timor Kadir, and
+[15] Benedikt Boecking, Naoto Usuyama, Shruthi Bannur,
+                                                                      Andrew Zisserman, “Vision-language modelling for ra-
+     Daniel C Castro, Anton Schwaighofer, Stephanie Hy-
+                                                                      diological imaging and reports in the low data regime,”
+     land, Maria Wetscherek, Tristan Naumann, Aditya Nori,
+                                                                      arXiv preprint arXiv:2303.17644, 2023.
+     Javier Alvarez-Valle, et al., “Making the most of text
+     semantics to improve biomedical vision–language pro-        [25] Kaiming He, Xiangyu Zhang, Shaoqing Ren, and Jian
+     cessing,” in European conference on computer vision.             Sun, “Deep residual learning for image recognition,” in
+     Springer, 2022, pp. 1–21.                                        Proceedings of the IEEE conference on computer vision
+                                                                      and pattern recognition, 2016, pp. 770–778.
+[16] Shruthi Bannur, Stephanie Hyland, Qianchu Liu, Fer-
+     nando Perez-Garcia, Maximilian Ilse, Daniel C Castro,       [26] Ramprasaath R Selvaraju, Abhishek Das, Ramakrishna
+     Benedikt Boecking, Harshita Sharma, Kenza Bouzid,                Vedantam, Michael Cogswell, Devi Parikh, and Dhruv
+     Anja Thieme, et al., “Learning to exploit temporal struc-        Batra, “Grad-cam: Why did you say that?,” arXiv
+     ture for biomedical vision-language processing,” in Pro-         preprint arXiv:1611.07450, 2016.
+     ceedings of the IEEE/CVF Conference on Computer Vi-
+     sion and Pattern Recognition, 2023, pp. 15016–15027.        [27] Kishore Papineni, Salim Roukos, Todd Ward, and
+                                                                      W“BLEU Zhu, “A method for automatic evaluation of
+[17] Alec Radford, Jong Wook Kim, Chris Hallacy, Aditya               machine translation”,” the Proceedings of ACL-2002,
+     Ramesh, Gabriel Goh, Sandhini Agarwal, Girish Sas-               ACL, Philadelphia, PA, July 2002, 2001.
+     try, Amanda Askell, Pamela Mishkin, Jack Clark, et al.,
+

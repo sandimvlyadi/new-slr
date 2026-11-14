@@ -1,0 +1,1257 @@
+             algorithms
+
+Article
+
+Improving Classification of Hand Osteoarthritis Using Deep
+Learning with Synthesized Data and Focal Loss Optimization
+Hetali Tank 1 , Zhen Cao 2 , Juan Shan 1, *                 and Ming Zhang 2, *
+
+                                         1   Department of Computer Science, Seidenberg School of CSIS, Pace University, New York, NY 10038, USA;
+                                             hc18137n@pace.edu
+                                         2   Department of Computer Science, Boston University, Boston, MA 02215, USA; caoz229@bu.edu
+                                         *   Correspondence: jshan@pace.edu (J.S.); mzhang2@bu.edu (M.Z.)
+
+
+                                         Abstract
+                                         Osteoarthritis (OA) severity grading from hand distal interphalangeal (DIP) joint radio-
+                                         graphs using the Kellgren–Lawrence (KL) scale is challenged by severe class imbalance,
+                                         with higher grades (KL3 and KL4) markedly underrepresented in clinical datasets. To
+                                         address this limitation, we propose a VGG19-based classification framework that systemati-
+                                         cally evaluates six training strategies targeting imbalance at the data level, algorithmic level,
+                                         or in combination. Synthetic images for minority classes were generated using CycleGAN
+                                         and subsequently filtered through rheumatologist validation. The evaluated strategies
+                                         include baseline training, rheumatologist-validated synthetic augmentation (SD), oversam-
+                                         pling (OS), focal loss (FL) optimization, and multiple combinations of these approaches.
+                                         The results show that strategies incorporating oversampling demonstrated the most consis-
+                                         tent and statistically robust improvements in minority-class performance. Specifically, the
+                                         combination of synthetic data and oversampling (SD + OS) achieved the highest binary
+                                         OA sensitivity (96.12%) and significantly improved OA F1 score compared to baseline
+                                         (0.613 vs. 0.416, p = 0.029). The full combined strategy (SD + OS + FL) yielded the highest
+                                         KL3 F1 score (0.527 vs. 0.280 baseline, p = 0.048) and significantly improved KL4 F1 score
+                                         (0.730 vs. 0.570 baseline, p = 0.150). Importantly, all strategies maintained higher or similar
+                                         overall performance with no significant change in majority-class performance (p > 0.10),
+                                         indicating that improvements in minority classes were not achieved at the expense of sacri-
+                                         ficing majority classes or overall model reliability. These findings suggest that the proposed
+                                         imbalance-mitigation strategies may improve minority class OA detection, particularly
+                                         when oversampling and validated synthetic augmentation are combined. It is worth noting
+                                         that the above results are derived from a held-out test set comprising 1626 samples, among
+                                         which only 43 are OA-positive due to data imbalance. The results should be treated as
+                                         preliminary findings subject to change upon validation in larger cohorts of OA patients.
+Academic Editors: Irene Rechichi,
+                                         Keywords: hand osteoarthritis classification; class imbalance; augmentation; synthetic data;
+Silvia Seoni, Sujit Kumar Sahu and
+Maryam Ravan
+                                         focal loss; CycleGAN; KL grade
+Received: 1 March 2026
+Revised: 10 May 2026
+Accepted: 16 May 2026
+Published: 20 May 2026                   1. Introduction
+Copyright: © 2026 by the authors.             Osteoarthritis (OA) is a chronic, degenerative joint disease characterized by cartilage
+Licensee MDPI, Basel, Switzerland.       loss and changes in bone structure, leading to pain, stiffness, and reduced mobility. It is
+This article is an open access article
+                                         among the most prevalent musculoskeletal disorders worldwide, particularly in aging pop-
+distributed under the terms and
+                                         ulations, and contributes significantly to disability and reduced quality of life [1,2]. While
+conditions of the Creative Commons
+Attribution (CC BY) license.
+                                         much research is focused on knee OA, hand OA—especially the distal interphalangeal
+
+
+Algorithms 2026, 19, 414                                                                                        https://doi.org/10.3390/a19050414
+Algorithms 2026, 19, 414                                                                                              2 of 23
+
+
+
+                           (DIP) joints—remains underrepresented in automated diagnostic research, despite its sig-
+                           nificant impact on hand function and quality of life [3]. This gap is clinically significant,
+                           as DIP joint OA can severely impair fine motor tasks and daily activities, underscoring
+                           the need for reliable grading to enable early intervention and monitoring. Radiographic
+                           imaging remains the gold standard for diagnosing hand OA, with the Kellgren-Lawrence
+                           (KL) grading system [4] widely adopted to evaluate disease severity based on features
+                           such as joint space narrowing, osteophyte formation, and subchondral sclerosis. However,
+                           manual KL grading is labor-intensive, subjective, and prone to inter-observer variability,
+                           limiting scalability in large studies and hindering consistent diagnosis in clinical practice.
+                           Automated approaches that can improve grading consistency, especially for advanced
+                           disease, are therefore of high clinical interest.
+                                 Recent advances in deep learning have enabled the development of automated systems
+                           for OA classification, offering the potential to improve diagnostic consistency and efficiency.
+                           Convolution Neural Networks (CNNs) have demonstrated strong performance in medical
+                           image analysis tasks, including OA detection and classification [5,6]. However, a persistent
+                           challenge in OA classification is class imbalance: datasets typically contain more healthy
+                           or mild cases (KL0–KL2) than severe cases (KL3–KL4). This imbalance biases model
+                           training, leading to classifiers that perform well on majority classes but poorly on severe
+                           cases—precisely the stages most relevant for clinical decision-making.
+                                 Several approaches have been proposed to address the imbalance in medical imaging
+                           datasets. Traditional methods include data-level balancing such as downsampling, over-
+                           sampling, and augmentation (flips, rotations, spatial shifts) [7]. More broadly, balanced
+                           training strategies have been proposed as foundational solutions. Salmi et al. and Johnson
+                           et al. [8,9] reviewed imbalance-handling techniques over the past decade, categorizing
+                           them into three levels: data preprocessing (resampling, augmentation), algorithmic modi-
+                           fications (e.g., cost-sensitive learning or loss reweighting), and hybrid approaches. Their
+                           review emphasized that constructing or simulating balanced datasets improves diagnostic
+                           sensitivity and generalizability, particularly when paired with robust evaluation metrics.
+                           Despite these efforts, performance gains on minority classes often come at the expense of
+                           overall accuracy.
+                                 Synthetic data generation has emerged as a promising strategy to address the scarcity
+                           of minority-class samples in medical imaging. Generative adversarial networks (GANs)
+                           have shown remarkable ability to produce anatomically realistic images that capture
+                           domain-specific variations while preserving underlying pathology. Among these, Cycle-
+                           GAN [10] stands out for its ability to perform unpaired image-to-image translation, elimi-
+                           nating the need for paired training data that are rarely available in clinical settings. This
+                           capability has led to its successful application across multiple medical imaging domains,
+                           including MRI-to-CT translation, lesion synthesis, and cross-modality adaptation [11–13].
+                           Extensions of CycleGAN have further improved its utility: Hu et al. [14] introduced residual
+                           dense blocks and structural similarity loss to enhance fidelity, ensuring that fine anatomical
+                           details are preserved, while Frid-Adar et al. [15] applied GAN-based augmentation to liver
+                           lesion classification, demonstrating significant improvements in sensitivity and overall
+                           model performance. Collectively, these studies illustrate that synthetic image generation
+                           not only increases the sample size of underrepresented classes but also provides clinically
+                           plausible data that can enhance model generalizability.
+                                 Another line of research focuses on improving the design of the loss function to handle
+                           imbalance directly during model optimization. A prominent example is focal loss [16],
+                           which extends standard cross-entropy by down-weighting well-classified, majority-class
+                           samples and emphasizing harder, minority-class examples. This adaptive reweighting
+                           mechanism prevents the model from being overwhelmed by abundant negative cases and
+
+
+
+                                                                                           https://doi.org/10.3390/a19050414
+Algorithms 2026, 19, 414                                                                                                3 of 23
+
+
+
+                           forces it to learn discriminative features from rare but clinically important categories. In
+                           medical imaging, focal loss has been shown to improve detection sensitivity in several
+                           domains: Zhou et al. [17] demonstrated improved calibration and robustness in optical co-
+                           herence tomography (OCT) analysis; Tan et al. [18] reported higher sensitivity in glaucoma
+                           diagnosis from subtle nerve fiber layer changes; and other studies have validated its utility
+                           in anomaly detection and adversarial learning scenarios. Survey work such as Johnson and
+                           Khoshgoftaar [9] further confirms that focal loss is among the most effective algorithm-level
+                           methods for handling class imbalance across diverse datasets. Together, these findings
+                           highlight loss-function engineering, particularly focal loss, as a complementary solution
+                           to data-level balancing, capable of directly shaping the learning process toward clinically
+                           critical minority classes.
+                                 Standard CNN architectures, such as VGG19 [19], remain strong baselines in medical
+                           image analysis. VGG19, though relatively older compared to modern transformer-based
+                           models, remains widely used due to its deep yet uniform layer structure, which enables
+                           stable gradient flow and reliable extraction of hierarchical image features. Its simplicity
+                           and proven track record have enabled successful applications across diverse medical do-
+                           mains, including diabetic retinopathy detection [20], multimodal disease classification [21],
+                           and tumor analysis [22]. Furthermore, transfer learning from pretrained ImageNet mod-
+                           els has become standard practice in medical imaging, enabling models to leverage rich,
+                           generalizable feature representations learned from large datasets [23]. However, while
+                           transfer learning helps address limited sample sizes, it does not fully overcome severe
+                           class imbalance—highlighting the need for complementary strategies such as synthetic
+                           augmentation and loss reweighting.
+                                 Taken together, prior studies suggest that no single method fully resolves severe
+                           class imbalance in OA datasets. Augmentation, balanced sampling, synthetic generation,
+                           and focal loss each provide partial improvements, but a combined approach addressing
+                           both data-level and algorithm-level imbalance simultaneously has not been systematically
+                           evaluated for DIP joint OA classification. Motivated by addressing the gap, this study
+                           proposes a two-stage deep learning framework that combines CycleGAN-based synthetic
+                           augmentation with focal loss optimization to enhance the classification of DIP joints, with a
+                           specific focus on improving the sensitivity of severe cases.
+                                 The present study builds directly upon our prior work [24], in which we proposed
+                           a CycleGAN and EfficientNetB7-based framework for hand OA classification. While the
+                           work in [25] established the feasibility of generative augmentation for this task, it left several
+                           important methodological questions unresolved, which the current study is designed to
+                           address. First, the synthetic radiographs in our prior work were not subjected to clinical
+                           quality review; here we introduce a blinded rheumatologist validation step and empirically
+                           demonstrate that clinically filtered synthetic images produce measurably better classifier
+                           performance than unfiltered outputs, contributing a methodological finding applicable
+                           beyond OA grading. Second, our prior work relied solely on synthetic data augmentation
+                           without a combination of other strategies or any algorithmic-level compensation for class
+                           imbalance; the present study introduces focal loss and oversampling as complementary
+                           strategies and evaluates different combinations, demonstrating statistically significant
+                           synergistic gains. Third, no statistical significance testing was reported in our prior work;
+                           here, we provide paired t-tests on a fixed held-out test set, statistically validating that
+                           the proposed strategies produce robust improvements. Taken together, these extensions
+                           transform the preliminary framework of our prior work into a statistically validated,
+                           clinically grounded, and comprehensively benchmarked methodology.
+
+
+
+
+                                                                                             https://doi.org/10.3390/a19050414
+Algorithms 2026, 19, 414                                                                                              4 of 23
+
+
+
+                           2. Methodology
+                           2.1. Dataset
+                                This study utilizes data from the Osteoarthritis Initiative (OAI), a large, longitudinal,
+                           multi-center study funded by the National Institutes of Health [26]. The OAI provides
+                           extensive clinical and imaging data to investigate causes, progression, and treatment of
+                           osteoarthritis. While the primary focus of OAI is knee OA, it also includes hand radio-
+                           graphs obtained at baseline and 48-month follow-up visits. In total, 3591 radiographs with
+                           visible OA signs were available. Each radiograph was annotated by trained radiologists
+                           using the Kellgren–Lawrence (KL) grading system [26], which scores OA severity from
+                           0 (none) to 4 (severe) across 12 finger joints per hand: distal interphalangeal (DIP), proximal
+                           interphalangeal (PIP), and metacarpophalangeal (MCP). Figure 1 shows the anatomical
+                           locations of these joints.
+
+
+
+
+                           Figure 1. DIP, PIP, and MCP joints in a hand radiograph.
+
+                           2.2. Preprocessing
+                                The dataset originally contained hand radiographs with varying pixel spacing due to
+                           differences in imaging equipment. To create a consistent dataset, we developed custom
+                           software to label the center and angle of each joint type (DIP, PIP, or MCP). All joints
+                           were then cropped to a uniform size of 180 × 180 pixels and rotated to ensure consistent
+                           orientation. This preprocessing method yielded 41,060 finger joints, including 13,199 DIP
+                           joints, 13,774 PIP joints, and 14,087 MCP joints. Given the variability in image quality
+                           across imaging systems, we applied additional filtering to exclude low-quality samples.
+                           This involved removing images with distorted or stretched joints, misaligned centers,
+                           obscured anatomical structures, or other artifacts that could negatively affect classification
+                           performance. After quality check, the refined dataset included 10,845 DIP joint images,
+                           10,853 PIP joint images, and 12,899 MCP joint images, each suitable for classification tasks
+                           related to joint type or osteoarthritis severity. For a detailed explanation of this process,
+                           please refer to our previous work [27].
+                                In this study, we focus specifically on DIP joints, which are commonly affected by
+                           hand OA. The DIP joint dataset was randomly partitioned into training (75%), validation
+                           (10%), and testing (15%) subsets, ensuring that data from each patient appeared in only one
+                           subset to prevent data leakage. Table 1 summarizes the distribution of DIP joint images
+                           across the training, validation, and test sets.
+                                We adopted the modified Kellgren–Lawrence (KL) grading system used in the Fram-
+                           ingham Study [3], which numerically represents joint severity from 0 to 4. The KL grades
+                           are defined as follows:
+
+
+
+                                                                                           https://doi.org/10.3390/a19050414
+Algorithms 2026, 19, 414                                                                                                    5 of 23
+
+
+
+                           •      KL0 (None): No joint space narrowing (JSN) or osteophyte formation;
+                           •      KL1 (Doubtful): Questionable osteophyte or JSN;
+                           •      KL2 (Minimal): Small osteophyte(s) or mild JSN;
+                           •      KL3 (Moderate): Moderate osteophyte(s) or JSN;
+                           •      KL4 (Severe): Large osteophyte(s) or severe JSN.
+                                In most studies, joints graded as KL0, KL1, and KL2 are considered healthy (non-OA),
+                           while KL3 and KL4 are considered as osteoarthritic (OA). The same rule is adopted in
+                           this study. Figure 2 illustrates representative DIP joint examples across all KL grades,
+                           highlighting the morphological differences between healthy joints (KL0–KL2) and OA-
+                           affected joints (KL3–KL4).
+
+                           Table 1. Distribution of KL grades into training, validation, and testing sets for DIP joints.
+
+                                                                        DIP Joints
+                                  Set        KL = 0         KL = 1         KL = 2        KL = 3         KL = 4          Total
+                                Training      5237           1205           1640           116            102           8300
+                               Validation     581             133           182            12              11           919
+                                  Test        1027           236            320            23             20            1626
+                                 Total        6845           1574           2142           151            133          10,845
+
+
+
+
+                           Figure 2. Representative DIP joint examples across KL grades 0–4, showing progression from healthy
+                           joints (KL0–KL2) to osteoarthritic joints (KL3–KL4).
+
+                           2.3. Synthetic Data Generation Using CycleGAN
+                                Severe data imbalance represents the primary technical challenge in DIP joint OA
+                           classification, as KL3 and KL4 cases comprise only 2.62% of the dataset (shown in Table 1).
+                           This extreme disparity biases model training toward majority classes, resulting in classifiers
+                           that achieve high overall accuracy while failing to detect critical severe cases—precisely the
+                           cases requiring timely intervention.
+                                To address this imbalance at the data level, we employed CycleGAN [10] for targeted
+                           synthetic image generation. CycleGAN’s unpaired image-to-image translation capability
+                           makes it particularly suited for medical imaging, where paired examples of disease progres-
+                           sion are rarely available. We generated synthetic KL3 and KL4 images by training separate
+                           CycleGAN models: one for the KL0 → KL3 translation, second for KL1 → KL3 translation,
+                           third for the KL0 → KL4 translation, and forth for KL1 → KL4 translation. Each model
+                           was trained independently on its respective target-grade images, so the generated outputs
+                           are inherently grade-specific by construction. The schematic in Figure 3 consolidates both
+                           pipelines into a single diagram for visual clarity, with KL3 and KL4 together labelled as
+                           Domain B. In this setup, KL0 and KL1 images representing healthy or mildly affected joints
+                           were designated as Domain A, while KL3 and KL4 images representing severe OA were
+                           designated as Domain B. Each CycleGAN model simulated disease progression by trans-
+                           lating images from Domain A to the respective Domain B grade, introducing joint space
+
+
+
+                                                                                                 https://doi.org/10.3390/a19050414
+Algorithms 2026, 19, 414                                                                                              6 of 23
+
+
+
+                           narrowing and osteophyte-like features while preserving underlying bone morphology,
+                           thereby creating realistic grade-specific images for dataset augmentation.
+
+
+
+
+                           Figure 3. Overall workflow of the CycleGAN-based synthetic data generation.
+
+                           2.3.1. Dataset Partitioning and Domain Composition
+                                 To ensure unbiased evaluation and prevent any data leakage of generated images
+                           into classifier’s evaluation, we first reserved 15% of the overall dataset as an independent
+                           test set, which was never used during CycleGAN training or validation (Table 1). The re-
+                           maining 85% of the data was used for synthetic image generation process. This subset was
+                           further split, with 90% allocated for CycleGAN training and 10% reserved as an internal
+                           CycleGAN test set Once the CycleGAN training was complete, the internal CycleGAN test
+                           set, containing 581 healthy KL0 images, served as the primary source pool for synthetic data
+                           generation. In early experiments, we evaluated several unpaired translation configurations
+                           for severe-grade augmentation (e.g., using KL0 or KL1 as the source and KL3 or KL4 as the
+                           target) and compared their impact on classifier performance. We observed that training
+                           CycleGAN with KL0 as Domain A and KL3 as Domain B produced the best translations;
+                           moreover, this configuration yielded the best downstream performance, resulting in the
+                           highest classification accuracy on the classifier. Accordingly, KL1 and KL4 were not in-
+                           cluded in the final CycleGAN training/testing setup, and only KL0 and KL3 images were
+                           used and are reported in Table 2. While we generated a large synthetic KL3 pool from
+                           the internal test set, our analysis revealed that a 30% augmentation ratio was optimal, i.e.,
+                           we randomly selected 235 synthetic KL3 samples (~30%) from generated pool to add to
+                           the VGG19 training set. This volume was sufficient to improve minority class sensitivity
+                           without causing the model to overfit to synthetic artifacts.
+
+                           Table 2. KL0 (Domain A) vs. KL3 (Domain B) across training/test sets for CycleGAN.
+
+                                                                     DIP Joint
+                                         Set                    KL = 0 (Domain A)              KL = 3 (Domain B)
+                                      Training                          5237                             116
+                                        Test                            581                              12
+                                        Total                           5818                             128
+
+                           2.3.2. CycleGAN Architecture
+                                We trained CycleGAN on unpaired KL0 (healthy) and KL3 (moderate OA) images us-
+                           ing the standard dual-generator dual-discriminator architecture proposed by Zhu et al. [10],
+
+
+                                                                                           https://doi.org/10.3390/a19050414
+Algorithms 2026, 19, 414                                                                                               7 of 23
+
+
+
+                           illustrated in Figure 4. The framework consists of two generators and two discriminators
+                           that work adversarially:
+                           •    Generators perform bidirectional image translation:
+                                #    Generator G: A → B: Transforms healthy joint images (Domain A: KL0/KL1) into
+                                     synthetic severe OA images (Domain B: KL3/KL4), learning to introduce disease-
+                                     characteristic features such as reduced joint space and osteophyte-like structures.
+                                #    Generator F: B → A: Performs the inverse transformation, reconstructing healthy-
+                                     appearing joints from severe cases to enforce structural consistency.
+                                #    Both generators used a ResNet-based architecture consisting of an initial con-
+                                     volution layer, two downsampling convolution blocks, nine residual blocks,
+                                     two upsampling transposed convolution layers and a final output layer with
+                                     Tanh activation.
+                           •    Discriminators distinguish real from synthetic images:
+                                #    Discriminator DA : Evaluates whether images appear authentically healthy (Do-
+                                     main A).
+                                #    Discriminator DB : Evaluates whether images exhibit realistic severe OA charac-
+                                     teristics (Domain B).
+                                #    PatchGAN discriminators were used, consisting of stacked convolutional layers
+                                     with LeakyReLU activations and instance normalization.
+
+
+
+
+                           Figure 4. CycleGAN architecture.
+
+                           2.3.3. Loss Function and Training Objective
+                               The CycleGAN model is optimized using a combination of adversarial loss and cycle-
+                           consistency loss, which together balance visual realism with anatomical preservation.
+                           •   Adversarial Loss:
+                                #    Because the dataset is unpaired, the adversarial loss does not compare images
+                                     at the pixel level. Instead, it measures how well the generator can fool the
+                                     discriminator into believing a synthetic image is real from the target domain. The
+                                     loss for Generator G: A → B and its discriminator DB is defined as
+
+                                       LGAN (G, DB , A, B) = Eb∼pdata (B) [log DB (b)] + Ea∼pdata (A) [log(1 − DB (G(a)))]
+
+                                #    A similar loss, LGAN (F, DA , B, A), is applied to the inverse generator F and dis-
+                                     criminator DA .
+
+
+
+                                                                                            https://doi.org/10.3390/a19050414
+Algorithms 2026, 19, 414                                                                                              8 of 23
+
+
+
+                           •    Cycle-Consistency Loss:
+                                #    Cycle-consistency loss enforces structural integrity by penalizing discrepancies
+                                     between the original image and its reconstruction after round-trip translation.
+                                     An image from Domain A is translated to Domain B using generator G and
+                                     then reconstructed back to Domain A using generator F. Similarly, images from
+                                     Domain B undergo the reverse transformation. The cycle-consistency loss is
+                                     computed using the pixel-wise L1 norm:
+
+                                         LCYC (G, F) = Ea∼pdata (A) [∥F(G(a)) − a∥1 ] + Eb∼pdata (B) [∥G(F(b)) − b∥1 ]
+
+                                     where E[·] denotes the expectation, computed as the average reconstruction error
+                                     over samples drawn from the empirical data distributions of Domains A and
+                                     B. The L1 norm encourages preservation of anatomical structure, ensuring that
+                                     bone morphology and joint alignment remain intact while allowing localized
+                                     pathological changes associated with OA progression.
+                                The overall CycleGAN objective function is defined as
+
+                                      LCycleGAN = LGAN (G, DB , A, B) + LGAN (F, DA , B, A) + λLCYC (G, F),
+
+                           where λ controls the trade-off between adversarial (DA and DB ) and cycle-consistency
+                           losses, enabling the model to preserve structural integrity while generating realistic images.
+
+                           2.3.4. Training Details
+                                 The CycleGAN model was trained to learn the unpaired image-to-image translation
+                           from KL0 to KL3, enabling synthetic generation of KL3 radiographic features from healthy
+                           joint images. Training was performed with a batch size of 16 and an initial learning rate of
+                           0.0002 using the Adam optimiser with β1 = 0.5 and β2 = 0.999, consistent with the original
+                           CycleGAN formulation. The cycle-consistency loss weight was set to λ = 10 to enforce
+                           structural preservation across the forward and inverse translation cycles.
+                                 Model checkpoints were saved every 5 epochs throughout training. Rather than
+                           selecting the final checkpoint at epoch 200, the optimal model was identified through
+                           visual inspection of generated image quality at intermediate checkpoints, with the selected
+                           checkpoint producing the most anatomically plausible and diagnostically consistent KL3
+                           synthetic images. This checkpoint-based selection approach is standard practice in GAN
+                           training, where the final training epoch does not necessarily correspond to the best genera-
+                           tive quality due to potential overtraining or mode instability in later epochs. The generated
+                           images were subsequently submitted for rheumatologist quality review, as described in
+                           Section 2.3.5.
+
+                           2.3.5. Rheumatologist Validation of Synthetic Images
+                                 To address the clinical authenticity of CycleGAN-generated radiographs, a rheumatol-
+                           ogist performed a qualitative review of a randomly selected subset of 300 synthetic KL3
+                           images. The rheumatologist screened the images for artifacts and anatomical inconsisten-
+                           cies, with a focus on deviations from typical osteoarthritic patterns in DIP joints. Images
+                           exhibiting features not representative of expected osteoarthritic changes were annotated,
+                           with the most common anomaly consisting of ghosting artifacts extending into the peri-
+                           articular space, where opacification would ordinarily be expected. Based on this review,
+                           images deemed implausible were excluded from the augmentation pool. The resulting
+                           filtered synthetic set consisting of 182 KL3 images was used under dedicated experimental
+                           conditions to assess the impact of clinical plausibility-based screening on downstream
+                           classifier performance.
+
+
+                                                                                           https://doi.org/10.3390/a19050414
+Algorithms 2026, 19, 414                                                                                                   9 of 23
+
+
+
+                           2.4. KL-Grade Classification
+                                 The goal of this work is to classify KL severity categories. To evaluate the impact of
+                           the proposed synthetic data augmentation and algorithm-level rebalancing, we designed
+                           six training strategies and employed VGG19 [19] as the primary classification model for
+                           five-grade KL severity classification (KL0–KL4). VGG19 was selected for its demonstrated
+                           effectiveness in medical image classification tasks [28–30]. Its deep, uniform architecture
+                           enables stable gradient flow and reliable hierarchical feature extraction from radiographic
+                           images. Using a single, fixed architecture across all experiments ensured that observed
+                           performance differences could be attributed to the proposed imbalance mitigation strategies
+                           rather than model-specific variations.
+                                 Prior to finalizing VGG19, we evaluated several alternative architectures, including
+                           DenseNet, EfficientNet, GoogLeNet, ResNet-152 and Swin Transformer. While DenseNet,
+                           EfficientNet, and GoogLeNet showed competitive performance in initial single-run exper-
+                           iments, they exhibited substantial variability in minority-class (KL3–KL4) performance
+                           across multiple runs with different random initializations, limiting reproducibility. In
+                           contrast, ResNet-152 and Swin Transformer consistently collapsed to majority-class pre-
+                           dictions (KL0) under severe class imbalance, failing to adequately capture minority
+                           classes. VGG19, by comparison, demonstrated stable and reproducible performance across
+                           all runs and training strategies, particularly for minority classes, enabling statistically
+                           meaningful comparisons.
+                                 The classification framework was evaluated using six distinct training strategies, each
+                           designed to address class imbalance either at the data level, the algorithmic level, or both.
+
+                           2.4.1. Strategy 1—Baseline: Original Imbalanced Data + Default Loss Function
+                                In this baseline strategy, the classifier was trained on the original dataset distribution
+                           as shown in Table 1 using the default cross-entropy loss, which assumes balanced class
+                           distributions and treats all samples equally. Given the severe class imbalance (KL3 and
+                           KL4 being underrepresented), this setup was expected to favor majority classes (KL0–KL2),
+                           potentially leading to poor generalization on clinically critical minority grades.
+
+                           2.4.2. Strategy 2—Synthetic Data (SD) Only: Synthetic Data + Default Loss Function
+                                To enrich the KL3 class, we added rheumatologist-validated synthetic KL3 images
+                           generated by CycleGAN to the training set, as detailed in Table 3. Only images that passed
+                           the rheumatologist quality review described in Section 2.3.5 were included. The default
+                           cross-entropy loss was used. This strategy tests whether increasing minority-class volume
+                           with clinically plausible synthetic samples alone can improve classification sensitivity for
+                           minority classes.
+
+                           Table 3. Post-augmentation distribution of KL grades in the fixed outer training, validation, and test
+                           split used (training KL3 includes 116 real + 182 rheumatologist-validated synthetic samples).
+
+                                                                        DIP Joint
+                                Set          KL = 0        KL = 1         KL = 2        KL = 3         KL = 4         Total
+                             Training         5237          1205           1640           298            102           8482
+                            Validation        581            133           182            12              11           919
+                               Test           1027          236            320            23             20            1626
+                               Total          6845          1574           2142           333            133          11,027
+
+
+
+
+                                                                                                https://doi.org/10.3390/a19050414
+Algorithms 2026, 19, 414                                                                                                10 of 23
+
+
+
+                           2.4.3. Strategy 3—Oversampling (OS) Only: Random Oversampling + Default
+                           Loss Function
+                                To address class imbalance through frequency-based resampling without introducing
+                           any new synthetic samples, we applied random oversampling directly to the original
+                           training set. Specifically, KL3 samples were duplicated 5× and KL4 samples 10×, restoring
+                           a more balanced class distribution. No additional data generation or loss modification
+                           was applied, thereby isolating the effect of frequency-based resampling on classification
+                           performance. This strategy provides a computationally inexpensive baseline for data-
+                           level imbalance handling and enables direct comparison with the feature-diversity-based
+                           approach of Strategy 2.
+
+                           2.4.4. Strategy 4—Focal Loss (FL) Only: Original Data + Focal Loss
+                                While strategies 2 and 3 address imbalance at the data level, strategy 4 addresses it
+                           algorithmically by modifying the loss function. We replaced standard cross-entropy with
+                           focal loss [16], which adaptively reweights each training sample’s contribution based on its
+                           classification difficulty. The focal loss is formulated as
+
+                                                          FL(pt ) = −αt (1 − pt )γ log(pt ),
+
+                           where pt represents the model’s predicted probability for the ground truth class t. The
+                           modulating factor (1 − pt )γ down weights well-classified samples (high pt ) and ampli-
+                           fies the loss for misclassified or uncertain predictions (low pt ). The term αt represents
+                           the class-specific weighting factor associated with the ground truth class label t. In this
+                           work, αt is selected from a predefined class weight vector α, such that αt = α[yt ], where
+                           yt denotes the ground-truth KL grade. This formulation ensures that samples from clin-
+                           ically important and underrepresented classes contribute more strongly to the training
+                           objective. This mechanism prevents the model from being dominated by abundant, eas-
+                           ily classified majority samples and forces it to prioritize learning discriminative features
+                           for challenging minority classes. Two focal loss hyperparameters were optimized us-
+                           ing the Hyperopt framework: the focusing parameter γ ∈ [1.0, 5.0], which controls the
+                           strength of difficulty-based reweighting, and a base weighting factor baseα ∈ [0.5, 3.0],
+                           used to construct class-specific importance weights for each category. A total of 30 op-
+                           timization trials were conducted, with each trial trained until convergence using early
+                           stopping (patience = 10 epochs). The optimal parameters were identified as γ = 2.94 and
+                           baseα = 0.80. Since our focus was on more accurately detecting severe OA cases, we ap-
+                           plied this base weight to construct class-specific weights. To prioritize severe OA detection,
+                           we constructed class-specific weights by applying multipliers to baseα :
+
+                                      α = [1.0 × baseα , 1.0 × baseα , 1.0 × baseα , 2.0 × baseα , 1.8 × baseα ]
+                                           = [0.80, 0.80, 0.80, 1.60, 1.44]
+
+                                The weighting factors for KL3 and KL4 were determined empirically through a series
+                           of preliminary experiments that explored different class-weight configurations. Higher
+                           multipliers were assigned to KL3 and KL4 to reflect their clinical importance and severe
+                           underrepresentation in the dataset. KL3 was assigned the highest weight (2.0×) because it
+                           represents an early severe disease stage where timely intervention is most effective and
+                           misclassification is more likely due to subtler radiographic changes. KL4, while more
+                           visually distinct, remains clinically significant for treatment planning and was therefore
+                           assigned a slightly lower but still elevated weight (1.8×). This weighting scheme explicitly
+                           biases the learning process toward improved recognition of severe OA grades while main-
+                           taining stability across all classes. Importantly, focal loss enables class-prioritized learning
+
+
+
+                                                                                               https://doi.org/10.3390/a19050414
+Algorithms 2026, 19, 414                                                                                          11 of 23
+
+
+
+                           without requiring additional training data, making it complementary to any synthetic data
+                           augmentation strategies.
+
+                           2.4.5. Strategy 5—Synthetic + Oversampling (SD + OS): Synthetic Data + Oversampling
+                           + Default Loss Function
+                                This strategy combines rheumatologist-validated CycleGAN synthetic augmentation
+                           (Strategy 2) with Oversampling (Strategy 3) to address class imbalance through complemen-
+                           tary data-level mechanisms. Validated synthetic data introduces new pathological feature
+                           variation for KL3, while oversampling (KL3 ×5, KL4 ×10) additionally stabilizes class fre-
+                           quencies across the training set. Standard cross-entropy loss was used without modification,
+                           isolating the effect of combined data-level enrichment from any algorithmic reweighting.
+                           This strategy tests whether the complementary strengths of feature-diversity-based and
+                           frequency-based augmentation produce synergistic gains beyond either approach alone.
+
+                           2.4.6. Strategy 6—Full Combined Approach (SD + OS + FL): Synthetic Data
+                           + Oversampling + Focal Loss
+                                This final strategy integrates all three complementary mechanisms—synthetic augmen-
+                           tation (Strategy 2), random oversampling (Strategy 3), and focal loss (Strategy 4)—to ad-
+                           dress class imbalance simultaneously at both the data and algorithmic levels. By enriching
+                           KL3 with clinically validated synthetic samples, stabilizing class frequencies via oversam-
+                           pling (KL3 ×5, KL4 ×10), and reweighting the loss function toward harder minority-class
+                           examples, this strategy seeks to maximize sensitivity to severe OA features while maintain-
+                           ing overall classification robustness.
+
+                           3. Experiment Results
+                           3.1. CycleGAN-Based Synthetic Augmentation
+                                To address the imbalance between non-OA (KL0–KL2) and OA (KL3–KL4) DIP joint
+                           cases, we employed CycleGAN to generate synthetic images for the underrepresented
+                           severe grades. While CycleGAN was capable of various mappings, our experiments
+                           indicated that KL0 to KL3 transformations yielded more accurate results compared to
+                           KL1 to KL3 mappings. Therefore, we chose KL0 as the source domain for generating
+                           synthetic KL3 images. For the most severe grade, KL4, we found that utilizing KL1
+                           as a source domain provided the necessary structural complexity to simulate end-stage
+                           remodeling effectively. Figure 5 illustrates representative synthetic radiographs generated
+                           with CycleGAN. The first row contains original DIP joint radiographs of KL0 and KL1
+                           grades. The second row presents corresponding synthetic images generated by translating
+                           KL0/1 images into more severe grades (KL3 and KL4). These examples show that the
+                           CycleGAN model can effectively capture the structural changes associated with higher KL
+                           grades, such as joint space narrowing, osteophyte formation, and bone remodeling, while
+                           preserving patient-specific anatomical details. These generated samples were subsequently
+                           incorporated into training to enrich underrepresented grades.
+
+                           3.2. Joint Classification
+                                 To ensure consistent experimental conditions and fair comparisons across training
+                           strategies, we adopted a KL3-focused augmentation scheme for all VGG19 experiments.
+                           KL3 was chosen as the primary augmentation target for three key reasons: (1) KL3 rep-
+                           resents the early severe stage at which timely intervention can delay disease progression,
+                           making the critical threshold where management transitions from conservative to more
+                           aggressive treatment approaches. (2) KL3 presents a “borderline grade”, falling between
+                           minimal osteoarthritis (KL2) and severe osteoarthritis (KL4), with features such as moder-
+                           ate joint space narrowing and osteophyte formation that are subtle and frequently overlap
+
+
+                                                                                         https://doi.org/10.3390/a19050414
+Algorithms 2026, 19, 414                                                                                          12 of 23
+
+
+
+                           with those of adjacent grades, making it particularly challenging for both clinicians and
+                           deep learning models to recognize consistently. (3) Among the severe grades, KL3 is more
+                           underrepresented relative to its clinical importance, with only 151 samples (1.4% of the
+                           dataset). For these reasons, KL3-focused augmentation was adopted.
+
+
+
+
+                           Figure 5. Examples of Synthetic KL3 and KL4 image generated from KL0 and KL1.
+
+                                From the synthetic KL3 image pool generated by CycleGAN, 300 images were ran-
+                           domly selected and submitted to a rheumatologist for quality review, as described in
+                           Section 2.3.5. Of these, 182 images were approved as clinically plausible and included in
+                           the augmented training set; the remaining were rejected for failing to exhibit diagnostically
+                           consistent KL3 features. The final distribution of the DIP joint images across the training,
+                           validation, and test sets for the VGG19 model is shown in Table 3.
+                                To ensure unbiased evaluation and stable model selection, a two-stage evaluation
+                           protocol was employed. First, the dataset was split into fixed training, validation, and test
+                           subsets, as summarized in Table 3, with the test set held out and never used during model
+                           training or hyperparameter tuning. Model development and optimization were performed
+                           exclusively using the training and validation sets. To further account for variability due
+                           to stochastic weight initialization and training dynamics, each model configuration was
+                           independently trained three times with different random initialization. Final performance
+                           for each model was reported as the mean across the three independent runs. Statistical
+                           significance between competing strategies was evaluated using paired two-sample t-tests
+                           based on performance metrics obtained from the three independent training runs. For
+                           each model, a p-value threshold of 0.05 (corresponding to a 95% confidence level) was
+                           used to determine statistical significance. In addition, 95% confidence intervals were
+                           computed to report uncertainty in model performance estimates. Training was performed
+                           for up to 200 epochs with a batch size of 32, using the Adam optimizer with an initial
+                           learning rate of 1 × 10−5 . A learning rate scheduler (ReduceLROnPlateau) was applied to
+                           reduce the learning rate upon plateau of validation loss with a patience of 5 epochs. Early
+                           stopping was applied based on validation loss, and the best model checkpoint was saved
+                           during the training. Evaluation metrics included per-class accuracy, per-class F1-score,
+                           overall accuracy, and overall F1-score. Additionally, binary classification performance
+                           (OA vs. non-OA) was assessed to reflect clinical decision-making scenarios.
+
+                           3.2.1. Strategy 1—Baseline Performance
+                                The baseline VGG19 model, trained on the original imbalanced dataset with standard
+                           cross-entropy loss, exhibited the expected pattern: strong majority class performance
+                           with severe under detection of the minority class. As shown in Table 4 (row 1), the
+                           model achieved high accuracy and F1-scores for well-represented healthy grades: KL0
+                           (accuracy = 90.3%, F1 = 0.887) and KL2 (accuracy = 76.3%, F1 = 0.713). The precision-recall
+
+
+                                                                                         https://doi.org/10.3390/a19050414
+Algorithms 2026, 19, 414                                                                                                   13 of 23
+
+
+
+                             breakdown further contextualizes this pattern: KL0 precision was 0.863 with recall of
+                             0.903. However, performance degraded sharply for minority classes. For the KL3 class,
+                             which contains 23 test samples, the model demonstrated consistently poor and unstable
+                             performance across all experimental runs. The number of correctly classified KL3 samples
+                             varied between 3 and 6 out of 23, corresponding to an accuracy range of approximately
+                             13.0–26.1% across runs. This variation highlights the sensitivity of the baseline model to
+                             random initialization under severe class imbalance conditions. The mean KL3 F1-score
+                             remained low (0.280), indicating poor recall and limited ability to correctly identify severe
+                             osteoarthritic cases. Similarly, KL4 performance remained suboptimal (accuracy = 58.3%,
+                             F1 = 0.573; precision = 0.690, recall = 0.533), suggesting partial but inconsistent recognition
+                             of advanced disease patterns.
+
+                             Table 4. KL-grade classification results of Accuracy (Acc), F1-score (F1), Precision (Pre) and Recall
+                             (Rec) across all training strategies.
+
+                                  KL0              KL1              KL2              KL3              KL4            Overall
+                              Acc       F1     Acc       F1     Acc       F1     Acc       F1     Acc       F1     Acc      F1
+     Strategy 1: Baseline    0.903    0.887   0.230    0.267   0.763    0.713   0.217    0.280   0.583   0.573    0.763   0.747
+     Strategy 2: SD Only     0.920    0.883   0.157    0.210   0.760    0.713   0.290    0.350   0.533   0.590    0.767   0.740
+     Strategy 3: OS Only     0.917    0.880   0.193    0.243   0.703    0.700   0.480    0.447   0.933   0.750    0.767   0.747
+     Strategy 4: FL Only     0.930    0.883   0.113    0.167   0.763    0.707   0.510    0.427   0.500   0.563    0.767   0.737
+     Strategy 5: SD + OS     0.910    0.887   0.217    0.263   0.740    0.717   0.550    0.503   0.883   0.740    0.770   0.753
+  Strategy 6: SD + OS + FL   0.917    0.877   0.100    0.150   0.750    0.703   0.567    0.527   0.850   0.733    0.760   0.730
+                              Pre     Rec      Pre     Rec      Pre     Rec      Pre     Rec      Pre     Rec      Pre     Rec
+     Strategy 1: Baseline    0.863    0.903   0.330    0.230   0.670    0.763   0.553    0.203   0.690   0.533    0.742   0.764
+     Strategy 2: SD Only     0.850    0.920   0.313    0.157   0.663    0.760   0.457    0.290   0.670   0.533    0.726   0.765
+     Strategy 3: OS Only     0.847    0.917   0.337    0.193   0.693    0.703   0.423    0.480   0.627   0.933    0.734   0.763
+     Strategy 4: FL Only     0.840    0.930   0.343    0.120   0.663    0.763   0.370    0.510   0.687   0.500    0.724   0.767
+     Strategy 5: SD + OS     0.860    0.910   0.343    0.217   0.700    0.740   0.467    0.550   0.640   0.883    0.746   0.771
+  Strategy 6: SD + OS + FL   0.833    0.917   0.300    0.100   0.660    0.750   0.497    0.567   0.647   0.850    0.715   0.760
+
+
+                                  KL1 presented a distinct challenge despite being relatively abundant (1574 samples).
+                             The model achieved only 23% accuracy (F1 = 0.267; precision = 0.330, recall = 0.230),
+                             frequently misclassifying KL1 joints as KL0 (48.46% of errors) or KL2 (28.68% of er-
+                             rors). This reflects KL1’s transitional nature: “questionable osteophyte or JSN” repre-
+                             sents inherently ambiguous radiographic findings that challenge both human graders and
+                             automated classifiers.
+                                  Overall metrics appeared deceptively reasonable (accuracy = 76.3%, F1 = 0.747), mask-
+                             ing the critical weakness in severe OA detection. This baseline establishes the severity of
+                             class imbalance and the urgent need for targeted mitigation strategies.
+
+                             3.2.2. Strategy 2—Synthetic Data (SD) Only Results
+                                  Introducing 182 rheumatologist-validated synthetic KL3 samples improved minority-
+                             class detection compared to baseline. KL3 accuracy rose to 29% (F1 = 0.350), with recall im-
+                             proving from 0.203 to 0.290, confirming that additional training examples directly increase
+                             the model’s ability to detect true KL3 cases. KL4 also improved modestly to 53.3% accuracy
+                             (F1 = 0.590). This demonstrates that data-level augmentation can enhance minority-class
+                             recognition by providing the model with additional training examples that exhibit the
+                             target pathology. KL0 and KL2 performance remained stable, confirming that validated
+                             synthetic augmentation does not degrade majority-class learning. Overall accuracy was
+                             76.7% (F1 = 0.740).
+
+
+
+                                                                                                 https://doi.org/10.3390/a19050414
+Algorithms 2026, 19, 414                                                                                            14 of 23
+
+
+
+                                However, KL1 declined slightly (accuracy = 16%, F1 = 0.21; precision = 0.313,
+                           recall = 0.157), and the gains for KL3, while meaningful, remained limited in absolute
+                           terms. These results confirm that clinically validated data-level augmentation provides a
+                           useful foundation for minority-class improvement, but additional strategies are needed to
+                           fully address severe class imbalance.
+
+                           3.2.3. Strategy 3—Oversampling (OS) Only Results
+                                Random Oversampling of KL3 (×5) and KL4 (×10) on the original training data
+                           produced a markedly different performance profile. KL4 accuracy surged to 93.3%
+                           (F1 = 0.750)—driven by a dramatic recall improvement to 0.933 (the highest across all
+                           strategies)—while precision declined to 0.627, reflecting oversampling’s effectiveness at
+                           restoring frequency balance for the more visually distinct end-stage grade. KL3 reached
+                           48% accuracy (F1 = 0.447; precision = 0.423, recall = 0.480), representing the strongest recall
+                           gain among single-intervention strategies for KL3, though precision remained lower than
+                           baseline (0.424 vs. 0.550), indicating some over-detection of the grade.
+                                KL0 and KL2 performance remained stable, while KL1 (accuracy = 19.3%, F1 = 0.243;
+                           precision = 0.337, recall = 0.193) remained consistently challenging across data-level strate-
+                           gies. Overall accuracy was 76.7% (F1 = 0.747). A key trade-off is evident when com-
+                           paring Strategy 3 to Strategy 2: oversampling dramatically improves KL4 detection
+                           (93.3% vs. 53.3%) but offers limited KL3 generalization, since it only replicates existing fea-
+                           ture patterns without introducing new pathological variation, which is more important for
+                           transitional grades with ambiguous features such as KL3. These two data-level strategies
+                           are therefore complementary, motivating their combination in Strategy 5.
+
+                           3.2.4. Strategy 4—Focal Loss (FL) Only Results
+                                Replacing cross-entropy with focal loss yielded notable improvements in minority-
+                           class detection without requiring additional data. KL3 accuracy increased to 51%
+                           (F1 = 0.427), with recall rising to 0.510—the highest among all single-intervention strate-
+                           gies, while precision declined to 0.370, reflecting the adaptive reweighting mechanism
+                           pushing the model to identify more KL3 cases at the cost of some false positives. KL4
+                           showed a different dynamic: recall dropped to 0.500 (below oversampling’s 0.933) while
+                           precision improved to 0.687, indicating that focal loss produces more conservative but
+                           higher-confidence KL4 predictions.
+                                KL0 and KL2 performance remained consistent with baseline (accuracy change within
+                           3%), confirming that focal loss’s adaptive reweighting does not sacrifice majority-class
+                           accuracy. KL1 detection declined to 11.3% accuracy (F1 = 0.167), likely because focal loss
+                           down-weights this already-challenging transitional grade in favor of the more critical KL3
+                           and KL4 classes. Notably, KL4 accuracy was 50% (F1 = 0.56), lower than oversampling alone
+                           (93%), revealing a meaningful trade-off: focal loss excels at attention-weighted KL3 learning
+                           but does not match oversampling’s frequency-based effectiveness for KL4. The overall
+                           accuracy was 76.7%, with an F1-score of 0.737. These results confirm that loss-function
+                           engineering addresses class imbalance more directly than data augmentation alone for KL3,
+                           but that its limitations in KL4 motivate combining it with other strategies.
+
+                           3.2.5. Strategy 5—Synthetic + Oversampling (SD + OS) Results
+                                Combining synthetic data (Strategy 2) with random oversampling (Strategy 3) yielded
+                           the strongest purely data-level performance profile across all strategies. KL3 accuracy
+                           reached 55% (F1 = 0.503), with recall of 0.550 and precision of 0.467—representing the best
+                           KL3 precision-recall balance at the data-level. KL4 reached 88.3% accuracy (F1 = 0.740; pre-
+                           cision = 0.640, recall = 0.883), maintaining strong recall slightly below oversampling alone
+
+
+
+
+                                                                                           https://doi.org/10.3390/a19050414
+Algorithms 2026, 19, 414                                                                                          15 of 23
+
+
+
+                           (0.933) but with improved precision (0.640 vs. 0.627). Overall accuracy was maintained at
+                           77% (F1 = 0.753).
+                                 The result confirms the complementary dynamic between the two strategies: oversam-
+                           pling stabilizes class frequency and drives strong KL4 detection, while synthetic data intro-
+                           duces novel pathological feature variation that improves KL3 generalization beyond what
+                           oversampling can achieve. Neither strategy in isolation matched this combination—Strategy 2
+                           showed lower KL4 performance (53.3%), while Strategy 3 showed more limited KL3 gener-
+                           alization (48%). KL1 (accuracy = 21.7%, F1 = 0.263; precision = 0.343, recall = 0.217) showed
+                           a slight recovery compared to other strategies, and KL2 remained stable (74%, F1 = 0.717).
+                           Strategy 5 represents the most effective purely data-level approach in this study.
+
+                           3.2.6. Strategy 6—Full Combined Strategy (SD + OS + FL) Results
+                                 The full combined strategy integrating validated synthetic data, oversampling
+                           (KL3 ×5, KL4 ×10), and focal loss achieved the highest KL3 detection performance across
+                           all strategies. KL3 accuracy increased to 56.7% (F1 = 0.527), with recall of 0.567 and pre-
+                           cision of 0.497, confirming a genuine synergistic gain when adaptive loss reweighting is
+                           layered on top of data-level balancing. Compared to Strategy 5, focal loss further increased
+                           KL3 recall from 0.550 to 0.567 and precision from 0.467 to 0.497. KL4 accuracy was 85%
+                           (F1 = 0.733), while overall accuracy was 76% (F1 = 0.730; precision = 0.647, recall = 0.850),
+                           slightly below Strategy 5’s KL4 recall (0.883) but with improved precision (0.647 vs. 0.640),
+                           reflecting focal loss’s tendency to refine confidence of minority-class predictions.
+                                 Comparing Strategy 6 to Strategy 5 (SD + OS), the addition of focal loss increased
+                           KL3 F1 from 0.503 to 0.527, confirming a further incremental gain when all three mech-
+                           anisms are combined. KL4 decreased slightly from 88.3% (Strategy 5) to 85%, reflecting
+                           a minor trade-off introduced by focal loss reweighting. KL1 (accuracy = 10%, F1 = 0.15;
+                           precision = 0.300, recall = 0.100) declined further compared to other strategies, consistent
+                           with focal loss deprioritizing this transitional grade. KL0 and KL2 remained stable. The
+                           progression across Strategies 1–6 demonstrates a clear hierarchy: validated synthetic data
+                           provides a qualitative foundation, oversampling substantially boosts frequency-sensitive
+                           minority detection, their combination maximizes data-level KL3 generalization, and focal
+                           loss provides a final incremental algorithmic gain. Overall, strategy 5 achieves the best
+                           performance and balanced improvement across all categories in this study.
+
+                           3.2.7. Binary OA Classification Results
+                                To contextualise clinical utility, all six configurations were evaluated under a binary
+                           OA vs. non-OA scheme (clinically, KL0–KL2 are non-OA; KL3–KL4 are OA), with results
+                           summarised in Table 5. In a screening context, OA sensitivity (recall) is the most critical
+                           metric, as missed OA cases carry a higher clinical cost than false positive referrals.
+                                The baseline achieved high accuracy (98.7%) and specificity (99.9%) but only 56.6%
+                           OA sensitivity, meaning more than 4 in 10 true OA cases were missed—confirming that
+                           global accuracy is a misleading indicator of clinical utility under severe class imbalance.
+                           Strategy 2 (Synthetic Only) improved sensitivity modestly to 63.6%, and minimal cost to
+                           specificity (99.81%).
+                                Strategy 3 (Oversampling Only) raised OA sensitivity to 95.4% and achieved an F1-
+                           score of 0.828, reducing the FN rate from 43.41% to 4.65%. Strategy 4 (Focal Loss Only)
+                           improved sensitivity substantially to 83.7% without requiring additional data, maintaining
+                           high precision (0.910) and specificity (99.4%).
+                                Strategy 5 (SD + OS) achieved the highest OA sensitivity overall (96.1%) and the lowest
+                           FN rate (3.88%), while also maintaining high precision (0.910)—outperforming Strategy 3 on
+                           both precision and sensitivity. Strategy 6 (SD + OS + FL) matched Strategy 3’s sensitivity
+
+
+
+                                                                                         https://doi.org/10.3390/a19050414
+Algorithms 2026, 19, 414                                                                                                     16 of 23
+
+
+
+                             (95.4%) with superior precision (0.910 vs. 0.732), offering the best sensitivity-specificity
+                             balance among all strategies.
+                                  Overall, oversampling-inclusive strategies dominated in sensitivity, with Strat-
+                             egy 5 achieving peak sensitivity and Strategy 6 offering the most clinically balanced
+                             profile. Strategies without oversampling produced higher precision but fell consistently
+                             short on sensitivity, reinforcing frequency-based resampling as the primary driver of OA
+                             sensitivity improvement.
+
+                             Table 5. Binary classification results showing Accuracy, F1-score, Precision, OA Sensitivity (Recall,
+                             TP Rate), OA Specificity (TN Rate), FP Rate, and FN Rate across all training strategies.
+
+            Strategy         Accuracy     F1-Score     Precision     Sensitivity/Recall      Specificity FP Rate        FN Rate
+     Strategy 1: Baseline     0.987         0.701        0.923              0.566              0.999        0.13%        43.41%
+     Strategy 2: SD Only      0.989         0.745        0.907              0.636              0.998        0.19%        36.43%
+     Strategy 3: OS Only      0.990         0.828        0.732              0.954              0.991        0.95%         4.65%
+     Strategy 4: FL Only      0.994         0.869        0.910              0.837              0.994        0.63%        16.28%
+     Strategy 5: SD + OS      0.997         0.932        0.910              0.961              0.991        0.86%         3.88%
+  Strategy 6: SD + OS + FL    0.997         0.923        0.910              0.954              0.993        0.73%        4.65%
+
+
+                             3.2.8. Confusion Matrix Analysis
+                                  To complement per-class accuracy and F1-score metrics, averaged row-normalized
+                             confusion matrices were computed across 3 independent runs for each of the six train-
+                             ing strategies, for both five-category KL-grade classification and binary OA vs. non-OA
+                             classification. Row normalization expresses each cell as the proportion of true samples of
+                             that grade predicted to each class, making misclassification patterns directly comparable
+                             across grades regardless of class size. Figure 6 presents the five-class matrices and Figure 7
+                             presents the binary matrices.
+
+
+
+
+                             Figure 6. Confusion matrices for five category classification under seven training strategies: (a) Base-
+                             line, (b) Synthetic Data (SD) Augmentation Only, (c) Oversampling (OS) Only, (d) Focal Loss (FL)
+                             Only, (e) SD + OS, (f) SD + OS +FL.
+
+
+
+                                                                                                   https://doi.org/10.3390/a19050414
+Algorithms 2026, 19, 414                                                                                                 17 of 23
+
+
+
+
+                           Figure 7. Confusion matrices for OA-NOA classification across seven training strategies: (a) Baseline,
+                           (b) Synthetic Data (SD) Only, (c) Oversampling (OS) Only, (d) Focal Loss (FL) Only, (e) SD + OS,
+                           (f) SD + OS + FL.
+
+                           Five-Category KL-Grade Analysis
+                                 Across all strategies, KL1 remained the most challenging grade, with diagonals ranging
+                           from 10.03% (Strategy 6) to 22.88% (baseline), with errors consistently absorbed by KL0
+                           and KL2, reflecting its inherently transitional and radiographically ambiguous nature.
+                           KL0 and KL2 diagonals remained broadly stable across strategies (90–93% and 70–79%,
+                           respectively), confirming that minority-class interventions did not substantially disrupt
+                           majority-class learning.
+                                 The most diagnostically critical pattern was the KL3 → KL2 misclassification rate,
+                           which represents systematic under-staging of early severe OA. At baseline, 53.62% of
+                           KL3 samples were misclassified as KL2, with only 30.43% correctly identified. Strategies
+                           without oversampling (2, 4) reduced this error to varying degrees but did not eliminate it.
+                           In contrast, oversampling-inclusive strategies (3, 5, 6) dramatically suppressed this error,
+                           with Strategies 5 and 6 reducing KL3 → KL2 confusion to 5.80% and 4.35% respectively,
+                           redirecting residual errors toward KL4 (over-staging) rather than KL2 (under-staging)—a
+                           clinically preferable failure mode.
+                                 KL4 diagonals showed a similar pattern: baseline achieved 51.67%, oversampling-
+                           inclusive strategies produced the highest values (93.33%, 88.33%, 85.00% for Strategies 3, 5,
+                           6, respectively), while focal-loss-only Strategy 4 showed a split 50%/50% between KL3 and
+                           KL4, indicating difficulty separating end-stage OA without frequency support. Strategy
+                           6 achieved the highest KL3 diagonal overall at 56.52%, combining strong minority-class
+                           detection with stable majority-class performance.
+
+                           Binary OA vs. Non-OA Analysis
+                                The binary matrices reveal a clear stratification across strategies based on the presence
+                           or absence of oversampling. Strategies without oversampling (1, 2, 4) maintained high
+                           non-OA specificity (TN rates 99.37–99.87%) but produced elevated FN rates of 43.41%,
+                           36.43%, 16.28%, and 31.78%, respectively, indicating a substantial proportion of true OA
+                           cases were missed.
+                                Oversampling-inclusive strategies (3, 5, 6) consistently achieved FN rates at or below
+                           4.65%, meaning at most 1 in 20 true OA cases was missed. Strategy 5 achieved the highest
+                           OA sensitivity at 96.12% (FN = 3.88%), while Strategy 6 matched Strategy 3’s sensitivity
+                           at 95.35% with a lower FP rate (0.73% vs. 0.95%) and higher precision, offering a better
+                           sensitivity-specificity balance for clinical use.
+                                Overall, oversampling is the dominant driver of OA recall improvement, while focal
+                           loss offers a precision-specificity refinement when added on top. Strategy 6 represents
+                           the most clinically robust configuration, minimizing missed OA cases while keeping false
+                           positive burden low.
+
+
+
+
+                                                                                                https://doi.org/10.3390/a19050414
+Algorithms 2026, 19, 414                                                                                                                  18 of 23
+
+
+
+                               3.2.9. Statistical Significance Analysis
+                                     Paired two-sample t-tests were conducted comparing KL3 and binary OA F1-scores
+                               between each strategy and the baseline across 3 independent runs (α = 0.05). Results
+                               are summarized in Tables 6 and 7. Table 6 reports mean ± SD, 95% confidence intervals
+                               (CI), and statistical significance for KL3 and KL4 individually, while Table 7 presents the
+                               corresponding results for binary OA classification by grouping KL3 and KL4 together.
+
+                               Table 6. Statistical significance of KL3 and KL4 F1-score improvements over baseline.
+
+                                               KL3 F1-Score                                                KL4 F1-Score
+          Strategy
+                            Mean ± SD            95% CI          p-Value      Sig.     Mean ± SD             95% CI           p-Value      Sig.
+    Strategy 1: Baseline    0.280 ± 0.062    [0.125, 0.435]         -           -      0.573 ± 0.064      [0.414, 0.733]         -          -
+   Strategy 2: SD Only      0.350 ± 0.104    [0.092, 0.608]       0.369        No      0.590 ± 0.104      [0.332, 0.848]       0.868       No
+   Strategy 3: OS Only      0.447 ± 0.061    [0.295, 0.598]      0.015 *       Yes     0.750 ± 0.027      [0.684, 0.816]      0.071 †      No
+    Strategy 4: FL Only     0.427 ± 0.006    [0.412, 0.441]      0.062 †       No      0.563 ± 0.179       [0.117, 1.01]       0.947       No
+    Strategy 5: SD + OS     0.503 ± 0.055    [0.367, 0.640]      0.015 *       Yes     0.740 ± 0.027      [0.674, 0.806]      0.086 †      No
+ Strategy 6: SD + OS + FL   0.527 ± 0.051    [0.399, 0.654]      0.048 *       Yes     0.733 ± 0.061      [0.582, 0.885]       0.150       No
+                               * Significant at α = 0.05 | † Borderline (p < 0.10) | SD = Standard Deviation | CI = Confidence Interval | Baseline
+                               shown as reference (-).
+
+
+                               Table 7. Statistical significance of binary OA (KL3–4) F1-score improvements over baseline.
+
+                                                                                       Binary OA F1-Score (KL3–4)
+                                            Strategy
+                                                                      Mean ± SD                 95% CI             p-Value              Sig.
+                                    Strategy 1: Baseline             0.416 ± 0.034          [0.332, 0.501]             -                 -
+                                    Strategy 2: SD Only              0.462 ± 0.090          [0.238, 0.685]           0.520              No
+                                    Strategy 3: OS Only              0.588 ± 0.045          [0.476, 0.699]          0.031 *             Yes
+                                    Strategy 4: FL Only              0.490 ± 0.083          [0.285, 0.695]           0.266              No
+                                    Strategy 5: SD + OS              0.613 ± 0.041          [0.511, 0.716]          0.029 *             Yes
+                                 Strategy 6: SD + OS + FL            0.623 ± 0.055          [0.487, 0.759]          0.055 †             No
+                               * Significant at α = 0.05 | † Borderline (p < 0.10) | SD = Standard Deviation | CI = Confidence Interval | Baseline
+                               shown as reference (-).
+
+
+                                     Five-class analysis: Majority-class grades (KL0, KL1, KL2) showed no statistically
+                               significant changes relative to baseline across any strategy (all p > 0.10), confirming that
+                               minority-class interventions did not disrupt majority-class reliability (full per-grade statis-
+                               tics are provided in Supplementary file). For KL3, significant improvements were observed
+                               in three strategies: Strategy 3 (OS Only; F1 = 0.447, p = 0.015), Strategy 5 (SD + OS;
+                               F1 = 0.503, p = 0.015), and Strategy 6 (SD + OS + FL; F1 = 0.527, p = 0.048). Strategy 4 (FL
+                               Only) produced a borderline result (F1 = 0.427, p = 0.062), while Strategy 2 did not reach
+                               significance (p = 0.369 and p = 0.778). No strategy reached significance for KL4 (all p > 0.05),
+                               though Strategies 3 and 5 approached the threshold (p = 0.071 and p = 0.086, respectively).
+                                     Binary OA analysis: Non-OA F1 remained stable across all strategies (all p > 0.18),
+                               confirming that OA detection gains did not come at the expense of non-OA reliability.
+                               For OA (KL3–4), significant improvements over baseline (F1 = 0.416) were confirmed for
+                               Strategy 3 (F1 = 0.588, p = 0.031) and Strategy 5 (F1 = 0.613, p = 0.029)—the strongest
+                               statistically confirmed OA result. Strategy 6 approached but did not reach significance
+                               (F1 = 0.623, p = 0.055), likely due to limited statistical power at n = 3 runs.
+                                     Overall, statistically confirmed KL3 and OA improvements were exclusively observed
+                               in oversampling-inclusive strategies, while no strategy compromised majority-class perfor-
+                               mance. The borderline results for Strategies 4 and 6 suggest that increasing the number of
+                               runs would likely yield additional confirmed improvements.
+
+
+
+
+                                                                                                             https://doi.org/10.3390/a19050414
+Algorithms 2026, 19, 414                                                                                            19 of 23
+
+
+
+                           4. Discussion
+                                This study systematically evaluated seven training strategies for KL-grade severity
+                           classification under severe class imbalance using DIP joint radiographs. The results provide
+                           several clinically and methodologically important insights.
+                                Oversampling is the dominant driver of minority-class improvement. Among individ-
+                           ual strategies, oversampling alone (Strategy 3) produced the most dramatic gains—KL4
+                           diagonal reaching 93.33%, binary OA sensitivity of 95.35%, and a statistically significant
+                           OA F1 improvement (p = 0.031)—despite introducing no new feature diversity. This reflects
+                           that frequency imbalance, rather than feature scarcity, is the primary barrier to minority-
+                           class learning for KL4. However, oversampling’s advantage was less pronounced for KL3,
+                           where validated synthetic data (F1 = 0.350) and focal loss (F1 = 0.427) both contributed
+                           meaningfully, suggesting that KL3’s subtler radiographic features benefit from qualita-
+                           tive augmentation beyond frequency restoration alone. This distinction is important: for
+                           visually distinct end-stage grades, restoring class frequency is sufficient to drive strong
+                           detection performance, whereas for borderline grades characterized by subtle and over-
+                           lapping features, additional mechanisms targeting feature diversity or loss reweighting
+                           are necessary.
+                                Validated synthetic data and oversampling are complementary. Strategy 5 (SD + OS)
+                           achieved the best purely data-level KL3 performance (F1 = 0.503) and the highest binary
+                           OA sensitivity overall (96.1%), with the strongest statistically confirmed OA improvement
+                           (p = 0.029). Critically, the KL3 → KL2 misclassification rate—the most clinically dangerous
+                           error, representing systematic under-staging of early severe OA—dropped from 53.62%
+                           at baseline to just 5.80% under Strategy 5, redirecting residual errors toward KL4 (over-
+                           staging) rather than KL2 (under-staging). In a clinical screening context, over-staging carries
+                           a lower cost than under-staging, as it results in further investigation rather than a missed
+                           diagnosis. The two data-level mechanisms address distinct aspects of the imbalance problem:
+                           oversampling stabilizes class frequencies and drives strong KL4 detection, while validated
+                           synthetic data introduces novel pathological feature variation that improves KL3 generaliza-
+                           tion beyond what frequency restoration alone achieves. Neither strategy in isolation matched
+                           the performance of their combination, confirming a genuine synergistic effect.
+                                Rheumatologist validation is a functionally necessary step: Of 300 candidate synthetic
+                           images generated by CycleGAN, 182 (60.67%) were approved following rheumatologist
+                           review. Strategies incorporating validated synthetic data consistently outperformed con-
+                           figurations using the full unfiltered set, confirming that clinical quality filtering is not a
+                           procedural formality but a functionally important component of GAN-based augmentation
+                           pipelines in medical imaging. This is particularly relevant for KL3, where the radiographic
+                           features—moderate joint space narrowing and early osteophyte formation—are subtle and
+                           easily mimicked incorrectly by generative models trained on coarser domain translations.
+                           The 39.33% rejection rate underscores that a non-trivial proportion of GAN-generated im-
+                           ages fail to meet clinical plausibility standards, and that including these images in training
+                           without filtering would introduce noisy or misleading examples into an already challenging
+                           learning problem.
+                                Focal loss provides meaningful but secondary gains: Focal loss alone (Strategy 4)
+                           achieved the strongest single-mechanism KL3 diagonal (50.72%) and improved binary OA
+                           sensitivity to 83.72%, confirming that adaptive loss reweighting effectively reshapes the
+                           optimization landscape toward harder minority-class examples. However, its effectiveness
+                           was substantially amplified when combined with oversampling: Strategy 6 (SD + OS + FL)
+                           achieved the highest statistically significant KL3 improvement (F1 = 0.527, p = 0.048), con-
+                           firming that focal loss requires frequency balance to operate most effectively—without
+                           oversampling, the persistent class frequency disparity limits the practical impact of loss
+
+
+
+                                                                                           https://doi.org/10.3390/a19050414
+Algorithms 2026, 19, 414                                                                                            20 of 23
+
+
+
+                           reweighting. These findings suggest that focal loss functions best as a refinement mecha-
+                           nism layered on top of data-level balancing rather than as a standalone intervention.
+                                 KL1 classification failure is a major limitation of this study: KL1 performance was
+                           consistently poor across all six strategies, with F1-scores ranging from 0.150 (Strategy
+                           6) to 0.267 (baseline), and no strategy produced a statistically significant improvement.
+                           This represents a fundamental and unresolved deficiency of the current framework: the
+                           model cannot reliably identify the KL1 grade, which constitutes 14.5% of the full dataset
+                           (1574 samples) and corresponds to an important early-disease category relevant to clinical
+                           monitoring. Strategies incorporating focal loss (4, 6) showed the worst KL1 performance, a
+                           direct consequence of the weighting scheme that explicitly deprioritizes KL1 in favor of KL3
+                           and KL4. The confusion matrices confirm that the majority of KL1 errors were absorbed by
+                           KL0 across all strategies. Unlike KL3, which suffers primarily from underrepresentation,
+                           KL1’s difficulty stems from visual and semantic ambiguity—it represents a borderline
+                           category defined by questionable osteophyte formation or joint space narrowing, with
+                           inherently overlapping radiographic appearance with both KL0 and KL2. This ambiguity
+                           is a known challenge even for experienced rheumatologists, and none of the imbalance
+                           mitigation strategies tested here directly address its root cause, as they target frequency
+                           or loss weighting rather than feature discriminability at grade boundaries. Consequently,
+                           although the proposed framework improves severe OA detection, its limited ability to
+                           reliably classify KL1 limits its utility for early-stage OA assessment and highlights an
+                           important direction for future research.
+                                 Majority-class performance was preserved across all strategies: KL0 and KL2 diago-
+                           nals remained stable within 2% of baseline across all six configurations, and no strategy
+                           produced statistically significant majority-class degradation (all p > 0.10). This confirms
+                           that minority-class gains are additive rather than traded off against global diagnostic
+                           reliability—a necessary condition for clinical deployment. Overall accuracy remained be-
+                           tween 76 and 77% across all strategies, with this apparent stability masking the substantial
+                           minority-class improvements captured by per-class F1-scores and binary OA sensitivity
+                           metrics. This highlights the well-known limitation of overall accuracy as a performance
+                           measure in severely imbalanced clinical datasets, where high global accuracy can coexist
+                           with clinically unacceptable minority-class detection rates.
+                                 Limitations: A critical limitation of this study is the small number of OA-positive
+                           cases in the test set. Although test set contains 1626 samples, but only 23 are KL3 and
+                           20 are KL4. This limited sample size constrains the precision and stability of per-class
+                           performance estimates, reduces statistical power, and increases the sensitivity of reported
+                           rankings and confidence intervals to small variations in sample composition. Consequently,
+                           several borderline findings—including Strategy 4 for KL3 classification (p = 0.062) and
+                           Strategy 6 for binary OA classification (p = 0.055)—may have reached statistical significance
+                           with a larger external test cohort or additional independent runs. Therefore, the reported
+                           “highest” performance values should be interpreted cautiously as observed outcomes on
+                           the current held-out dataset rather than definitive evidence of superiority or generalizability.
+                           In addition, this study is also limited to DIP joints, and generalization to other joint sites
+                           or imaging modalities requires separate validation. Finally, CycleGAN training used KL0
+                           source images, which may not fully capture the range of pathological progression pathways
+                           contributing to KL3 appearances in clinical practice, potentially limiting the diversity of
+                           generated synthetic samples.
+                                 Future Work: Several directions are motivated by the current findings. First, KL1 classi-
+                           fication represents the most persistent unresolved challenge in this framework. Future work
+                           should explore grade-specific augmentation targeting the KL0/KL1/KL2 decision bound-
+                           ary, contrastive learning approaches to improve feature separation between visually similar
+
+
+
+                                                                                           https://doi.org/10.3390/a19050414
+Algorithms 2026, 19, 414                                                                                                21 of 23
+
+
+
+                           adjacent grades, and ordinal classification frameworks that explicitly model the graded and
+                           progressive nature of KL severity rather than treating each grade as an independent class.
+                           Addressing KL1 will likely require strategies that target feature discriminability at grade
+                           boundaries rather than frequency or loss reweighting, as the current results demonstrate
+                           that imbalance-focused interventions do not resolve ambiguity-driven misclassification.
+                           Second, expanding the rheumatologist-validated synthetic dataset through multi-cycle or
+                           progressive GAN architectures that simulate intermediate disease stages more faithfully
+                           could further improve KL3 generalization and reduce the proportion of rejected synthetic
+                           images. Third, extending this framework to other joints—including PIP and MCP joints in
+                           the hand, as well as knee and hip joints—would establish its broader clinical applicability
+                           and determine whether the relative effectiveness of each strategy generalizes across anatom-
+                           ical sites with different imbalance profiles. Finally, incorporating uncertainty estimation
+                           into the classification pipeline through Monte Carlo dropout or ensemble methods would
+                           provide clinically actionable confidence scores alongside grade predictions, supporting
+                           more informed radiological decision-making and enabling the model to flag ambiguous
+                           cases for human review rather than committing to a single deterministic prediction.
+
+                           5. Conclusions
+                                 This study demonstrates that severe class imbalance in KL-grade radiographic classifi-
+                           cation of DIP joints can be reliably addressed through a combination of rheumatologist-
+                           validated synthetic augmentation, random oversampling, and focal loss, without com-
+                           promising majority-class diagnostic performance. Oversampling proved to be the single
+                           most effective individual intervention, producing the strongest KL4 detection (93.33%)
+                           and binary OA sensitivity (95.35%), with a statistically significant OA F1 improvement
+                           over baseline (p = 0.031). Combining validated synthetic data with oversampling (Strategy
+                           5: SD + OS) further improved KL3 performance (F1 = 0.50, p = 0.029) and reduced the
+                           clinically critical KL3 → KL2 under-staging error from 53.62% to 5.80%, confirming that the
+                           two data-level mechanisms are complementary rather than competing. The full combined
+                           strategy (Strategy 6: SD + OS + FL) achieved the highest statistically significant KL3 F1
+                           (0.527, p = 0.048), establishing focal loss as an effective refinement when layered on top of
+                           data-level balancing. KL1 classification remained near-complete failure across all strategies
+                           (F1 range: 0.150–0.267), reflecting grade boundary ambiguity as a distinct and unresolved
+                           problem that imbalance-focused interventions alone cannot address. These findings estab-
+                           lish a clear hierarchy of intervention effectiveness: oversampling provides the strongest
+                           frequency-based foundation, validated synthetic augmentation adds qualitative feature
+                           diversity, and focal loss delivers a final algorithmic refinement. This framework provides a
+                           replicable and clinically grounded approach to tackle severe data imbalance problem in
+                           medical image classification tasks. It must be noted, however, that all reported performance
+                           values and strategy rankings—including the designations of “highest” binary OA sensi-
+                           tivity and “highest” KL3 F1-score—are derived from a held-out test set comprising only
+                           43 OA positive samples (KL3–KL4 combined). Given this small sample size, the absolute
+                           values and relative rankings of strategies may not be stable and should be interpreted as
+                           preliminary observations, subject to change upon validation on larger independent cohorts.
+
+                           Supplementary Materials: The following supporting information can be downloaded at
+                           https://www.mdpi.com/article/10.3390/a19050414/s1.
+
+                           Author Contributions: Conceptualization, J.S. and M.Z.; methodology, H.T. and Z.C.; software,
+                           H.T. and Z.C.; validation, H.T. and Z.C.; formal analysis, H.T.; data curation, H.T. and Z.C.;
+                           writing—original draft preparation, H.T.; writing—review and editing, J.S., M.Z., H.T. and Z.C.; su-
+                           pervision, J.S. and M.Z. All authors have read and agreed to the published version of the manuscript.
+
+
+
+
+                                                                                               https://doi.org/10.3390/a19050414
+Algorithms 2026, 19, 414                                                                                                             22 of 23
+
+
+
+                                   Funding: This research received no external funding.
+
+                                   Data Availability Statement: No new data were created. Data were pulled from public database
+                                   OAI (https://nda.nih.gov/oai, accessed on 23 June 2020).
+
+                                   Conflicts of Interest: The authors declare no conflicts of interest.
+
+References
+1.    Kolasinski, S.L.; Neogi, T.; Hochberg, M.C.; Oatis, C.; Guyatt, G.; Block, J.; Callahan, L.; Copenhaver, C.; Dodge, C.; Felson, D.;
+      et al. 2019 American College of Rheumatology/Arthritis Foundation Guideline for the management of osteoarthritis of the hand,
+      hip, and knee. Arthritis Rheumatol. 2020, 72, 220–233. [CrossRef]
+2.    Hunter, D.J.; Bierma-Zeinstra, S. Osteoarthritis. Lancet 2019, 393, 1745–1759. [CrossRef]
+3.    Haugen, I.K.; Englund, M.; Aliabadi, P.; Niu, J.; Clancy, M.; Kvien, T.; Felson, D. Prevalence, incidence and progression of hand
+      osteoarthritis in the general population: The Framingham Osteoarthritis Study. Ann. Rheum. Dis. 2011, 70, 1581–1586. [CrossRef]
+4.    Kohn, M.D.; Sassoon, A.A.; Fernando, N.D. Classifications in brief: Kellgren–Lawrence classification of osteoarthritis. Clin.
+      Orthop. Relat. Res. 2016, 474, 1886–1893. [CrossRef]
+5.    Abdullah, S.S.; Rajasekaran, M.P. Automatic detection and classification of knee osteoarthritis using deep learning approach.
+      Radiol. Med. 2022, 127, 398–406. [CrossRef]
+6.    Litjens, G.; Kooi, T.; Bejnordi, B.E.; Setio, A.A.A.; Ciompi, F.; Ghafoorian, M.; van der Laak, J.A.W.M.; van Ginneken, B.; Sánchez,
+      C.I. A survey on deep learning in medical image analysis. Med. Image Anal. 2017, 42, 60–88. [CrossRef]
+7.    Guida, C.; Zhang, M.; Blackadar, J.; Yang, Z.; Driban, J.B.; Duryea, J.; Shan, J. Automated hand osteoarthritis classification
+      using convolutional neural networks. In Proceedings of the 2021 20th IEEE International Conference on Machine Learning and
+      Applications (ICMLA), Pasadena, CA, USA, 13–16 December 2021; pp. 1487–1494.
+8.    Salmi, M.; Atif, D.; Oliva, D.; Abraham, A.; Ventura, S. Handling imbalanced medical datasets: Review of a decade of research.
+      Artif. Intell. Rev. 2024, 57, 273. [CrossRef]
+9.    Johnson, J.M.; Khoshgoftaar, T.M. Survey on deep learning with class imbalance. J. Big Data 2019, 6, 27. [CrossRef]
+10.   Zhu, J.-Y.; Park, T.; Isola, P.; Efros, A.A. Unpaired image-to-image translation using Cycle-consistent adversarial networks. In
+      Proceedings of the IEEE International Conference on Computer Vision, Venice, Italy, 22–29 October 2017; pp. 2223–2232.
+11.   Ma, Y.; Liu, Y.; Cheng, J.; Zheng, Y.; Ghahremani, M.; Chen, H.; Liu, J.; Zhao, Y. Cycle structure and illumination constrained GAN
+      for medical image enhancement. In Proceedings of the Medical Image Computing and Computer Assisted Intervention—MICCAI 2020,
+      Lima, Peru, 4–8 October 2020; Lecture Notes in Computer Science; Springer: Berlin/Heidelberg, Germany, 2020; Volume 12262.
+12.   Galdran, A.; Carneiro, G.; Ballester, M.A.G. Balanced-MixUp for highly imbalanced medical image classification. In Proceedings
+      of the Medical Image Computing and Computer Assisted Intervention—MICCAI, Strasbourg, France, 27 September–1 October
+      2021; pp. 1–12.
+13.   Chartsias, A.; Joyce, T.; Dharmakumar, R.; Tsaftaris, S.A. Adversarial image synthesis for unpaired multi-modal cardiac data. In
+      Proceedings of the Simulation and Synthesis in Medical Imaging, Québec City, QC, Canada, 10 September 2017; pp. 3–11.
+14.   Hu, J.; Xiao, F.; Jin, Q.; Zhao, G.; Lou, P. Synthetic data generation based on RDB-CycleGAN for industrial object detection.
+      Mathematics 2023, 11, 4588. [CrossRef]
+15.   Frid-Adar, M.; Diamant, I.; Klang, E.; Amitai, M.; Goldberger, J.; Greenspan, H. GAN-based synthetic medical image augmentation
+      for increased CNN performance in liver lesion classification. Neurocomputing 2018, 321, 321–331. [CrossRef]
+16.   Lin, T.; Goyal, P.; Girshick, R.; He, K.; Dollár, P. Focal loss for dense object detection. In Proceedings of the IEEE International
+      Conference on Computer Vision (ICCV), Venice, Italy, 22–29 October 2017; pp. 2980–2988.
+17.   Zhou, Y.; Wang, J.; Li, M. Development and validation of a deep learning system to screen multi-class retinal diseases using
+      optical coherence tomography macular images. J. Biomed. Inform. 2021, 119, 103820.
+18.   Tan, J.; Lee, S.; Huang, M. Focal loss analysis of nerve fiber layer reflectance for glaucoma diagnosis. Biomed. Opt. Express 2021, 12,
+      2045–2058. [CrossRef]
+19.   Simonyan, K.; Zisserman, A. Very deep convolutional networks for large-scale image recognition. arXiv 2014, arXiv:1409.1556.
+20.   Mateen, M.; Wen, J.; Nasrullah, N.; Song, S.; Huang, Z. Fundus image classification using VGG-19 architecture with PCA and
+      SVD. Symmetry 2019, 11, 1. [CrossRef]
+21.   Annapoorani, G.; Manikandan, P.; Genitha, C.H. Evolving medical image classification: A three-tiered framework combining
+      MSPLnet and IRNet-VGG19. J. Med. Syst. 2024, 48, 96. [CrossRef]
+22.   Chandrasekaran, S.; Aarathi, S.; Alqhatani, A.; Khan, S.B.; Quasim, M.T.; Basheer, S. Improving healthcare sustainability using
+      advanced brain simulations with VGG19 and bidirectional LSTM. Front. Med. 2025, 12, 1574428. [CrossRef]
+23.   Kim, H.E.; Cosa-Linan, A.; Santhanam, N.; Jannesari, M.; Maros, M.E.; Ganslandt, T. Transfer learning for medical image
+      classification: A literature review. BMC Med. Imaging 2022, 22, 69. [CrossRef]
+
+
+
+
+                                                                                                          https://doi.org/10.3390/a19050414
+Algorithms 2026, 19, 414                                                                                                        23 of 23
+
+
+
+24.   Cao, Z.; Shan, J.; Jiang, X.; Wang, Q.; McAlindon, T.; Driban, J.; Zhang, M. Enhancing Hand Osteoarthritis Classification with
+      Generative AI: A CycleGAN and EfficientNetB7 Approach [abstract]. Arthritis Rheumatol. 2025, 77.
+25.   OAI—The Osteoarthritis Initiative.          National Institute of Mental Health Data Archive (NDA). Available online:
+      https://nda.nih.gov/oai/ (accessed on 15 May 2026).
+26.   Davis, J.E.; Schaefer, L.F.; McAlindon, T.E.; Eaton, C.B.; Roberts, M.B.; Haugen, I.K.; Smith, S.E.; Duryea, J.; Lu, B.; Driban,
+      J.B. Characteristics of accelerated hand osteoarthritis: Data from the osteoarthritis initiative. J. Rheumatol. 2019, 46, 422–428.
+      [CrossRef]
+27.   Ponnusamy, R.; Zhang, M.; Chang, Z.; Wang, Y.; Guida, C.; Kuang, S.; Sun, X.; Blackadar, J.; Driban, J.B.; McAlindon, T.; et al.
+      Automatic measuring of finger joint space width on hand radiograph using deep learning and conventional computer vision
+      methods. Biomed. Signal Process. Control 2023, 84, 104713. [CrossRef]
+28.   He, W.; Zhou, T.; Xiang, Y.; Lin, Y.; Hu, J.; Bao, R. Deep learning in image classification: Evaluating VGG19′ s performance on
+      complex visual data. arXiv 2024, arXiv:2412.20345.
+29.   Khan, M.A.; Rajinikanth, V.; Satapathy, S.C.; Taniar, D.; Mohanty, J.R.; Tariq, U.; Damaševičius, R. VGG19 network assisted joint
+      segmentation and classification of lung nodules in CT images. Diagnostics 2021, 11, 2208. [CrossRef] [PubMed]
+30.   Bansal, M.; Kumar, M.; Sachdeva, M.; Mittal, A. Transfer learning for image classification using VGG19: Caltech-101 image
+      dataset. J. Ambient. Intell. Humaniz. Comput. 2023, 14, 3609–3620. [CrossRef] [PubMed]
+
+
+Disclaimer/Publisher’s Note: The statements, opinions and data contained in all publications are solely those of the individual
+author(s) and contributor(s) and not of MDPI and/or the editor(s). MDPI and/or the editor(s) disclaim responsibility for any injury to
+people or property resulting from any ideas, methods, instructions or products referred to in the content.
+
+
+
+
+                                                                                                      https://doi.org/10.3390/a19050414
+

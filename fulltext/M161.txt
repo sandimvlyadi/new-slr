@@ -1,0 +1,390 @@
+                                                                                                                                                                   KneeRAC: Retrieval-Augmented Classification for
+                                                                                                                                                                     Grading Knee Osteoarthritis on Radiographs
+
+
+
+
+2025 11th International Conference on Optimization and Applications (ICOA) | 979-8-3315-9957-7/25/$31.00 ©2025 IEEE | DOI: 10.1109/ICOA66896.2025.11236821
+                                                                                                                                                                                             Kundjanasith Thonglek and Suphanat Wisitkatanyuchai
+                                                                                                                                                                        Department of Computer Engineering, Faculty of Engineering, Kasetsart University, Bangkok, Thailand
+                                                                                                                                                                                                  Email: {kundjanasith.th, suphanat.wi}@ku.th
+
+
+                                                                                                                                                                  Abstract— Automated grading of knee osteoarthritis severity
+                                                                                                                                                              using radiographic images is a critical task in computer-aided
+                                                                                                                                                              diagnosis, aiming to support early intervention and reduce
+                                                                                                                                                              radiologist workload. While deep learning models have shown
+                                                                                                                                                              promising performance in classifying Kellgren–Lawrence grades,
+                                                                                                                                                              their effectiveness can be limited by small, imbalanced datasets
+                                                                                                                                                              and subtle visual differences between severity levels. To address
+                                                                                                                                                              these challenges, we propose KneeRAC, a Retrieval-Augmented
+                                                                                                                                                              Classification (RAC) framework that enhances traditional
+                                                                                                                                                              classification pipelines through contextual embedding integration.
+                                                                                                                                                              We evaluate KneeRAC across 17 commonly used deep
+                                                                                                                                                                                                                                                    Fig. 1. Knee osteoarthritis grading with corresponding X-ray images
+                                                                                                                                                              convolutional neural network architectures by comparing its
+                                                                                                                                                              performance to standard classification methods. The proposed                              Among the various radiographic assessment tools for
+                                                                                                                                                              framework       demonstrates      consistent  improvements      in                    diagnosing knee osteoarthritis, the Kellgren and Lawrence
+                                                                                                                                                              classification accuracy for most models, with EfficientNetB0                          grading system remains the most widely adopted due to its
+                                                                                                                                                              achieving the highest gains, which is rising from 83.51% in the                       simplicity and historical prevalence in both clinical practice and
+                                                                                                                                                              traditional setting to 86.81% with the proposed method. In                            research. The KL grading system assigns knee osteoarthritis
+                                                                                                                                                              addition to accuracy, our method significantly reduces training                       severity scores on an ordinal scale from 0 to 4, based on the
+                                                                                                                                                              time by decoupling feature extraction from classifier training.
+                                                                                                                                                                                                                                                    presence and extent of joint space narrowing, osteophyte
+                                                                                                                                                              KneeRAC reduces runtime by 95.05% in average. Further
+                                                                                                                                                              analysis of runtime distribution shows that over 98% of the time
+                                                                                                                                                                                                                                                    formation, subchondral sclerosis, and subchondral cysts, as
+                                                                                                                                                              is spent on embedding extraction, while classifier training                           illustrated in Fig.1. Despite its widespread use, the KL grading
+                                                                                                                                                              accounts for only 1.65%, demonstrating the practicality of our                        process has significant limitations when performed by human
+                                                                                                                                                              decoupled design. This efficient, modular approach not only                           observers. The evaluation is highly subjective, which leads to
+                                                                                                                                                              improves predictive performance but also facilitates faster                           substantial inter- and intra-observer variability in grade
+                                                                                                                                                              experimentation with limited computational resources.                                 assignment [5]. This variability undermines diagnostic
+                                                                                                                                                                  Keywords— Clinical Decision Support, Embedding Extraction,                        consistency, especially in large-scale cohort studies or
+                                                                                                                                                              Knee Osteoarthritis, Retrieval-Augmented Learning                                     longitudinal patient monitoring. Furthermore, the grading
+                                                                                                                                                                                                                                                    process is labor-intensive and relies heavily on the expertise of
+                                                                                                                                                                                     I. INTRODUCTION                                                trained radiologist [6].
+                                                                                                                                                                  Knee osteoarthritis is a widespread and debilitating chronic                          In recent years, deep learning approaches have shown
+                                                                                                                                                              musculoskeletal condition that significantly impacts the quality                      considerable promise in automating medical image analysis
+                                                                                                                                                              of life for millions of individuals worldwide. It is particularly                     tasks, including knee osteoarthritis severity assessment from
+                                                                                                                                                              prevalent among aging populations and is recognized as a                              knee radiographs [7]. Numerous models have been proposed to
+                                                                                                                                                              leading cause of long-term disability [1]. Knee osteoarthritis                        replicate or even surpass human performance in KL grading by
+                                                                                                                                                              typically manifests through persistent joint pain, stiffness,                         learning discriminative features directly from image data. These
+                                                                                                                                                              swelling, and a progressive loss of mobility, all of which                            AI-driven approaches aim to enhance efficiency, scalability, and
+                                                                                                                                                              collectively hinder daily activities and reduce functional                            reproducibility, thereby reducing human bias and expediting the
+                                                                                                                                                              independence. Early and accurate diagnosis is crucial to                              diagnostic process. Despite their promise, current deep learning-
+                                                                                                                                                              managing the disease effectively and slowing its progression                          based classifiers face several key limitations. Their performance
+                                                                                                                                                              before it reaches an advanced stage that may require invasive                         depends heavily on large-scale and well-annotated datasets that
+                                                                                                                                                              treatments such as total knee arthroplasty. Radiographic                              are difficult to obtain in the medical field [8]. These models are
+                                                                                                                                                              imaging remains a cornerstone for knee osteoarthritis                                 sensitive to domain shifts caused by variations in imaging
+                                                                                                                                                              assessment, and numerous grading systems have been                                    protocols or patient populations [9]. Importantly, most models
+                                                                                                                                                              developed to standardize diagnosis and disease staging. These                         lack mechanisms to incorporate clinical context or historical
+                                                                                                                                                              include the Kellgren and Lawrence (KL) grading system [2], the                        case-based reasoning, leading to poor performance in borderline
+                                                                                                                                                              Osteoarthritis Research Society International atlas [3], and the                      or ambiguous cases where visual cues alone may be insufficient
+                                                                                                                                                              Ahlbäck classification [4], each offering unique criteria and                         [10].
+                                                                                                                                                              levels of granularity in evaluating joint degeneration.
+
+
+
+                                                                                                                                                              979-8-3315-9957-7/25/$31.00 ©2025 IEEE
+                                                                                                                                                             Authorized licensed use limited to: Central Electronics Engineering Research Institute. Downloaded on July 09,2026 at 08:34:32 UTC from IEEE Xplore. Restrictions apply.
+     We propose KneeRAC, a Retrieval-Augmented                                                       TABLE I.       EXPERT GRADING RESULTS BY GROUP
+ Classification (RAC) framework tailored for automated KL                                                             Medical Expert 1           Medical Expert 2
+                                                                                         Osteoarthritis
+ grading of knee osteoarthritis in radiographic images from X-
+ ray scan. Inspired by the diagnostic strategies employed by                             Grades                   162x300x3     161x640x3    162x300x3     161x640x3
+
+ radiologists, who frequently compare current patient images                             0: Normal                   452           62           446           57
+ with similar historical cases to guide their assessments,
+                                                                                         1: Doubtful                 440           37           446           42
+ KneeRAC integrates a retrieval mechanism directly into the
+ classification pipeline. This hybrid framework combines the                             2: Mild                     191           41           191           41
+ power of deep neural networks for feature extraction and                                3: Moderate                 175           46           175           46
+ classification with a content-based image retrieval system that
+                                                                                         4: Severe                   206            -           206            -
+ retrieves contextually similar knee radiographs from a curated
+ case database.
+                                                                                           4) Grade 3 (Moderate): Clear evidence of multiple
+     By grounding each prediction in a set of visually and                             osteophytes, moderate joint space narrowing, and subchondral
+ semantically relevant examples, KneeRAC improves
+                                                                                       bone sclerosis (increased bone density beneath the cartilage).
+ classification accuracy. Moreover, the retrieved examples serve
+ as visual explanations that to enhance interpretability and                           There may also be early signs of bone contour irregularities or
+ encourage greater clinical trust. This case-based reasoning also                      mild deformities. Patients at this stage often experience pain,
+ increases the robustness of model to domain shifts and imaging                        stiffness, and functional limitations.
+ variability across datasets and acquisition conditions. Also, the
+ retrieval module might mitigate the dependency on large                                   5) Grade 4 (Severe): Marked joint space narrowing, large
+ annotated datasets, as the presence of similar reference cases can                    and numerous osteophytes, severe subchondral sclerosis, and
+ guide accurate classification with fewer labeled samples.                             definite bone deformities, such as flattening or angulation of
+                                                                                       joint surfaces. This advanced stage of osteoarthritis is typically
+     The remainder of this paper is organized as follows: Section
+                                                                                       associated with significant pain, limited mobility, and reduced
+ II describes the dataset used in this work. Section III explains
+ our proposed methodology, which leverages retrieval-                                  quality of life. Joint replacement surgery may be considered.
+ augmented classification to grade knee osteoarthritis on
+ radiographs. Section IV presents the experimental results to                              The dataset employed in this study was independently
+ evaluate the proposed method. Lastly, Section V concludes this                        annotated by two medical experts, as summarized in Table I.
+ work and discusses our future works.                                                  Upon inspection, discrepancies in labeling were primarily
+                                                                                       observed in normal and doubtful, whereas mild, moderate, and
+                                II. DATASET                                            severe exhibited full agreement between the annotators. To
+     This section describes the dataset utilized in our study,                         ensure high-quality ground truth labels and reduce ambiguity
+ focusing on knee osteoarthritis grading. We employed the                              during training and evaluation, we retained only those samples
+ publicly available Digital Knee X-ray Images dataset [11],                            with consistent KL grade annotations from both experts.
+ which comprises 1,650 high-resolution, 8-bit grayscale digital                        Samples with conflicting labels were excluded from further
+ X-ray images of knee joints. These images were acquired using                         analysis. Besides, the dataset comprises images in two
+ a PROTEC PRS 500E X-ray machine across various hospitals                              resolutions: (162 x 300 x 3) and (161 x 640 x 3). The smaller
+ and diagnostic centers. Each image in the dataset has been                            dimension corresponds to unilateral knee radiographs (either
+ meticulously annotated by two medical experts using the                               left or right), while the larger dimension includes bilateral knee
+ Kellgren and Lawrence grading system. The KL system                                   views (both left and right in a single image).
+ classifies knee osteoarthritis severity into five grades:
+                                                                                                                 III. METHODOLOGY
+    1) Grade 0 (Normal): No visible signs of osteoarthritis.                                     This section presents our proposed method, which
+ The joint space appears normal, with smooth bone contours and                         employs retrieval-augmented learning to classify the severity
+ no evidence of osteophyte formation, subchondral sclerosis, or                        of knee osteoarthritis from X-ray images. First, each X-ray
+ cysts. This grade is considered radiographically healthy.                             image is fed into a base model to transform the raw image into
+                                                                                       a vector embedding. These embeddings are then used to build a
+     2) Grade 1 (Doubtful): Possible early signs of                                    searchable index that captures the relationships among all data
+ osteoarthritis. There may be minute osteophyte formation at the                       points in the embedding space. For each input embedding, the
+ joint margins, but joint space remains normal. These changes                          k nearest neighbors are retrieved based on similarity in this
+ are often subtle and may be difficult to distinguish from normal                      space. The retrieved k nearest neighbor vectors are then
+ anatomical variations, making clinical significance uncertain.                        averaged to compute a representative neighbor embedding. To
+                                                                                       enhance contextual understanding, the original input
+    3) Grade 2 (Mild): Definite osteophyte formation is                                embedding is augmented by concatenating it with its
+ present, typically at the joint margins. The joint space may                          corresponding averaged neighbor embedding. This augmented
+ appear slightly narrowed but remains largely intact. This grade                       vector is then passed to a classifier model, which is trained to
+ suggests early-stage osteoarthritis.                                                  predict the Kellgren-Lawrence grade of knee osteoarthritis.
+
+
+
+
+Authorized licensed use limited to: Central Electronics Engineering Research Institute. Downloaded on July 09,2026 at 08:34:32 UTC from IEEE Xplore. Restrictions apply.
+ Fig. 2. Workflow of embedding generation from X-ray images for retrieval-augmented classification
+
+
+
+ A. Embedding Generation from Radiographs                                                  Following preprocessing, we employed several state-of-the-
+                                                                                       art convolutional neural networks as base encoders to transform
+     Figure 2 illustrates the overall workflow of our embedding                        the input images into high-level feature embeddings. The
+ generation pipeline for retrieval-augmented classification. This                      networks used include DenseNet121, DenseNet169,
+ process begins with image preprocessing, followed by feature                          DenseNet201, EfficientNetB0–B7, MobileNet, ResNet50,
+ extraction using convolutional neural networks (CNNs), class-                         ResNet101, ResNet152, VGG16, and VGG19. Each model was
+ wise embedding organization, nearest neighbor retrieval through                       truncated to remove the final classification layers, allowing us to
+ Facebook AI Similarity Search (FAISS) 1 indexing, and ends                            extract embeddings from the output layer with the result of a
+ with embedding enrichment using context vectors from similar                          global average pooling operation. Regardless of the model used,
+ samples.                                                                              the output embeddings were reshaped or projected into a
+     In our approach, the input knee radiographs were originally                       consistent dimensionality of 1024 for downstream processing.
+ provided in two slightly different resolutions: (162 x 300 x 3),                          After feature extraction, the resulting embeddings were
+ representing single-knee views, and (161 x 640 x 3), typically                        organized based on their corresponding osteoarthritis severity
+ showing both knees. To ensure uniformity across the dataset, we                       grades, ranging from 0 (Normal) to 4 (Severe). This grouping
+ standardized all images to a fixed resolution of (162 x 320 x 3).                     allowed us to form distinct class-specific embedding collections
+ This was achieved by applying zero-padding to images with a                           that reflect the underlying distribution of each KL grade. For
+ height of 161 pixels and resizing the width to 320 pixels when                        every class, we constructed a dedicated vector index using
+ necessary. This normalization step preserved the spatial integrity                    FAISS, a library designed for efficient approximate nearest
+ of anatomical structures while enabling efficient and consistent                      neighbor (ANN) search in high-dimensional vector spaces. By
+ batch processing within deep neural networks, which require                           leveraging FAISS, we enabled rapid and scalable retrieval of the
+ inputs of identical dimensions.                                                       most similar samples within the same class. This retrieval
+                                                                                       capability is particularly important for building informative
+ 1
+                                                                                       context representations that reinforce the classification process.
+     https://github.com/facebookresearch/faiss
+
+
+
+
+Authorized licensed use limited to: Central Electronics Engineering Research Institute. Downloaded on July 09,2026 at 08:34:32 UTC from IEEE Xplore. Restrictions apply.
+                                    input:      (None, 2048)                               The 2048-dimensional input vector formed by concatenating
+                   Input
+                                                                                       the query embedding with its context embedding. First, the
+                   Layer           output:      (None, 256)
+                                                                                       vector is passed through a fully connected layer that reduces the
+                                                                                       dimensionality to 256. This layer serves as a high-capacity
+           BatchNormalization input:            (None, 256)
+                                                                                       transformation that captures nonlinear relationships between the
+                 Layer        output:           (None, 256)
+
+                                                                    Dropout
+                                                                                       combined features. Following this, batch normalization is
+                                    input:      (None, 256)
+                                                                                       applied to normalize the outputs of the fully connected layer.
+             FullyConnected
+                                                                                       Batch normalization helps mitigate internal covariate shift by
+                  Layer            output:      (None, 128)                            keeping the distribution of layer activations stable during
+                                                                                       training, which results in faster convergence and allows the use
+           BatchNormalization input:            (None, 128)
+                                                                                       of higher learning rates.
+                 Layer        output:           (None, 128)
+
+                                                                    Dropout
+                                                                                           A dropout layer is introduced to reduce overfitting by
+             FullyConnected         input:      (None, 128)                            randomly setting a fraction of the neurons to zero during
+                  Layer            output:       (None, 64)                            training. This encourages the model to learn redundant
+                                                                                       representations and prevents it from becoming overly reliant on
+                  Output            input:       (None, 64)                            any single neuron, thereby improving generalization
+                  Layer            output:       (None, 5)                             performance. The network then proceeds to a second fully
+                                                                                       connected layer that compresses the representation further from
+ Fig. 3. Architecture of the classifier model                                          256 to 128 dimensions. This step reduces the model's complexity
+                                                                                       and focuses the learned features into a more compact latent
+                                                                                       space. Again, batch normalization and dropout follow this layer
+     During inference, each input knee radiograph underwent the                        to stabilize training and further enhance generalization.
+ same preprocessing steps and was passed through the shared
+                                                                                           Subsequently, a third fully connected layer reduces the
+ encoder network to generate a 1024-dimensional feature
+                                                                                       feature size to 64 dimensions. This smaller representation serves
+ embedding. Based on the model’s preliminary prediction of
+                                                                                       as a distilled form of the original input embedding, capturing
+ osteoarthritis severity, we identified the corresponding FAISS
+                                                                                       only the most discriminative features necessary for
+ index associated with the predicted KL grade. This index was
+                                                                                       classification. The final output layer is another fully connected
+ then queried to retrieve the top-k most similar embeddings,
+                                                                                       layer with 5 neurons, corresponding to the five grades . A
+ where k was set to 25 in our experiments. These retrieved
+                                                                                       softmax activation function is applied to this output,
+ embeddings, which represent semantically similar cases from
+                                                                                       transforming the raw logits into normalized class probabilities
+ the training dataset, were then aggregated by averaging to
+                                                                                       suitable for multi-class classification. This architectural design
+ produce a class-informed context vector.
+                                                                                       is grounded in standard deep learning practices for structured
+     Consequently, this context vector was combined with the                           data and makes sense for main following reasons:
+ original query embedding to create an enriched feature
+ representation of the input radiograph. The fusion was                                    •     Progressive dimensionality reduction through stacked
+ implemented either through simple vector averaging or                                           fully connected layers helps the model compress the
+ concatenation, depending on the experimental setting. This                                      high-dimensional input features in hierarchical manner.
+ augmented representation incorporated not only the intrinsic                              •     Batch normalization improves stability by addressing
+ characteristics of the input image but also contextual cues from                                shifts in input distributions across layers.
+ related historical examples, enhancing the ability of the model
+ to make more informed and robust predictions. The final                                   •     Dropout combats overfitting, which is especially critical
+ combined embedding was then fed into the classification head                                    given the relatively small size and imbalance of medical
+ for the further KL grade prediction.                                                            imaging datasets.
+                                                                                           To ensure a fair and robust evaluation of our classifier model,
+                                                                                       we employed stratified k-fold cross-validation when k is five.
+ B. Classifier Training with Augmented Embeddings                                      This method ensures that each fold maintains the original class
+     After generating the augmented embeddings through our                             distribution, which is critical in datasets with class imbalance. In
+ proposed pipeline, we used them to train a deep neural network                        each fold, four parts were used for training and one for
+ classifier aimed at predicting osteoarthritis severity grades.                        validation, with each fold serving as the validation set once. This
+ Figure 3 presents the architecture of the classification model. It                    approach reduces bias and enhances generalizability by ensuring
+ consists of fully connected (dense) layers, interleaved with batch                    balanced evaluation across all severity grades. The classifier was
+ normalization and dropout layers to ensure stable training and                        trained using a batch size of 32, with early stopping based on
+ reduce overfitting. The model takes as input a 2048-dimensional                       validation loss. If the validation loss did not improve over five
+ feature vector, formed by concatenating the query image’s 1024-                       consecutive epochs, training was halted, and the best-performing
+ dimensional embedding with the average embedding of its k                             model was retained. This strategy helps prevent overfitting and
+ nearest neighbors (retrieved using FAISS). This combination                           ensures selection of a model that generalizes well to unseen data.
+ captures both the individual characteristics of the query and the
+ contextual information from similar cases.
+
+
+
+
+Authorized licensed use limited to: Central Electronics Engineering Research Institute. Downloaded on July 09,2026 at 08:34:32 UTC from IEEE Xplore. Restrictions apply.
+                   TABLE II.        HARDWARE SPECIFICATION
+
+       Hardware                             Specification
+          CPU            Intel(R) Xeon(R) Gold 6130 CPU (2.10GHz, 16 cores)
+     Main Memory                               256 GB
+          GPU                            NVIDIA Tesla V100
+     GPU Memory                                 32 GB
+
+
+
+
+                                                                                       Fig. 5. Runtime for training model with traditional and proposed methods
+
+
+                                                                                           This outcome can be attributed to three key factors. First,
+                                                                                       these models are relatively deep and already extract highly
+                                                                                       expressive features on their own. As a result, the benefit of
+                                                                                       adding contextual embeddings from similar samples may be
+                                                                                       diminished, offering limited additional discriminative power.
+                                                                                       Second, deeper architectures tend to be more prone to
+ Fig. 4. Model accuracy comparison between traditional and proposed methods            overfitting, especially on smaller or imbalanced datasets like
+                                                                                       those commonly found in medical imaging. The increased
+                                                                                       complexity introduced by context vector integration could
+                        IV. EVALUATION                                                 exacerbate this effect, leading to less reliable generalization.
+    This section provides a thorough evaluation of the proposed                        Third, variations in feature scale or embedding distribution
+ method, performed on the hardware configuration outlined in                           between the query and retrieved neighbors may have introduced
+ Table II. We first examine the classification accuracy of multiple                    noise into the final representation, offsetting the intended benefit
+ base models, comparing their performance under the traditional                        of context enrichment for these specific models.
+ pipeline against our retrieval-augmented embedding approach.                              Within the set of models examined, EfficientNetB0
+ Following this, we assess the runtime performance of each setup                       consistently achieved the highest accuracy across both
+ to evaluate the computational efficiency and practical                                approaches. Specifically, it reached an average accuracy of
+ applicability of our method in real-world scenarios.                                  83.51% in the traditional method and 86.81% when used as the
+                                                                                       base encoder in the proposed embedding-based pipeline. These
+                                                                                       results highlight the effectiveness of the proposed method in
+ A. Classification accuracy                                                            improving classification performance using contextual
+     We evaluated classification accuracy using both the                               embeddings.
+ traditional approach and our proposed retrieval-augmented                             B. Training time
+ method. In the traditional setting, we experimented with 17
+ different classifier architectures, each trained directly on the                          After assessing model accuracy, we proceeded to evaluate
+ image data without any additional contextual information. For                         the training time required for each model under both the
+ the proposed method, however, we fixed the structure of the                           traditional and proposed methods. This analysis provides
+ classifier model and instead varied the base encoder responsible                      insight into the computational complexity and resource
+ for generating image embeddings. These embeddings were then                           demands associated with training each approach. Figure 5
+ enriched using nearest-neighbor context vectors retrieved via                         shows the runtime comparison across different models,
+ FAISS indexing before being passed to the classifier.                                 highlighting the efficiency gains achieved by the proposed
+                                                                                       method. We observed that the proposed embedding-based
+     Figure 4 summarizes the distribution of classification
+ accuracies achieved by each model under both approaches.                              method significantly reduced the overall training time when
+ While our proposed method led to improvements in many cases,                          compared to the traditional approach, which is achieving an
+ the gains were not uniform across all models. Notably, four                           average reduction of approximately 95.05%. This substantial
+ deeper architectures (DenseNet121, DenseNet201, ResNet101,                            improvement is primarily attributed to the fact that, in the
+ and ResNet152) did not benefit from the embedding                                     proposed pipeline, the deep base encoder is only used once
+ augmentation process.                                                                 during the feature extraction phase and is not trained jointly
+                                                                                       with the classifier.
+
+
+
+
+Authorized licensed use limited to: Central Electronics Engineering Research Institute. Downloaded on July 09,2026 at 08:34:32 UTC from IEEE Xplore. Restrictions apply.
+                                                                                           Due to remaining challenges in generalizability and real-
+                                                                                       world deployment, several directions remain for future
+                                                                                       exploration. Improving the neighbor retrieval process through
+                                                                                       attention mechanisms or domain-aware similarity measures
+                                                                                       could enhance the quality of contextual embeddings and lead to
+                                                                                       more discriminative features. Expanding the evaluation of the
+                                                                                       framework to other medical imaging tasks, such as rare disease
+                                                                                       detection or multi-label classification, would help assess its
+                                                                                       versatility. Incorporating temporal or longitudinal patient data
+                                                                                       may also enable dynamic and personalized predictions,
+                                                                                       especially in progressive conditions. Furthermore, adapting the
+                                                                                       framework for lightweight deployment on edge or mobile
+                                                                                       devices could facilitate real-time clinical inference, supporting
+                                                                                       broader integration into healthcare workflows. These
+                                                                                       enhancements will contribute to advancing retrieval-augmented
+                                                                                       learning for medical image classification.
+                                                                                                                        REFERENCES
+                                                                                       [1]  D. Primorac, V. Molnar, E. Rod, Z. Jelec, F. Cukelj, V. Matisic, T.
+                                                                                            Vrdoljak, D. Hudetz, H. Hajsok, and I. Boric, “Knee osteoarthritis: A
+                                                                                            review of pathogenesis and state-of-the-art non-operative therapeutic
+                                                                                            considerations,” Genes, vol. 11, no. 8, 2020. [Online]. Available:
+ Fig. 6. Runtime breakdown of each step in the proposed method                              https://www.mdpi.com/2073-4425/11/8/854
+                                                                                       [2] E. Vaattovaara, E. Panfilov, A. Tiulpin, T. Niinim¨aki, J. Niinim¨aki, S.
+                                                                                            Saarakkala, and M. T. Nevalainen, “Kellgren-lawrence grading of knee
+     In addition to measuring overall training time, we analyzed                            osteoarthritis using deep learning: Diagnostic performance with external
+ the runtime distribution across individual stages of the proposed                          dataset and comparison with four readers,” Osteoarthritis and Cartilage
+ method. As illustrated in Figure 6, the process is divided into                            Open, vol. 7, no. 2, p. 100580, 2025. [Online]. Available:
+                                                                                            https://www.sciencedirect.com/science/article/pii/S2665913125000160
+ three primary steps: (1) extracting embeddings from the training
+                                                                                       [3] R. Altman and G. Gold, “Atlas of individual radiographic features in
+ set, (2) extracting embeddings from the test set, and (3) training                         osteoarthritis, revised,” Osteoarthritis and Cartilage, vol. 15, pp. A1–A56,
+ the classifier using the combined embeddings.                                              2007, radiographic Atlas for Osteoarthritis of the Hand, Hip and Knee.
+     Our results indicate that the majority of the computational                            [Online].                                                          Available:
+                                                                                            https://www.sciencedirect.com/science/article/pii/S1063458406003281
+ time is spent during the embedding extraction phase. On
+                                                                                       [4] M. Galli, V. De Santis, and L. Tafuro, “Reliability of the ahlback
+ average, generating training set embeddings accounts for                                   classification of knee osteoarthritis,” Osteoarthritis and Cartilage, vol. 11,
+ approximately 78.43% of the total runtime, while test set                                  no.      8,      pp.      580–584,       2003.      [Online].      Available:
+ embedding extraction takes about 19.92%. In contrast, the time                             https://www.sciencedirect.com/science/article/pii/S1063458403000955
+ spent on training the classifier is minimal, accounting for only                      [5] J. A. Gustafson, M. E. Robinson, G. K. Fitzgerald, S. Tashman, and S.
+ about 1.65% of the total runtime. This distribution emphasizes                             Farrokhi, “Knee motion variability in patients with knee osteoarthritis:
+                                                                                            The effect of self-reported instability,” Clin. Biomech. (Bristol, Avon),
+ the efficiency of the proposed method. The most                                            vol. 30, no. 5, pp. 475–480, Jun. 2015.
+ computationally demanding task is the extraction of features                          [6] S. Afshari Mirak, S. H. Tirumani, N. Ramaiya, and I. Mohamed, “The
+ using deep encoder models. This step is performed only once.                               growing nationwide radiologist shortage: Current opportunities and
+ Once the embeddings are obtained, training the classifier                                  ongoing challenges for international medical graduate radiologists,”
+                                                                                            Radiology, vol. 314, no. 3, p. e232625, 2025, pMID: 40035678. [Online].
+ becomes a fast and lightweight process. This makes the                                     Available: https://doi.org/10.1148/radiol.232625
+ approach especially beneficial for scenarios where frequent                           [7] I. D. Mienye, T. G. Swart, G. Obaido, M. Jordan, and P. Ilono, “Deep
+ model updates or retraining are necessary.                                                 convolutional neural networks in medical image analysis: A review,”
+                                                                                            Information, vol. 16, no. 3, 2025. [Online]. Available:
+                                                                                            https://www.mdpi.com/2078-2489/16/3/195
+                        V. CONCLUSION                                                  [8] D. Pais, S. Br´as, and R. Sebasti˜ao, “Overcoming the small dataset
+                                                                                            challenge in healthcare,” in 2024 IEEE 22nd Mediterranean
+     In this paper, we introduced KneeRAC, a Retrieval-                                     Electrotechnical Conference (MELECON), 2024, pp. 497–502.
+ Augmented Classification (RAC) framework for automated KL                             [9] A. T. Tran, T. Zeevi, and S. Payabvash, “Strategies to improve the
+ grading of knee osteoarthritis from X-ray images. By integrating                           robustness and generalizability of deep learning segmentation and
+ FAISS-based similarity retrieval into the feature pipeline, our                            classification in neuroimaging,” BioMedInformatics, vol. 5, no. 2, 2025.
+ approach enhances embedding quality prior to classification. We                            [Online]. Available: https://www.mdpi.com/2673-7426/5/2/20
+ evaluated its effectiveness on 17 popular deep learning models,                       [10] V. Hassija, V. Chamola, A. Mahapatra, A. Singal, D. Goel, K. Huang, S.
+ comparing it with traditional classification pipelines. The                                Scardapane, I. Spinelli, M. Mahmud, and A. Hussain, “Interpreting black-
+                                                                                            box models: A review on explainable artificial intelligence,” Cognitive
+ proposed method consistently improved accuracy in most cases                               Computation, vol. 16, no. 1, pp. 45–74, Jan 2024. [Online]. Available:
+ and significantly reduced training time by up to 95.05% on                                 https://doi.org/10.1007/s12559-023-10179-8
+ average. These improvements stem from decoupling feature                              [11] S. Gornale and P. Patravali, “Digital knee x-ray images,” Dataset, 2020.
+ extraction from classification, enabling both efficiency and                               [Online]. Available: https://data.mendeley.com/datasets/t9ndx37v5h/1J.
+ better generalization.
+
+
+
+
+Authorized licensed use limited to: Central Electronics Engineering Research Institute. Downloaded on July 09,2026 at 08:34:32 UTC from IEEE Xplore. Restrictions apply.
+

@@ -1,0 +1,423 @@
+Journal of Medical and Biological Engineering (2025) 45:298–306
+https://doi.org/10.1007/s40846-025-00947-2
+
+    ORIGINAL ARTICLE
+
+
+
+Deep Learning with an Attention Mechanism for Enhancing
+Automated Modified Total Sharp/van der Heijde Scoring of Hand X‑ray
+Images in Rheumatoid Arthritis
+Chung‑Yueh Lien1          · Hao‑Jan Wang1,2 · Cheng‑Kai Lu3              · Tzu‑Hsuan Hsu1 · Woei‑Chyn Chu2        · Chien‑Chih Lai4,5,6
+
+Received: 10 February 2025 / Accepted: 27 March 2025 / Published online: 15 April 2025
+© The Author(s) 2025
+
+
+Abstract
+Purpose Rheumatoid arthritis (RA) is a chronic autoimmune disease whose accurate diagnosis relies on clinical symptoms,
+serological markers, and imaging studies, particularly X-ray evaluations of joint damage. A widely adopted metric for evalu-
+ating RA severity in hand and foot radiographs, the modified Total Sharp Score, quantifies joint erosion and joint space
+narrowing. However, manual scoring is labor-intensive, time-consuming, and prone to variability, limiting its reliability and
+consistency in clinical practice.
+Methods This study introduces a deep learning–based approach augmented with an attention mechanism to automate joint
+localization and damage classification in hand X-rays of patients with RA. The You Only Look Once v7 model was used for
+joint localization, incorporating performance enhancements via window-level transformation and the Distance Intersection
+over Union algorithm.
+Results The model achieved a localization accuracy of 99.66% mAP@0.50, significantly enhancing the detection precision.
+This model outperformed the vision transformer in scenarios involving limited data and small feature regions, achieving an
+overall classification accuracy of 88%.
+Conclusion The proposed method improved feature learning and classification, especially with limited data, and the attention
+mechanisms significantly enhanced the performance of the RA automatic diagnosis system. Data imbalance was effectively
+addressed via a modified EfficientNetV2 model with an integrated attention mechanism for joint damage classification.
+
+Keywords Artificial intelligence · Joint space narrowing · Modified Total Sharp/van der Heijde Scoring · Rheumatoid
+arthritis · Attention mechanism
+
+
+                                                                             1 Introduction
+
+* Chien‑Chih Lai                                                             Rheumatoid arthritis (RA) is an autoimmune disease that
+  cclai3@vghtpe.gov.tw                                                       primarily affects joints, such as those in the hands, wrists,
+1                                                                            and knees, resulting in inflammation and subsequent tis-
+     Department of Information Management, National Taipei
+     University of Nursing and Health Sciences, Taipei, Taiwan               sue damage [1]. RA is typically diagnosed based on exclu-
+2                                                                            sionary test results, clinical evaluation results, laboratory
+     Deptartment of Biomedical Engineering, National Yang
+     Ming Chiao Tung University, Taipei, Taiwan                              findings, and imaging study results [2]. The modified Total
+3                                                                            Sharp Score (mTSS) is essential for assessing RA progres-
+     Department of Electrical Engineering, National Taiwan
+     Normal University, Taipei, Taiwan                                       sion, particularly in evaluating new biopharmaceutical effi-
+4                                                                            cacy and guiding medication adjustments [3]. For instance,
+     Division of Allergy, Immunology, and Rheumatology,
+     Department of Medicine, Taipei Veterans General Hospital,               when ΔmTSS ≤ 0.5, a reduction in methotrexate is recom-
+     Taipei, Taiwan                                                          mended to mitigate side effects [4]. mTSS is also critical
+5
+     Institute of Clinical Medicine, National Yang Ming Chao                 for high-risk groups, such as patients with prolonged RA or
+     Tung University, Taipei, Taiwan                                         sarcopenia, who exhibit greater disease activity [5].
+6
+     Faculty of Medicine, National Yang Ming Chiao Tung                         However, mTSS scoring is labor-intensive and subjec-
+     University, Taipei, Taiwan                                              tive, thereby leading to inconsistencies [6, 7]. It evaluates
+
+Vol:.(1234567890)
+Deep Learning with an Attention Mechanism for Enhancing Automated Modified Total Sharp/van der Heijde                                299
+
+
+joint erosion and joint space narrowing (JSN) in RA through                 The present study improves our previous work by main-
+X-rays; moreover, it requires assessment of up to 42 joints,             taining a two-stage model structure to enhance algorithm
+including 30 joints of the two hands and wrist and 12 joints             performance. We adopted You Only Look Once (YOLO) v7
+of the two feet. A previous study reported discrepancies in              for joint localization and integrated an attention-enhanced
+scoring by different clinicians and even variations in scores            CNN for JSN classification in mTSS. Furthermore, a ViT
+by the same expert over time, with agreement rates as low                was included for comparison to assess the performance of
+as 0.79 [8]. These challenges, coupled with psychological                image classification with EfficientNetV2.
+pressures on patients and irregular follow-ups, hinder the
+widespread clinical use of mTSS despite its value [9].
+   Recent advancements in deep learning offer solutions                  2 Methods
+for improving mTSS scoring efficiency. While models such
+as convolutional neural networks (CNNs) and vision trans-                2.1 Data Source
+formers (ViTs) have been successfully employed in medi-
+cal imaging, their clinical adoption in RA is limited due to             The imaging data and preprocessing methods used in this
+small datasets and inconsistent ground truth annotations [7].            study were largely consistent with those in our previous
+Mate et al. used a deep neural network on 290 hand X-rays,               study [24]. In this study, a total of 915 12-bit grayscale Dig-
+achieving 94.46% accuracy, whereas Üreten et al. trained a               ital Imaging and Communications in Medicine (DICOM)
+CNN on 135 images, achieving 73.33% accuracy and under-                  images with resolutions ranging from 1230 × 1504 to
+scoring dataset size limitations [10, 11].                               3015 × 2505 were extracted as the training and testing data-
+   To further address these issues and apply solutions to                sets. A total of 823 images were used and split into training
+mTSS scoring, Murakami et al. combined a deep learning                   and test sets in an 8:2 ratio.
+CNN classifier with a mathematical algorithm for joint ero-                 The regions of interest (ROIs) were labeled for JSN-
+sion segmentation, achieving a positive rate of 80.5% [12].              classified 30 joints and consolidated into a single category
+Chaturvedi incorporated attention mechanisms into CNN                    for more efficient object detection. In particular, these 30
+models, reducing the root mean square error from 1.96 to                 joints were unified into a single ROI class (“Joint”), and
+1.35 [13]. Hirano et al. manually cropped joints for CNN                 24,690 single-category ROI labels were aggregated across
+classification, achieving accuracy rates of 70.6%–74.1% for              823 images to satisfy the YOLO model’s data requirements
+joint erosion and 49.3%–65.4% for JSN [14]. Honda et al.                 for object detection.
+used a U-net CNN to extract joint coordinates and trained                   In classification tasks, ROI labeling is susceptible to indi-
+an EfficientNet model on 1,367 images, achieving k-values                vidual factors, such as prior diagnostic experience and the
+of 0.88 for erosion and 0.87 for JSN [15].                               evaluator’s mental state, which can lead to variability in the
+   To the best of our knowledge, a publicly accessible data-             classification results. Thus, we simplified the classification
+set for RA hand images is nonexistent. Previous research                 target into healthy, mild, and severe categories correspond-
+relies on privately collected data with limited dataset size             ing to mTSS scores of 0, 1–2, and 3–4, respectively.
+[12, 14, 15], and varying joint sizes affect the models’ per-
+formance. In this domain, data scarcity is a major limitation            2.2 Image Preprocessing
+to model performance [8, 15–17]. Radke et al. dynamically
+adjusted Intersection over Union (IoU) calculations and                  We adjusted the window-level transformation (W/L) of the
+used a focal loss function to enhance training for imbal-                DICOM images, applying a W/L value of 2026/1791, to
+anced data, raising RetinaNet model accuracy from 80 to                  improve ROI features, such as joints and bones, while reduc-
+94% [8]. The introduction of attention mechanisms and ViT                ing noise. The images were then downsampled from 12-bit
+models further enhanced the performance for medical image                to 8-bit and converted to the PNG format to reduce train-
+classification [18–23]. Stolpovsky et al. used EfficientNetV2            ing parameters and graphics processing unit (GPU) load.
+for localization and combined TinyViT with a head model                  To combine multiple images into composites, simulating
+for classification, achieving a JSN classification accuracy of           a wider range of scenarios, data augmentation techniques,
+0.67, erosion accuracy of 0.74, and localization accuracy of             including the Mosaic method, were employed.
+99% [23]. These studies illustrate that optimizing strategies               Images were resized to 256 × 256 pixels, with smaller
+and model adjustments, incorporating attention mechanisms                ROIs expanded outward from their centers to preserve spa-
+and ViT models, can further improve the precision and clini-             tial context and alignment. Data augmentation included
+cal applicability of automated mTSS evaluation. Our pre-                 random horizontal flipping (30%) and rotations up to 10°
+vious study was limited to asymptomatic and mild cases                   to improve robustness to variations. Since X-ray images are
+[24]. The absence of public RA imaging datasets further                  grayscale, while ImageNet’s default settings, that is, [0.485,
+constrained model training and generalization.                           0.456, 0.406] with a standard deviation of [0.229, 0.224,
+300                                                                                                              C.-Y. Lien et al.
+
+0.225], are optimized for color images, we adjusted the         cases, compared to a fully downsampled set (500 samples
+brightness and saturation gradients accordingly. The nor-       per class) for effectiveness evaluation. Figure 1 illustrates
+malization values were optimized for medical imaging, dif-      processed samples for classification.
+fering from ImageNet’s defaults. The calculated mean was
+[0.5660, 0.5660, 0.5660] with an SD of [0.2054, 0.2054,         2.4 Localization Model
+0.2054], accurately reflecting the grayscale characteristics
+of the medical images.                                          We used YOLOv7 as the localization model. The selection
+                                                                of appropriate nonmaximum suppression (NMS) and IoU
+2.3 Handling of Imbalanced Data Through                        methods is critical for accurate joint localization. For chal-
+     Sampling Weights                                           lenges such as hand joint deformation, stiffness, and incon-
+                                                                sistent positioning, fixed aspect ratios were not required
+The classification data were highly imbalanced                  for ground truth boxes. Because the wrist and finger joints
+[30,000:539:1,409] for healthy, mild, and severe cases, pos-    naturally differ in size, we opted for Distance IoU (DIoU)
+ing challenges for the model. While random down-sampling        for bounding box precision and DIoU-NMS for handling
+could balance the data, maintaining data volume is crucial      overlapping predictions. While Complete IoU (CIoU) is a
+for deep learning [8, 10, 11, 14]. Thus, we compared the bal-   common method for object detection regression, its empha-
+anced data using weighted sampling versus down-sampling.        sis on aspect ratios made it unsuitable for our objectives.
+A partial down-sampling strategy reduced the number of          Our prior research confirmed that DIoU is optimal for mTSS
+healthy samples to match the number of mild.                    joint localization tasks for this dataset [24], with further
+   To further mitigate the imbalance, we calculated class       validation across other datasets [8, 23]. The model outputs
+weights inversely proportional to class frequencies, assign-    ROIs, including coordinates and confidence scores, for use
+ing higher weights to minority classes to enhance their         in the second preprocessing stage of the classification model.
+representation during training. Using a “WeightedRan-
+domSampler” in PyTorch to ensure that sampling probabili-       2.5 Classification Model
+ties are aligned with class weights, highlighting the model
+on underrepresented classes and improving generalization.       We constructed the model using EfficientNetV2 integrated
+These normalization and sampling strategies enhanced per-       with a custom attention module after preprocessing the clas-
+formance on imbalanced data, achieving a weighted distri-       sification images, as shown in Fig. 2.
+bution of [1,406:539:1,406] for healthy, mild, and severe
+
+
+
+
+Fig. 1  Processed samples for the classification model
+Deep Learning with an Attention Mechanism for Enhancing Automated Modified Total Sharp/van der Heijde                                         301
+
+
+
+
+Fig. 2  Architecture diagram of EfficientNet with the attention model. This module focuses on central joint areas, improving classification accu-
+racy by prioritizing critical regions over the entire image
+
+
+   The attention module, inspired by the self-attention                    Table 1  Localization model training results
+mechanism in deep learning, dynamically computes rel-                      Yolov7         Precision Recall F1-score Average          mAP@0.50
+evance among input elements, thereby enhancing the                                                                  IoU
+ability of the model to learn complex patterns. It uses
+convolutional layers with progressively reduced channels                  CIoU       94%             94%     94%          72.84%     92.58%
+                                                                          CIoU + W/L 98%             96%     97%          76.83%     98.58%
+from 512, 256, 128, 64, to 16, and ultimately down to one
+channel. Each layer applies a ReLU activation function                    DIoU + W/L 100%            98%     99%          82.41%     99.66%
+and a final Softmax layer to generate normalized attention
+weights. AdaptiveAvgPool2d reduced feature dimensions,
+and decreasing computational costs while retaining spatial                 3.2 Training Classification Model
+information and dropout minimized overfitting. CrossEn-
+tropyLoss with class weights addressed the imbalance,                     The experiments were conducted using two datasets: a “com-
+focusing on underrepresented classes by adjusting loss                    pletely downsampled dataset” where each class contained
+contributions.                                                            500 samples, and a “weighted dataset” where class imbal-
+                                                                          ance was managed through weighted sample sampling and
+                                                                          loss function adjustments. We compared the performance of
+                                                                          the original EfficientNet model (Eff.), an attention-enhanced
+3 Results                                                                EfficientNet model (Eff. w Att.), and the ViT, which relies
+                                                                          entirely on attention mechanisms.
+The experiments were conducted using an RTX 3060 GPU                          All models were trained with identical parameters using
+with 12 GB of VRAM, and the models were accelerated                       the stochastic gradient descent optimization method, with
+through CUDA (Compute Unified Device Architecture)                        an initial learning rate of 0.01, a momentum of 0.9, and a
+11.8, developed with PyTorch v2.3.0.                                      weight decay set at 0.003 to control the model complexity.
+                                                                          A scheduler was employed to reduce the learning rate by a
+                                                                          factor of 0.3 if no significant reduction in validation loss was
+3.1 Training Localization Model                                          observed within 10 training epochs, with a lower bound set
+                                                                          at ­10−9 to ascertain training stability. The results are sum-
+The YOLOv7 model with CUDA acceleration was used; the                     marized in Table 2.
+batch size was set to 32, with subdivisions of 16, and a total                The confusion matrices demonstrate that while the model
+of 823 images was used. Of these 823 images, 658 hand                     excels at recognizing healthy and severe cases, it struggles
+images containing 19,740 samples were used for training,                  with distinguishing mild cases, often misclassifying them as
+whereas 165 hand images containing 4,950 samples were                     severe. In clinical practice, this suggests a need for further
+used for validation, following an approximate ratio of 8:2.               improvement in recognizing mild cases.
+The experiment combined with the use of W/L to enhance                        Figure 3 illustrates the training curve for Efficient-
+ROI features. The results are presented in Table 1.                       Net with the attention model, demonstrating the highest
+302                                                                                                                            C.-Y. Lien et al.
+
+Table 2  Comparison of                Dataset           Model        Class       Precision   Recall   F1-score   Macro Acc   Weight F1-score
+classification model training
+results                               Downsampled       ViT          Healthy     52%         71%      60%        53%         52%
+                                                                     Mild        42%         41%      42%
+                                                                     Severe      70%         44%      54%
+                                                        Eff          Healthy     47%         65%      54%        48%         45%
+                                                                     Mild        52%         23%      32%
+                                                                     Severe      47%         60%      53%
+                                                        Eff. w Att   Healthy     83%         84%      84%        72%         71%
+                                                                     Mild        59%         72%      65%
+                                                                     Severe      72%         59%      65%
+                                      Weighted          ViT          Healthy     100%        94%      97%        80%         75%
+                                                                     Mild        63%         93%      75%
+                                                                     Severe      78%         37%      50%
+                                                        Eff          Healthy     94%         95%      95%        86%         86%
+                                                                     Mild        82%         80%      81%
+                                                                     Severe      81%         83%      82%
+                                                        Eff. w Att   Healthy     97%         100%     98%        88%         88%
+                                                                     Mild        86%         74%      80%
+                                                                     Severe      82%         89%      86%
+
+
+
+
+Fig. 3  Training and validation curve for EfficientNet with attention model
+
+
+
+validation accuracy achieved at epoch 86. As the training                     4 Discussion
+was completed at 100 epochs, the learning rate decreased
+to 7.29 −6, with the loss plateauing and triggering early                     Compared with our previous study [24], although the
+stopping due to overfitting.                                                  accuracy for the severe class declined from 0.9 to 0.82,
+   To further understand model performance, we con-                           the present study remarkably improved the classification
+ducted a confusion matrix analysis comparing EfficientNet                     between healthy and diseased (mild and severe) joints.
+with the attention model with the ViT model using the                         Our previous study did not address data imbalance in the
+weighted dataset. The results are shown in Tables 3 and 4.
+Deep Learning with an Attention Mechanism for Enhancing Automated Modified Total Sharp/van der Heijde                                 303
+
+Table 3  Confusion matrix of        Macro Acc            Prediction                                     Recall   F1-score       Support
+EfficientNet with attention         88%
+model using the weighted                                 Healthy         Mild         Severe
+dataset
+                                    Healthy              208             0            1                 100%     98%            209
+                                    Mild                 0               146          50                74%      80%            196
+                                    Severe               6               23           237               89%      86%            266
+
+
+
+Table 4  Confusion matrix           Macro Acc            Prediction                                     Recall   F1-score       Support
+for the ViT model using the         80%
+weighted dataset                                         Healthy         Mild         Severe
+
+                                    Healthy              196             0            13                94%      97%            209
+                                    Mild                 0               182          14                93%      75%            196
+                                    Severe               6               162          98                37%      50%            266
+
+
+
+test set. To overcome this, we adopted the perspective of                4.1 Data Imbalance Strategies and Model
+Radke et al. [8], integrating an attention mechanism to                       Performance Comparison in Classification
+improve training on imbalanced data. This mechanism
+not only addressed data imbalance but also minimized                     Overfitting occurred across all models, and we believe that
+the impact of manual scoring variability, thereby improv-                the overfitting stems from the lack of images for class 1
+ing the model’s ability to distinguish between mild and                  (mild) caused by the imbalance dataset [1406:539:1406].
+severe cases. In clinical practice, rheumatologists prior-               The introduction of attention mechanisms improved the clas-
+itize detecting diseased joints rather than distinguishing               sification accuracy for classes healthy and mild in Efficient-
+the severity levels of the joints. Hence, accurately detect-             Net, achieving comparable performance to the ViT model
+ing diseased joints is more critical than evaluating their               and demonstrating its clinical applicability.
+severity. Our results demonstrate that this approach can                     Furthermore, we tested two strategies to address data
+aid in the efficient diagnosis of patients with RA in clini-             imbalance by comparing a fully downsampled dataset with
+cal practice.                                                            a weighted dataset. The downsampled dataset achieved
+    The introduction of DIoU and W/L significantly improved              72% accuracy but had inconsistent class performance. Con-
+YOLOv7’s localization model precision, increasing the aver-              versely, the weighted dataset, which employed class weights
+age IoU from 72.84% to 82.41%. The W/L enhanced the                      during training, achieved 88% accuracy and F1-scores of
+joint feature clarity in the X-ray images and reduced the                0.88, demonstrating that balancing data quantity with class
+image variation due to equipment differences, boosting the               weights effectively enhanced learning.
+model accuracy from a mAP of 92.58% to 99.66%. Effi-
+cientNet with attention model further enhanced JSN clas-                 4.2 Enhancing Model Interpretability and Trust
+sification accuracy and robustness. Incorporating the custom                  with Attention Mechanisms
+attention module allowed the model to underscore more on
+critical features, particularly distinguishing difficult-to-clas-        Deep learning models reveal promise; however, their lack of
+sify mild and severe cases. Experiments on the weighted                  interpretability limits their clinical impact. The EfficientNet
+dataset revealed that the model attained an F1-score of 98%              with attention model requires further exploration, particu-
+for healthy cases and 86% for severe cases, representing                 larly regarding overfitting risks, as models may overlearn
+improvements of 3% and 4%, respectively, compared with                   dataset-specific features, decreasing real-world performance.
+the model without the attention mechanism. These results                 Figure 4 illustrates heatmap examples. The leftmost image
+support our hypothesis that combining image preprocessing,               reveals the input, while the middle feature maps represent
+deep learning model optimization, and attention mechanisms               (a) EfficientNet’s output, (b) the attention mask, and (c) the
+significantly enhances the performance of the RA automatic               combined feature map. The right images display the pro-
+diagnosis system.                                                        cessed heatmap.
+    EfficientNet with attention model improved feature learn-
+ing and classification, especially with limited data. The                4.3 Potential Use of Transformer‑Based Models
+attention model was more stable across classes with higher
+variability than the ViT-based model, which achieved a pre-              The ViT model’s reliance on serializing images for trans-
+cision of 1.0 for healthy samples.                                       former encoding may have rendered it sensitive to image
+304                                                                                                                            C.-Y. Lien et al.
+
+
+
+
+Fig. 4  Training curve for EfficientNet with attention model. Case   map highlighted critical features, such as damaged joints, improving
+2 presented irrelevant joint areas that were assigned strong nega-   model transparency, fostering clinician trust, and aiding in error iden-
+tive weights, suppressing nonrelevant feature responses. The heat-   tification for future improvements
+
+
+
+variability, potentially affecting its performance. Notably,         addressing data imbalance and incorporating an attention
+the affected joints were rarely misclassified as healthy, a          mechanism resulted in an overall accuracy of 88% for the
+clinically significant result with promising research implica-       weighted dataset. Increasing the weight of minority classes
+tions. The ViT technology demonstrated promise, requiring            effectively enhanced learning outcomes, while the attention
+only one-fifth of the parameters of EfficientNet with atten-         mechanism enhanced the model’s focus on critical features.
+tion model while showing comparable performance to Effi-             The EfficientNet model with attention outperformed both
+cientNet for healthy samples. As noted in the original ViT           the ViT model and the baseline EfficientNet model in terms
+paper, ViT excels with larger datasets, and its performance          of accuracy and stability.
+depends heavily on parameter tuning [18]. Future studies can            We also underscored the importance of model transpar-
+refine ViT models by exploring deeper architectures, hyper-          ency to foster trust among healthcare professionals and
+parameter optimization, and data modifications to better suit        facilitate error identification. Future studies should inte-
+transformer designs.                                                 grate clinical expertise and multimodal data to enhance the
+                                                                     model’s adaptability, performance, and interpretability.
+                                                                        Despite these advancements, accurate classification of
+5 Conclusion                                                        mild cases remains challenging. Future studies should focus
+                                                                     on optimizing data balancing strategies and leveraging mul-
+This study employed deep learning to automate joint                  timodal data integration to improve clinical applicability and
+localization and disease severity classification for mTSS in         diagnostic precision for the mTSS scoring.
+patients with RA using hand X-rays. By combining clini-
+                                                                     Author Contributions Conceptualization: CYL, HJW, WCC, and CCL;
+cal imaging preprocessing techniques with optimized deep             Material preparation and data collection were performed by THH and
+learning architectures, it significantly improved joint locali-      CCL; The AI model was developed by HJW and THH, CYL. Data
+zation and the classification of healthy and diseased joints.        analysis and validation were performed by HJW, CKL, and CYL. Writ-
+The YOLOv7 model, integrated with the DIoU algorithm                 ing—Original Draft Preparation, HJW, CKL, and WCC, CYL; Writ-
+                                                                     ing—Review & Editing, CYL, CKL, WCC, and CCL; All authors read
+and W/L adjustment, achieved an exceptional mean average             and approved the final manuscript.
+precision (mAP@0.50) of 99.66%, providing highly accu-
+rate and fine-grained localization to support the classifica-        Funding Open Access funding enabled and organized by National Yang
+tion models for joint localization. In the classification task,      Ming Chiao Tung University. This work was supported by a grant from
+Deep Learning with an Attention Mechanism for Enhancing Automated Modified Total Sharp/van der Heijde                                           305
+
+the Ministry of Science and Technology Taiwan (NSTC 113-2622-E-             5. Lin, J. et al. (2019). Myopenia is associated with joint dam-
+227-001, NSTC 113-2634-F-A49-003, MOST 106-2634-F-075-001,                     age in rheumatoid arthritis: a cross‐sectional study. Journal of
+MOST 107-2634-F-075-001, and MOST 108-3011-F-075-001).                         cachexia, sarcopenia and muscle, 10(2), 355–367. https://​www.​
+                                                                               ncbi.​nlm.​nih.​gov/​pmc/​artic​les/​PMC64​63467/​pdf/​JCSM-​10-​355.​
+Data availability The experimental datasets used in this manuscript            pdf.
+are not public available due to ethical reasons. The detailed records of    6. Sharp, J. T., et al. (1985). How many joints in the hands and
+our proposed model are public available on https://github.com/Nich-            wrists should be included in a score of radiologic abnormalities
+olaxKAmIL/RA_PaperData (accessed on 5 April 2025).                             used to assess rheumatoid arthritis? Arthritis & Rheumatism,
+                                                                               28(12), 1326–1335. https://​doi.​org/​10.​1002/​art.​17802​81203
+Declarations                                                                7. Momtazmanesh, S., Nowroozi, A., & Rezaei, N. (2022). Arti-
+                                                                               ficial intelligence in rheumatoid arthritis: current status and
+Conflict of interest The authors declare no conflict of interest.              future perspectives: a state-of-the-art review. Rheumatol-
+                                                                               ogy and Therapy, 9(5), 1249–1304. https://​d oi.​o rg/​1 0.​1 007/​
+Ethical Approval This study was conducted according to the guidelines          s40744-​022-​00475-4
+of the Declaration of Helsinki and approved by the Institutional Review     8. Radke, K. L., et al. (2022). Adaptive IoU thresholding for
+Board (3) of Taipei Veterans General Hospital (protocol code 2022-01-          improving small object detection: a proof-of-concept study of
+023CC; approval date: 27 Jan 2022).                                            hand erosions classification of patients with rheumatic arthritis
+                                                                               on X-ray images. Diagnostics, 13(1), 104. https://​doi.​org/​10.​
+Consent to Participate Informed consent was waived because of the              3390/​diagn​ostic​s1301​0104
+retrospective nature of the study and the use of deidentified clinical      9. Lwin, M. N., Serhal, L., Holroyd, C., & Edwards, C. J. (2020).
+data.                                                                          Rheumatoid arthritis: the impact of mental health on disease:
+                                                                               a narrative review. Rheumatology and Therapy, 7(3), 457–471.
+Consent to Publish Consent was waived due to there is no personal              https://​doi.​org/​10.​1007/​s40744-​020-​00217-4
+identifier in the manuscript.                                              10. Mate, G. S., Kureshi, A. K., & Singh, B. K. (2021). An efficient
+                                                                               CNN for hand X-ray classification of rheumatoid arthritis. Jour-
+                                                                               nal of Healthcare Engineering, 2021(1), 6712785. https://​doi.​
+Open Access This article is licensed under a Creative Commons                  org/​10.​1016/j.​micpro.​2023.​104822
+Attribution 4.0 International License, which permits use, sharing,         11. Üreten, K., Erbay, H., & Maraş, H. H. (2020). Detection of rheu-
+adaptation, distribution and reproduction in any medium or format,             matoid arthritis from hand radiographs using a convolutional
+as long as you give appropriate credit to the original author(s) and the       neural network. Clinical Rheumatology, 39, 969–974. https://​
+source, provide a link to the Creative Commons licence, and indicate           doi.​org/​10.​1007/​s10067-​019-​04487-4.
+if changes were made. The images or other third party material in this     12. Murakami, S., Hatano, K., Tan, J., Kim, H., & Aoki, T. (2018).
+article are included in the article’s Creative Commons licence, unless         Automatic identification of bone erosions in rheumatoid arthri-
+indicated otherwise in a credit line to the material. If material is not       tis from hand radiographs based on deep convolutional neural
+included in the article’s Creative Commons licence and your intended           network. Multimedia tools and applications, 77, 10921–10937.
+use is not permitted by statutory regulation or exceeds the permitted          https://​doi.​org/​10.​1007/​s11042-​017-​5449-4
+use, you will need to obtain permission directly from the copyright        13. Chaturvedi, N. (2021). DeepRA: predicting joint damage from
+holder. To view a copy of this licence, visit http://creativecommons.          radiographs using CNN with attention. arXiv preprint arXiv:​
+org/licenses/by/4.0/.                                                          2102.​06982. https://​doi.​org/​10.​48550/​arXiv.​2102.​06982.
+                                                                           14. Hirano, T., Nishide, M., Nonaka, N., Seita, J., Ebina, K.,
+                                                                               Sakurada, K., & Kumanogoh, A. (2019). Development and
+                                                                               validation of a deep-learning model for scoring of radiographic
+References                                                                     finger joint destruction in rheumatoid arthritis. Rheumatology
+                                                                               Advances in Practice, 3(2). https://​doi.​org/​10.​1093/​rap/​rkz047.
+ 1. Almutairi, K., Nossent, J., Preen, D., Keen, H., & Inderjeeth,         15. Honda, S., Yano, K., Tanaka, E., Ikari, K., & Harigai, M.
+    C. (2021). The global prevalence of rheumatoid arthritis:                  (2022). Development of a scoring model for the Sharp/van der
+    a meta-analysis based on a systematic review. Rheumatol-                   Heijde score using convolutional neural networks and its clini-
+    ogy International, 41(5), 863–877. https://​d oi.​o rg/​1 0.​1 007/​       cal application. Rheumatology, 62(6), 2272–2283. https://​doi.​
+    s00296-​020-​04731-0                                                       org/​10.​1093/​rheum​atolo​gy/​keac5​86
+ 2. Gravallese, E. M., & Firestein, G. S. (2023). Rheumatoid Arthri-       16. Srinivasan, S., Gunasekaran, S., Mathivanan, S. K., Jayagopal,
+    tis — Common Origins, Divergent Mechanisms. New England                    P., Khan, M. A., Alasiry, A., Marzougui, M., & Masood, A.
+    Journal of Medicine, 388(6), 529–542. https://​doi.​org/​10.​1056/​        (2023). A framework of faster CRNN and VGG16-enhanced
+    NEJMr​a2103​726                                                            region proposal network for detection and grade classification
+ 3. Al-Maini, M., et al. (2023). Artificial intelligence-based pre-            of knee RA. Diagnostics, 13(8), 1385. https://​doi.​org/​10.​3390/​
+    ventive, personalized and precision medicine for cardiovascular            diagn​ostic​s1308​1385
+    disease/stroke risk assessment in rheumatoid arthritis patients:       17. Zhou, Z., et al. (2022). RATING: Medical knowledge-guided
+    A narrative review. Rheumatology International, 43(11), 1965–              rheumatoid arthritis assessment from multimodal ultrasound
+    1982. https://​doi.​org/​10.​1007/​s00296-​023-​05415-1                    images via deep learning. Patterns, 3(10), 100592. https://​doi.​
+ 4. Tanaka, Y., Yamanaka, H., Ishiguro, N., Miyasaka, N., Kawana,              org/​10.​1016/j.​patter.​2022.​100592
+    K., Hiramatsu, K., & Takeuchi, T. (2016). Adalimumab discon-           18. Manzari, O. N., Ahmadabadi, H., Kashiani, H., Shokouhi, S. B.,
+    tinuation in patients with early rheumatoid arthritis who were             & Ayatollahi, A. (2023). MedViT: A robust vision transformer
+    initially treated with methotrexate alone or in combination                for generalized medical image classification. Computers in
+    with adalimumab: 1 year outcomes of the HOPEFUL-2 study.                   Biology and Medicine, 157, 106791. https://​doi.​org/​10.​1016/j.​
+    RMD Open, 2(1), e000189. https://​d oi.​o rg/​1 0.​1 136/​r mdop​          compb​iomed.​2023.​106791
+    en-​2015-​000189                                                       19. He, K., Gan, C., Li, Z., Rekik, I., Yin, Z., Ji, W., Gao, Y., Wang,
+                                                                               Q., Zhang, J., & Shen, D. (2023). Transformers in medical
+306                                                                                                                               C.-Y. Lien et al.
+
+    image analysis. Intelligent Medicine, 3(1), 59–78. https://​doi.​   23. Stolpovsky, A., Dakhova, E., Druzhinina, P., Postnikova, P.,
+    org/​10.​1016/j.​imed.​2022.​07.​002                                    Kudinsky, D., Smirnov, A., Sukhinina, A., Lila, A., & Kur-
+20. Park, S., Kim, G., Kim, J., Kim, B., & Jong. (2021). Federated          mukov, A. (2023). RheumaVIT: transformer-based model for
+    Split Vision Transformer for COVID-19 CXR Diagnosis using               Automated Scoring of Hand Joints in Rheumatoid Arthritis.
+    Task-Agnostic Training. Proceedings of the 35th International           Proceedings of the IEEE/CVF International Conference on
+    Conference on Neural Information Processing Systems, 24617–             Computer Vision, 2514-2514. https://​doi.​org/​10.​1109/​ICCVW​
+    24630. https://​doi.​org/​10.​5555/​35402​61.​35421​46.                 60793.​2023.​00266
+21. Almalik, F., Yaqub, M., spsampsps Nandakumar, K. (2022).            24. Wang, H.-J., et al. (2022). Deep learning-based computer-aided
+    Self-Ensembling Vision Transformer (SEViT) for Robust Medi-             diagnosis of rheumatoid arthritis with hand X-ray images con-
+    cal Image Classification International Conference on Medical            forming to modified total Sharp/van der Heijde score. Biomed-
+    Image Computing and Computer-Assisted Intervention. https://​           icines, 10(6), 1355. https://​doi.​org/​10.​3390/​biome​dicin​es100​
+    doi.​org/​10.​1007/​978-3-​031-​16437-8_​36.                            61355
+22. Shamshad, F., Khan, S., Zamir, S. W., Khan, M. H., Hayat, M.,
+    Khan, F. S., & Fu, H. (2023). Transformers in medical imaging:
+    A survey. Medical Image Analysis, 88, 102802. https://​doi.​org/​
+    10.​1016/j.​media.​2023.​102802
+

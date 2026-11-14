@@ -1,0 +1,319 @@
+                                                                                                                                                                                     2025 IEEE Statistical Signal Processing Workshop (SSP)
+
+
+
+
+                                                                                                                                         WHICH UNCERTAINTY QUANTIFICATION METHOD IN DEEP LEARNING MODELS FOR
+                                                                                                                                                            KNEE OSTEOARTHRITIS DIAGNOSIS?
+
+                                                                                                                                                                                            Mame Diarra Fall †? and Elhadji C. Faye†
+
+                                                                                                                                                       †
+                                                                                                                                                           Institut Denis Poisson, Université d’Orléans, Université de Tours, CNRS, 45100 Orléans, France.
+
+
+
+
+2025 IEEE Statistical Signal Processing Workshop (SSP) | 979-8-3315-1800-4/25/$31.00 ©2025 IEEE | DOI: 10.1109/SSP64130.2025.11073440
+                                                                                                                                                            ? Laboratoire de Probabilités, Statistique et Modélisation, Sorbonne Université, Paris, France.
+
+
+                                                                                                                                                                 ABSTRACT                                                  such as a lack of transparency and interpretability compared to,
+                                                                                                                                           This article focuses on uncertainty quantification (UQ) in                      for example, traditional statistical methods. In particular, the
+                                                                                                                                        deep learning methods for knee osteoarthritis (OA) diagnosis.                      clinical deep learning models developed for OA lack rigorous
+                                                                                                                                        Knee OA is one of the leading causes of physical disability                        techniques for quantifying the certainty (or lack thereof) of
+                                                                                                                                        worldwide, with a high personal and socio-economic burden.                         their predictions, which ultimately limits their suitability for
+                                                                                                                                        However, the detection of knee OA relies on visual assessment,                     use in medical decision-making. Apart from our preliminary
+                                                                                                                                        which is highly subjective. Recently, deep learning has led                        work on quantifying uncertainty in [5], we are not aware of
+                                                                                                                                        to remarkable improvements in the detection of knee OA.                            any other research addressing this issue among the many deep
+                                                                                                                                        However, the deep learning methods proposed in the current                         learning-based methods proposed for the OA diagnosis.
+                                                                                                                                        literature seem to be more concerned with model performance                           This paper aims to further investigate UQ methods for the
+                                                                                                                                        than with UQ.                                                                      challenging classification of X-ray images for the diagnosis of
+                                                                                                                                           In this paper, we explore several UQ methods that aim to                        OA. In particular, we will focus mainly on conformal predic-
+                                                                                                                                        complement existing deep learning approaches. In particular,                       tion, an emerging and prominent UQ method. We will also
+                                                                                                                                        we consider conformal prediction, Monte Carlo dropout and                          consider Monte Carlo dropout, and compare the two methods
+                                                                                                                                        evidential deep learning. The advantages and disadvantages of                      with the evidential deep learning approach we proposed in [5].
+                                                                                                                                        each method are highlighted in the context of the particular
+                                                                                                                                        application. The aim is to provide a simple means of express-                        II. UNCERTAINTY QUANTIFICATION METHODS
+                                                                                                                                        ing uncertainty while allowing greater model transparency for                         The focus of this section is on the two UQ techniques that
+                                                                                                                                        clinical users.                                                                    form the basis of our analysis, namely Monte Carlo dropout
+                                                                                                                                          Index Terms— Deep learning, Uncertainty quantification,                          and conformal prediction.
+                                                                                                                                        Classification, Medical imaging, Osteoarthritis, X-ray.
+                                                                                                                                                                                                                           II-A. Monte Carlo dropout
+                                                                                                                                                               I. INTRODUCTION                                                The Monte Carlo dropout (MCD) technique [6] is a popular
+                                                                                                                                                                                                                           option for modelling uncertainty in deep neural networks. It
+                                                                                                                                           Osteoarthritis (OA) is the most common musculoskeletal
+                                                                                                                                                                                                                           involves training a neural network model with dropout enabled,
+                                                                                                                                        disease worldwide. Knee OA in particular is a debilitating
+                                                                                                                                                                                                                           and keeping it enabled during inference. For a given input,
+                                                                                                                                        condition and one of the major anatomical sites of pain. It
+                                                                                                                                                                                                                           several forward passes are then made. Each time, a different
+                                                                                                                                        has a significant social and economic cost. Billions of dollars
+                                                                                                                                                                                                                           dropout mask is randomly sampled. The random deactivation
+                                                                                                                                        are spent worldwide each year on the diagnosis, treatment,
+                                                                                                                                                                                                                           of neurons introduces variability into the outputs. Averaging
+                                                                                                                                        and management of knee OA, which represents a significant
+                                                                                                                                                                                                                           the predictions gives the final prediction, and the uncertainty
+                                                                                                                                        financial burden given the lack of curative drugs for the
+                                                                                                                                                                                                                           can be calculated using entropy or some other measure of
+                                                                                                                                        condition [1]. The current clinical failure to detect the disease
+                                                                                                                                                                                                                           dispersion.
+                                                                                                                                        at an early stage is a major contributor to these costs. The
+                                                                                                                                                                                                                              Other popular approaches to UQ include deep ensemble [7]
+                                                                                                                                        diagnosis of knee OA is based on the Kellgren and Lawrence
+                                                                                                                                                                                                                           and evidential deep learning [5], [8]. However, all these meth-
+                                                                                                                                        (KL) grading system [2]. It defines the severity of OA in five
+                                                                                                                                                                                                                           ods lack formal theoretical coverage guarantees. Conformal
+                                                                                                                                        grades, from 0 (normal) to 4 (severe). However, this criterion is
+                                                                                                                                                                                                                           prediction allows to solve this issue.
+                                                                                                                                        subjective, and human experts may differ in their assessment of
+                                                                                                                                        the severity of OA. This makes early diagnosis of OA difficult.
+                                                                                                                                           To reduce the burden of knee OA on the healthcare sys-                          II-B. Conformal prediction
+                                                                                                                                        tem, the research community should focus on developing                                Conformal prediction (CP) or conformal inference is a
+                                                                                                                                        automated diagnostic approaches. To this end, deep learning-                       compelling and simple framework that provides a reliable in-
+                                                                                                                                        based approaches are promising [3], [4]. However, the practical                    dicator of uncertainty [9]–[11]. It also has an intuitive meaning
+                                                                                                                                        application of deep learning is currently hampered by issues                       that can help users in their decision-making. Furthermore,
+
+
+
+                                                                                                                                        979-8-3315-1800-4/25/$31.00 ©2025 IEEE                                        56
+                                                                                                                                                 Authorized licensed use limited to: University of Pittsburgh. Downloaded on July 08,2026 at 06:00:16 UTC from IEEE Xplore. Restrictions apply.
+                                             2025 IEEE Statistical Signal Processing Workshop (SSP)
+
+
+
+conformal prediction methods are distribution-free, can be
+used for various tasks such as classification or regression, and
+provide formal guarantees of marginal coverage even when
+working with a finite number of samples.
+    Implementing a split conformal prediction method requires
+only a pre-trained model fˆ (e.g., a neural network classifier) on
+a given data set, and a small amount (typically, n = 1000) of
+i.i.d and unseen data (Xi , Yi )ni=1 to form the calibration data.
+Using fˆ, the calibration data and a user-selected coverage error
+level α, CP constructs a finite prediction set (or uncertainty set)
+that guarantees that the prediction set contains the true label
+with a probability of at least 1 − α. In the calibration step, a
+conformal score s is computed for each pair of image and label
+(Xi , Yi ) (i = 1, . . . , n), to define a measure of the discrepancy
+between the predicted and true labels. Typically, si = 1 −                                              Fig. 1. Data set distribution
+fˆ(Xi )Yi where fˆ(Xi )Yi is the softmax output of the true class.
+The score is high when the softmax output for the true class
+is low, i.e. the model is very erroneous. We compute q̂ as the                      to the KL scale mentioned above, which has five categories:
+ d(n+1)(1−α)e
+       n        quantile of the n scores s1 , . . . , sn , where d·e                KL0 (no OA), KL1 (doubtful OA), KL2 (early OA), KL3
+is the ceiling function. Note that q̂ is essentially the 1 − α                      (moderate OA) and KL4 (end-stage OA). Here we look at
+quantile, but with a small correction. This correction becomes                      the 4130 X-ray images with 8260 knee joints from [15]. We
+negligible as n → ∞.                                                                adopt the data set preprocessing method used in [5] (cropping
+    For an image Xtest from the test set whose label Ytest is                       and histogram equalisation). The preprocessing allows to focus
+unknown, the prediction set is                                                      on the relevant features of the knee joint and to improve the
+                                                                                    image quality. The data set distribution is shown in Fig. 1.
+              C(Xtest ) = {y : fˆ(Xtest )y ≥ 1 − q̂}.                    (1)
+                                                                                       We perform three types of multiclass classification:
+This is a set of plausible labels for Ytest with at least 1 − α                       1) Experiment 1: The aim is to determine the severity of
+probability of containing the true label [12],                                            knee OA. We consider the classification of KL2, KL3 and
+                                                                                          KL4.
+                   P[Ytest ∈ C(Xtest )] ≥ 1 − α.                         (2)
+                                                                                      2) Experiment 2: It is dedicated to the early diagnosis of
+The set C(Xtest ) becomes larger when the model is uncertain                              knee OA. We look at the classification of KL0, KL1 and
+or the image is inherently difficult to classify. Thus, the size                          KL2.
+of the set is an indicator of the model uncertainty. However,                         3) Experiment 3: We examine the classification of all five
+this method tends to produce prediction sets that under-cover                             classes.
+difficult subgroups and over-cover easy ones. Adaptive predic-                      It is worth mentioning that Experiments 2 and 3 are very
+tion sets (APS) [13] can remedy this. In this method, classes                       challenging because the three classes KL0, KL1 and KL2 are
+are included from most likely to least likely (probabilities are                    very similar.
+given by the softmax output) until the cumulative softmax                              Since the dataset is highly unbalanced, to avoid bias due to
+output exceeds the quantile. The prediction set is given by                         unbalanced classes, we propose here an additional data aug-
+the included classes. However, APS can still produce large                          mentation method to balance the dataset. For each experiment,
+prediction sets that may not accurately represent the model                         we first identify the most represented class. We then perform a
+uncertainty. The regularised APS (RAPS) proposed in [14]                            data augmentation to balance all classes. The techniques used
+includes a regularisation term to promote small prediction set                      to augment the data include horizontal and vertical flips, angle
+sizes by mitigating the effects of noisy probability estimates.                     rotation, etc.
+Both APS and RAPS are guaranteed to satisfy the marginal
+coverage property given in equation (2). In our experiments,
+                                                                                    III-B. Implementation details
+we will consider these two methods.
+                                                                                       We trained five network architectures to evaluate the per-
+            III. MATERIALS AND METHODS                                              formance of conformal prediction (CP), Monte Carlo dropout
+                                                                                    (MCD) and the evidential deep learning (EDL) method we
+III-A. Data                                                                         proposed in [5]. For each experiment, we present here only
+  The database used in this study was obtained from the public                      the results obtained with the best architecture (in terms of
+baseline data set of the Osteoarthritis Initiative (OAI). This                      accuracy). These are EfficientNet-B0 [16] for Experiment 1,
+cohort recruited 4,796 subjects including men and women aged                        and DenseNet-121 [17] for Experiments 2 and 3. The networks
+45–79 years. The images in the cohort were graded according                         were trained from scratch with experiment specific training
+
+
+
+                                                                               57
+         Authorized licensed use limited to: University of Pittsburgh. Downloaded on July 08,2026 at 06:00:16 UTC from IEEE Xplore. Restrictions apply.
+                                             2025 IEEE Statistical Signal Processing Workshop (SSP)
+
+
+
+parameters (see Table I). The Adam optimiser was used with                         by the number of classes. For MCD, the uncertainty is given
+an experience-dependent initial learning rate, a weight decay                      by the standard deviation of the predictions calculated over
+of 10−4 and a learning rate scheduler were also added. The                         the 1000 forward passes. In contrast, EDL takes a different
+quantitative evaluation was performed using four metrics:                          approach by estimating the uncertainty in the prediction (see
+accuracy, precision, recall and F1-score (see [5]).                                [5]). It can be seen that when all four methods classify
+   The uncertainty quantification methods were implemented                         correctly, RAPS has smaller prediction sets (see rows 1 and
+as follows:                                                                        5). When EDL (row 2) or MCD (row 3) or both EDL and
+  1) CP: The implementation simply consists of reserving a                         MCD misclassify (rows 4, 6), the two CP methods have the
+     part of the data set that is not used during the training                     correct prediction sets, with smaller prediction sets for RAPS.
+     phase, for calibration. The size of the calibration data was
+     set to n = 1000, 1500 and 1000 for Experiments 1, 2 and                                                         Dataset
+     3 respectively, and α was set to 10%, corresponding to                                         Method Training Validation Test Inference time (s)
+     a 90% confidence level. We implemented the CP using                                             EDL     4800       384      721           48
+     the APS and RAPS methods described in Section II-B.                                   Exp. 1   MCD      4800       384      721          526
+     For RAPS, the regularisation parameter was set to 0.1 for
+                                                                                                      CP     3800       384      721           45
+     Experiments 1 and 2, and to 0.3 for Experiment 3.
+                                                                                                     EDL     6273      1569     1382          125
+                                                                                           Exp. 2
+  2) MCD: we considered a dropout layer with a rate of
+     0.5, and performed 1000 forward passes for each datum                                          MCD      6273      1569     1382          2230
+     during the inference stage.                                                                      CP     5489       785     1382          147
+  3) EDL: The softmax layer was removed and the neural                                               EDL     10456     2614     1656          680
+     network was trained with a specific loss function (we                                 Exp. 3   MCD      10456     2614     1656          1290
+     refer to [5] for more details).
+                                                                                                      CP     10456     1614     1656          827
+                   Exp. Batch size Epochs   lr
+                   1        32      100   1e − 3                                                      Table II. Setup for Experiments 1-3.
+                   2       165      242 3.3e − 4
+                   3       128      500   1e − 4
+
+     Table I. Training parameters for Experiments 1–3.
+                                                                                                    V. DISCUSSION AND CONCLUSION
+
+                                                                                      This article has investigated several UQ methods for the
+                           IV. RESULTS                                             challenging diagnosis of knee osteoarthritis. The results ob-
+   Table II shows the size of the training, validation and test                    tained provide valuable insights into the need to quantify
+sets, as well as the inference time (in seconds) for each model.                   uncertainty in an end-to-end deep learning model, especially
+The performance results, which are not shown here due to                           when designed for high-stakes decision making.
+space limitations, show that for each experiment the four UQ                          The main focus is on CP, an emerging UQ method in
+methods perform similarly in terms of accuracy, precision, F1                      deep learning models. Compared to MCD and EDL, CP
+score and recall. The performance obtained is also in line with                    is characterised by both ease of implementation and short
+the current literature on deep learning-based methods using                        inference time. The implementation of EDL requires a mod-
+this dataset [4]. Although the focus here is on uncertainty                        ification of the learning loss function, but requires negligible
+quantification rather than performance, it is reassuring to see                    computational time for inference (see Table II). In the case
+that UQ does not degrade model performance.                                        of MCD, slight modifications to the model architecture are
+   To evaluate the CP models, we looked at their empirical                         required to incorporate the dropout layers, but UQ requires
+coverage property. For each image in the test set, we computed                     running multiple forward passes, resulting in high computa-
+the mean number of times that the true class is contained in                       tional cost. The dropout rate must also be carefully chosen to
+the prediction set. This is an empirical verification of equation                  avoid degrading model performance. CP methods can be easily
+(2). We obtained values close to 0.9 for APS (between 0.88                         incorporated into existing models without modifying the model
+and 0.89) and slightly higher than 0.9 for RAPS (between 0.91                      architecture and require little inference time. However, split CP
+and 0.93).                                                                         requires an additional calibration data set that is independent
+   Table III shows some results obtained with the four UQ                          and identical to the training data. This can limit the use of CP,
+methods on the three experiments. The table displays for each                      for example in the case of data scarcity.
+image the actual and predicted class (or prediction set for CP                        In contrast to EDL and MCD, CP techniques provide
+methods) together with the estimated probability (in brackets)                     statistical coverage guarantees and may be more intuitive for
+and the model uncertainty. Note that the four methods do not                       clinical decision making. They have the potential to increase
+estimate uncertainty in the same way. For CP methods, the                          clinician confidence trust in deep learning models by providing
+uncertainty is given by the size of the prediction set divided                     meaningful notions of uncertainty.
+
+
+
+                                                                              58
+         Authorized licensed use limited to: University of Pittsburgh. Downloaded on July 08,2026 at 06:00:16 UTC from IEEE Xplore. Restrictions apply.
+                                            2025 IEEE Statistical Signal Processing Workshop (SSP)
+
+
+        Test Image                    Method                Actual Class                     Predicted Class / Set (Proba.)                     Uncertainty
+                                       EDL                      KL2                                  KL2 (0.9679)                                 0.0481
+                                       MCD                      KL2                                  KL2 (0.9970)                                0.000003
+                                     CP (APS)                   KL2                            {KL2 (1.0), KL3 (0.00)}                            0.6667
+                                    CP (RAPS)                   KL2                                  {KL2 (1.0)}                                  0.3333
+                                       EDL                      KL2                                  KL0 (0.9546)                                 0.0681
+                                       MCD                      KL2                                  KL2 (0.9995)                                0.000019
+                                     CP (APS)                   KL2                          {KL2 (0.998), KL0 (0.007)}                           0.6667
+                                    CP (RAPS)                   KL2                                 {KL2 (0.9988)}                                0.3333
+                                       EDL                      KL2                                  KL2 (0.9307)                                 0.1040
+                                       MCD                      KL2                                  KL0 (0.5222)                                 0.0176
+                                     CP (APS)                   KL2                         {KL2 (0.9985), KL0 (0.0013)}                          0.6667
+                                    CP (RAPS)                   KL2                                 {KL2 (0.9985)}                                0.3333
+                                       EDL                      KL2                                  KL1 (0.9516)                                 0.0726
+                                       MCD                      KL2                                  KL0 (0.9224)                                 0.0015
+                                     CP (APS)                   KL2                         {KL2 (0.9992), KL1 (0.0004)}                          0.6667
+                                    CP (RAPS)                   KL2                                 {KL2 (0.9992)}                                0.3333
+                                       EDL                      KL0                                  KL0 (0.7237)                                 0.0951
+                                       MCD                      KL0                                  KL0 (0.5364)                                 0.0060
+                                     CP (APS)                   KL0                         {KL0 (0.9470), KL1 (0.0513)}                          0.4000
+                                    CP (RAPS)                   KL0                                 {KL0 (0.9470)}                                0.2000
+                                       EDL                      KL3                                  KL4 (0.8680)                                 0.1301
+                                       MCD                      KL3                                  KL4 (0.9684)                                 0.0013
+                                                                                  {KL3 (0.8835), KL4 (0.1069), KL2 (0.0065), KL0
+                                     CP (APS)                   KL3                                                                               0.8000
+                                                                                                    (0.0029)}
+                                    CP (RAPS)                   KL3                         {KL3 (0.8835), KL4 (0.1069)}                          0.4000
+
+Table III. Results of Experiment 1 (row 1), Experiment 2 (rows 2-4) and Experiment 3 (rows 5-6). For each predicted class,
+the estimated probability is given in brackets.
+
+
+                     ACKNOWLEDGEMENT                                               [5] M. D. Fall, “Quantifying Uncertainty in Knee
+  This work was supported by the French National Agency                                Osteoarthritis Diagnosis,” in Proceedings of the IEEE
+of Research (ANR) through the MIMOSA project (ANR-20-                                  20th International Symposium on Biomedical Imaging,
+CE45-0013), the BACKUP project (ANR-23-CE40-0018-01).                                  2024. [Online]. Available: https://hal.science/hal-
+and the AI.iO Project (ANR-20-THIA-0017).                                              04453938
+                                                                                   [6] Y. Gal and Z. Ghahramani, “Dropout as a Bayesian
+                      VI. REFERENCES                                                   approximation: Representing Model uncertainty in Deep
+ [1] V. P. Leifer, J. N. Katz, and E. Losina, “The burden of                           Learning,” in Proceedings of The 33rd International
+     OA-health services and economics,” Osteoarthritis and                             Conference on Machine Learning, vol. 48. PMLR, 2016,
+     cartilage, vol. 30, no. 1, pp. 10–16, 2022.                                       pp. 1050–1059.
+ [2] J. Kellgren and J. Lawrence, “Radiological assessment                         [7] A. Malinin and M. Gales, “Predictive uncertainty esti-
+     of osteo-arthrosis.” Annals of the Rheumatic Diseases,                            mation via prior networks,” in Proceedings of the 32nd
+     vol. 16, no. 4, pp. 494–502, 1957.                                                International Conference on Neural Information Process-
+ [3] A. Tiulpin, J. Thevenot, E. Rahtu, P. Lehenkari, and                              ing Systems, 2018, pp. 7047–7058.
+     S. Saarakkala, “Automatic knee osteoarthritis diagnosis                       [8] M. Sensoy, L. Kaplan, and M. Kandemir, “Evidential
+     from plain radiographs: a deep learning-based approach,”                          deep learning to quantify classification uncertainty,” in
+     Scientific reports, vol. 8, no. 1, p. 1727, 2018.                                 Proceedings of the 32nd International Conference on
+ [4] A. S. Mohammed, A. A. Hasanaath, G. Latif, and                                    Neural Information Processing Systems, 2018, pp. 3183–
+     A. Bashar, “Knee osteoarthritis detection and severity                            3193.
+     classification using residual neural networks on prepro-                      [9] V. Vovk, A. Gammerman, and G. Shafer, Algorithmic
+     cessed x-ray images,” Diagnostics, vol. 13, no. 8, p. 1380,                       learning in a random world. Springer, 2005, vol. 29.
+     2023.                                                                        [10] H. Papadopoulos, K. Proedrou, V. Vovk, and A. Gammer-
+
+
+
+                                                                             59
+        Authorized licensed use limited to: University of Pittsburgh. Downloaded on July 08,2026 at 06:00:16 UTC from IEEE Xplore. Restrictions apply.
+                                            2025 IEEE Statistical Signal Processing Workshop (SSP)
+
+
+
+     man, “Inductive confidence machines for regression,” in
+     Machine learning: 13th European conference on machine
+     learning. Springer, 2002, pp. 345–356.
+[11] A. N. Angelopoulos and S. Bates, “A gentle introduction
+     to conformal prediction and distribution-free uncertainty
+     quantification,” arXiv preprint arXiv:2107.07511, 2021.
+[12] V. Vovk, A. Gammerman, and C. Saunders, “Machine-
+     learning applications of algorithmic randomness,” in Pro-
+     ceedings of the Sixteenth International Conference on
+     Machine Learning, 1999, pp. 444–453.
+[13] Y. Romano, M. Sesia, and E. Candes, “Classification
+     with valid and adaptive coverage,” Advances in Neural
+     Information Processing Systems, vol. 33, pp. 3581–3591,
+     2020.
+[14] A. Angelopoulos, S. Bates, J. Malik, and M. I. Jordan,
+     “Uncertainty sets for image classifiers using conformal
+     prediction,” arXiv preprint arXiv:2009.14193, 2020.
+[15] P. Chen, L. Gao, X. Shi, K. Allen, and L. Yang, “Fully
+     automatic knee osteoarthritis severity grading using Deep
+     Neural networks with a novel ordinal loss,” Computerized
+     Medical Imaging and Graphics, vol. 75, pp. 84–92, 2019.
+[16] M. Tan and Q. Le, “Efficientnet: Rethinking model scal-
+     ing for convolutional neural networks,” in International
+     conference on machine learning.         PMLR, 2019, pp.
+     6105–6114.
+[17] G. Huang, Z. Liu, L. Van Der Maaten, and K. Q. Wein-
+     berger, “Densely connected convolutional networks,” in
+     Proceedings of the IEEE conference on computer vision
+     and pattern recognition, 2017, pp. 4700–4708.
+
+
+
+
+                                                                             60
+        Authorized licensed use limited to: University of Pittsburgh. Downloaded on July 08,2026 at 06:00:16 UTC from IEEE Xplore. Restrictions apply.
+

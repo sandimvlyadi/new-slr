@@ -1,0 +1,1073 @@
+                                                 An AI System for Continuous Knee
+                                             Osteoarthritis Severity Grading: An Anomaly
+                                             Detection Inspired Approach with Few Labels
+
+                                             Niamh Belton1,2           Aonghus Lawlor3,4      Kathleen M. Curran1,2,4
+                                         1
+                                          Science Foundation Ireland Centre for Research Training in Machine Learning
+                                          2
+                                            School of Medicine, 3 School of Computer Science, University College Dublin
+
+
+
+
+arXiv:2407.11500v2 [cs.LG] 29 May 2025
+                                         4
+                                           Insight Centre for Data Analytics, University College Dublin, Dublin, Ireland
+
+
+                                               Abstract. The diagnostic accuracy and subjectivity of existing Knee
+                                               Osteoarthritis (OA) ordinal grading systems has been a subject of on-
+                                               going debate and concern. Existing automated solutions are trained to
+                                               emulate these imperfect systems, whilst also being reliant on large an-
+                                               notated databases for fully-supervised training. This work proposes a
+                                               three stage approach for automated continuous grading of knee OA that
+                                               is built upon the principles of Anomaly Detection (AD); learning a ro-
+                                               bust representation of healthy knee X-rays and grading disease severity
+                                               based on its distance to the centre of normality. In the first stage, SS-
+                                               FewSOME is proposed, a self-supervised AD technique that learns the
+                                               ‘normal’ representation, requiring only examples of healthy subjects and
+                                               < 3% of the labels that existing methods require. In the second stage,
+                                               this model is used to pseudo label a subset of unlabelled data as ‘normal’
+                                               or ‘anomalous’, followed by denoising of pseudo labels with CLIP. The
+                                               final stage involves retraining on labelled and pseudo labelled data using
+                                               the proposed Dual Centre Representation Learning (DCRL) which learns
+                                               the centres of two representation spaces; normal and anomalous. Disease
+                                               severity is then graded based on the distance to the learned centres.
+                                               The proposed methodology outperforms existing techniques by margins
+                                               of up to 24% in terms of OA detection and the disease severity scores
+                                               correlate with the Kellgren-Lawrence grading system at the same level
+                                               as human expert performance. Code available at https://github.com/
+                                               niamhbelton/SS-FewSOME_Disease_Severity_Knee_Osteoarthritis.
+
+                                               Keywords: Few Shot Anomaly Detection · Knee Osteoarthritis · Self-
+                                               Supervision · Self-Supervised Learning · X-ray · Contrastive Learning
+                                               · Few Labels · CLIP · Deep Learning · Machine Learning · Artificial
+                                               Intelligence.
+
+
+                                         1   Introduction
+                                         Knee Osteoarthritis (OA) is a degenerative joint disease that affects over 250 mil-
+                                         lion of the world’s population [42]. Two of the most common grading systems for
+                                         OA diagnosis are the Kellgren-Lawrence (KL) system [23] and the Osteoarthritis
+                                         Research Society International (OARSI) atlas criteria [2, 3]. The KL system con-
+                                         sists of five ordinal classes from grade zero to four where grade zero is healthy,
+2
+
+grade four is severe OA and grades ≥ 2 are the cut-off for OA diagnosis [16].
+The OARSI atlas criteria diagnoses OA if the subject meets specific criteria
+relating to the degree of Joint Space Narrowing (JSN) and the severity of os-
+teophytes [17]. The subjectivity of these scales has been a matter of on-going
+concern [1] with studies reporting wide ranges of inter-observer reliability of 0.51
+to 0.89 [45] for the KL system. Low agreement between the two scales has also
+been observed, with [16] reporting that the cut-off for defining knee OA using
+the two systems should not be considered comparable. The variability of OA
+severity grading has been attributed to the difference in the level of clinician’s
+experience and/or the use of subjective language such as ‘possible’ osteophytic
+lipping and ‘doubtful’ joint space narrowing in the guidelines for grading [15].
+The challenges of the current OA grading systems suggests that ordinal classes
+may not be suitable for assessing OA severity and highlights the requirement for
+an automated system.
+    This work aims to overcome the weaknesses of current AI systems and models
+for OA grading. Firstly, the high performance of existing techniques (accuracies
+≥ 90%) [29, 37] is a cause for concern given the inter-rater reliability between
+human experts can be as low as 0.51 [45], suggesting that the methods have
+overfit to the dataset. Secondly, several of the approaches train the model as a
+multi-class classification problem which do not consider the ordinal nature of
+the data [43, 19, 20]. Thirdly, existing solutions are reliant on large datasets con-
+sisting of thousands of X-rays for training, along with ground truth OA severity
+labels from experts which is a tedious and costly process [5, 41, 46].
+    This work proposes a three stage approach to designing a continuous au-
+tomated disease severity system. The principle that underpins the proposed
+methodology is that healthy knee X-rays can be more easily identified but classi-
+fying the degree of OA severity is a subjective process. The first stage therefore,
+focuses solely on learning a robust representation of healthy X-rays through
+Self-Supervised Learning (SSL). The model FewSOME [7] is leveraged for this
+as it requires as few as 30 labels to achieve optimal performance and therefore,
+the challenge of acquiring a large dataset is eliminated. This work extends Few-
+SOME to use SSL, namely SS-FewSOME. The OA severity of an X-ray is then
+assessed based on its distance in Representation Space (RS) to the centre of
+the normal RS, borrowing the core concept of several Anomaly Detection (AD)
+techniques. The second stage involves using the trained technique to pseudo la-
+bel unlabelled data and denoising these labels with the CLIP model. The third
+stage is Dual Centre Representation Learning (DCRL), where the model con-
+trastively learns two representations, normal and anomalous. Disease severity is
+then graded based on the distance to the learned centres.
+The contributions of this work are;
+
+    – A newly proposed continuous OA grading system based on the principles
+      of AD that is not trained to overfit to a subjectively graded dataset, thus
+      removing any subjective bias.
+    – We advance the original FewSOME by including SSL, patch based con-
+      trastive learning, denoising of pseudo labels with CLIP and DCRL, increas-
+                                                                                 3
+
+   ing the AUC for OA detection from 58.3% (original FewSOME implementa-
+   tion) to 72.9%.
+ – The proposed three stage method outperforms the existing SOTA on the
+   task of OA detection by 24.3% (from 56.7% to 81.0%).
+ – This performance is achieved using a fraction of the data and less than
+   3% of the labels that existing methods require, eliminating the need for
+   extensive computational resources, large annotated datasets and access to
+   expert annotators. Thus, removing the barriers for clinical implementation
+   and improving health equity.
+
+
+2     Related Work
+
+2.1   Automated Knee OA Severity Classification
+
+Several fully-supervised Convolutional Neural Network (CNN) based approaches
+have been proposed to classify knee X-rays according to the KL system. Antony
+et al. [4] developed a technique to localise the knee joint area on the X-ray and
+then classify the OA severity using a CNN. The CNN simultaneously minimised
+a categorical cross-entropy loss and a regression mean squared error loss. Several
+works improved upon this performance by employing ensembles of CNNs [5] and
+implementing more advanced CNNs such as the ResNET [31], ConvNeXt [22],
+EfficientNetV2-S [39] and the HRNet coupled with an attention mechanism to
+filter out the counterproductive features [20]. Siamese networks [41] have also
+been employed by first localising the knee joint area and training an ensemble of
+classifiers for the lateral and medial components separately. Wahyuningrum et
+al. [43] manually preprocesses the data by cropping the X-rays to the knee joint
+area. They then use a CNN to extract features, followed by a Long Short-Term
+Memory model (LSTM) to grade the OA severity. Farooq et al. [19] makes use
+of both labelled and unlabelled data by first training a dual-channel adversar-
+ial autoencoder in an unsupervised manner for the task of reconstruction. They
+then incorporate two supervised classification networks for KL-grade and leg-side
+classification achieving an average F1 score of 0.76. Bose et al. [10] demonstrated
+the importance of precise feature selection for knee OA diagnosis. They use a
+CNN to extract features, followed by feature selection techniques such as Par-
+ticle Swarm Optimization (PSO) and Genetic Bee Colony (GBC) to identify
+the most relevant features. These methods were further improved by incorpo-
+rating complex data pre-processing such as image enhancement [29], resulting
+in an average accuracy of 91% and noise-reduction with Gaussian-filters, nor-
+malising with a pixel-centring method, and implementing a balanced contrast
+enhancement technique [37]. The majority of existing techniques optimised their
+performance using loss functions suitable for multi-class classification, where the
+distance between all grades are equidistant i.e. the distance between grade zero
+and grade four is equal to the distance between grade zero and grade one. Cul-
+venor et al. [15], instead, employed an ordinal loss function to take into account
+the ordinal nature of KL grading system.
+4
+
+    MediAI-OA [46] has advanced beyond simple KL grade classification by au-
+tomatically quantifying the degree of JSN in the medial and lateral tibiofemoral
+joint and detecting osteophytes in the medial distal femur, lateral distal femur,
+medial proximal tibia and lateral proximal tibia regions. They employ a four
+step approach. Firstly, they train a RetinaNet [33] on bounding box annotations
+to detect the knee joint and regions associated with osteophytes. Secondly, they
+segment the joint space region by training the HRNet [44] to detect the most me-
+dial and lateral corner points of the distal femur and proximal tibia. They then
+train an image classification network, NASNet [49] to determine the presence of
+ostephytes. MediAI-OA also trained a NASNet to classify the KL grade.
+    A prior work investigated the feasibility of a continuous OA system based
+on Siamese networks, reporting a positive correlation between the KL grading
+system and the model output [28]. However, despite this progress, the existing
+solutions are trained to mimic a flawed grading system and they are reliant on
+large annotated training sets with the MediAI-OA system training on 44,193
+labelled radiographs.
+
+2.2   Anomaly Detection
+AD is a field of study that aims to automatically identify data samples that differ
+substantially from normality. AD algorithms train on a dataset, Xtrain which
+consists of solely normal images. A network ϕ learns to extract the features
+of normality from the training set through various methods such as one-class,
+generative or Self-Supervised techniques. Given, a test instance xt , the trained
+network ϕ can identify if it belongs to the normal or anomalous class. One-
+class methods such as DeepSVDD [35] and PatchCore [34] use ϕ to learn a
+RS for normality. They can then identify anomalies based on their distance to
+normal RS, where large distances indicate that the case is an anomaly and small
+distances indicate that the case is normal. Generative models are another class of
+AD models [47], particularly popular in the medical field [12, 6, 48]. At training
+time, they learn to reconstruct the image. At test time, they can then identify
+anomalies by large reconstruction errors. However, SSL based methods such as
+Cutpaste [27] have been dominating the field of AD in recent years, with several
+works leveraging SSL for medical AD tasks [11, 12]. Although the majority of
+AD techniques train on unlabelled data, a recent technique Dual-distribution
+discrepancy with self-supervised refinement (DDAD) [12] trains on both labelled
+and unlabelled data. They train an ensemble of reconstruction networks with
+the objective of modelling the normative distribution and a second ensemble
+of networks to model the unknown distribution. They then calculate the intra-
+discrepancy and inter-discrepancy of the distributions to assign anomaly scores.
+Finally they train a separate network via self-supervised learning to further refine
+the anomaly scores. They demonstrated their AD performance on chest X-rays
+and brain MRI.
+    There has been recent interest in Few Shot AD for settings where there
+is limited data. Few Shot AD focuses on learning to detect anomalies having
+trained on zero shots or few shots of the normal class [21, 7]. FewSOME [7] is a
+                                                                                 5
+
+
+
+
+Fig. 1. Examples of X-rays from the training set for each KL grade. OAKL refers to
+whether OA was diagnosed based on the KL scale and OAOARSI refers to whether OA
+was diagnosed based on the OARSI criteria.
+
+
+
+recent few shot AD technique originally developed for poor quality data detection
+in medical imaging datasets [9] and has since proven its performance for AD in
+natural images, industrial defect detection and motion artefact detection in brain
+MRI [8]. FewSOME is in the category of one-class AD models as it contrastively
+learns the normal RS from solely nominal images and prevents representational
+collapse with the use of an ‘anchor’ and stop loss. Anomalies are identified based
+on their distance to the normal RS.
+
+
+
+3   Materials
+
+
+The baseline cohort from the Osteoarthritis Initiative (OAI) [14, 30] was used for
+this analysis as it is the most commonly used subset in the literature. The OAI
+is an observational, longitudinal study of 4,796 subjects across 431,000 clinical
+studies with the goal of better understanding of prevention and treatment of
+knee osteoarthritis [30]. The images are of size 224 × 224, with 5, 778 available
+for training, 826 available for validation and 1, 526 available for testing. It was
+ensured that both knees belonging to a single patient were within the same
+dataset split to prevent any data leakage. The dataset provides the KL grades
+and a grading for both the severity of JSN and osteophytes on a scale from
+zero to three. The grading for JSN and osteophytes are provided for medial and
+lateral tibiofemoral compartments separately. According to the OARSI scale,
+OA is diagnosed if any of the following criteria are met; either JSN grade ≥ 2,
+sum of osteophyte grades ≥ 2 or grade one JSN in combination with a grade one
+osteophyte [16, 17]. The dataset contained missing values for osteophyte gradings
+in some cases. As the missing values solely occurred when the KL grades were
+equal to zero or one and the JSN for both the medial and lateral compartments
+had a grade of zero, we labelled these cases as not having OA according to the
+OARSI scale. Examples of a knee X-ray for each grade are shown in figure 1.
+Table 1 shows the breakdown of the class balances for each split.
+6
+
+Table 1. The number of X-rays in each dataset split and the number of X-rays that
+were diagnosed with OA according to the KL system (OAKL ) and the OARSI system
+(OAOARSI ).
+
+Split      Grade 0     Grade 1    Grade 2    Grade 3    Grade 4    OAKL        OAOARSI
+Train      2286        1046       1516       757        173        2446        2436
+Validation 328         153        212        106        27         345         342
+Test       639         296        447        223        51         721         706
+
+
+
+
+Fig. 2. The figure shows iteration i of training where a data sample xi ∈ XN is paired
+with a randomly selected data sample xj ∈ XN . Following the SDA, both instances
+are input in tandem into the neural network ϕl . The output, denoted as ϕi,l and ϕj,l is
+converted to patch level features, P (ϕi,l ) and P (ϕj,l ). Following average pooling, the
+tensor is reshaped to create patch embedding maps, F (P (ϕi,l )) and F (P (ϕj,l )). The
+patch embedding map, F (P (ϕi,l )) consists of p patches at coordinates z, k, where each
+patch is denoted as pi,k,z The Cosine Distance (CD) is calculated between each patch,
+pi,z,k and pj,z,k at the same coordinates z, k. The loss is calculated as the Binary Cross
+Entropy between the CD between patches and each ground truth label, yi,x,k
+
+4     Methods
+4.1   Stage 1: Self-Supervised Learning with FewSOME
+      (SS-FewSOME)
+The purpose of Stage 1, Self-Supervised FewSOME (SS-FewSOME) is to learn a
+representation of healthy X-rays. There are K ensembles trained on a dataset XN
+                                                                                       7
+
+of size N , where XN is sampled from the training data, Xtrain which consists
+of solely nominal images of healthy X-rays. In iteration i of training, a data
+sample xi ∈ XN is paired with a randomly selected data sample xj ∈ XN . The
+original FewSOME implementation relies on ImageNet pretrained weights and
+an ‘anchor’ for learning compact representations of the normal class where the
+ground truth label, y is equal to zero for the duration of training. This work
+extends this method to use SSL where both data samples, xi and xj are input
+into a Stochastic Data Augmentation (SDA) module. The SDA module consists
+of two sets of transforms, Tnorm and Tanom . The set of transforms Tnorm are
+applied only to xi and they consist of weak, global augmentations that aim to
+generate additional X-rays whose representation are within the hyper-sphere of
+the normal RS. Tnorm consists of the identity function (i.e. no transformation),
+applying jitter to the image and adjusting the sharpness and brightness. The
+set of transforms Tanom are applied only to xj and they consist of the identity
+function and strong augmentations, random cropping followed by resizing and
+Cutpaste [27]. Section 8.2 presents the results of experiments conducted to choose
+the optimal performing transforms for Tanom .
+    Following the SDA, the first l layers of a neural network, ϕ, initialised with
+ImageNET [36] pre-trained weights are used to transform the input space, XN
+to the RS, ϕl (XN ) ∈ Rc×h×w , where c is the number of channels, h is the
+height and w is the width of the extracted feature maps. The later layers are
+removed as they are biased towards natural image classification. As the size of
+the training dataset is small, both ϕl (xi ) and ϕl (xj ), denoted as ϕi,l and ϕj,l , are
+converted to patch level features, P (ϕi,l ) and P (ϕj,l ) using a sliding window of
+size sw × sw with stride = 1 with resulting dimensions of p × c × sw × sw where
+p is the number of patches. The patch level features also improve the sensitivity
+of the model to localised anomalies such as osteophytes. Feature aggregation is
+performed by average pooling for each patch and the resultant tensor    √ √
+                                                                            is reshaped
+to create patch embedding maps, F (P (ϕi,l )) and F (P (ϕj,l )) ∈ R p× p×c . The
+patch embedding map, F (P (ϕi,l )) consists of p patches at coordinates z, k, where
+each patch is denoted as pi,z,k .
+    This method exploits that X-rays are spatially similar and therefore, the
+Cosine Distance, CD is calculated only between patches pi,z,k ∈ F (P (ϕi,l )) and
+pj,z,k ∈ F (P (ϕj,l )) that have the same coordinates, z, k. The ground truth label
+yi,z,k ∀(z, k) is equal to zero if the identity transform in the SDA was applied
+to xj and yi,z,k ∀(z, k) is equal to one if cropping and resizing was applied. In
+the case of applying the CutPaste transform, the entire image is not affected
+and therefore, yi,z,k is equal to one if the receptive field of pj,z,k was affected
+by the CutPasting and zero otherwise. The CD between each patch, pi,z,k and
+pj,z,k is calculated as shown in equation 1 and denoted as ŷi,z,k . The difference
+between ŷi,z,k and the ground truth label, yi,z,k are minimised using Binary
+Cross Entropy during training as shown in equation 2. Stage 1 is depicted in
+figure 2.
+
+                                               pi,z,k · pj,z,k
+                             ŷi,z,k = 1 −                                           (1)
+                                             ||pi,z,k ||||pj,z,k ||
+8
+
+
+                              √   √
+                    N X  p   p
+             1     X       X
+LBCE = −    √ √                yi,z,k · log(ŷi,z,k ) + (1 − yi,z,k ) · log(1 − ŷi,z,k )
+         N · p · p i=1 z=1
+                           k=1
+                                                                                     (2)
+
+4.2   Stage 2: Pseudo Labelling and Denoising with CLIP
+
+
+
+
+Fig. 3. SS-FewSOME from Stage 1 is used to transform xu ∈ Xu to the RS. The AS
+scoring function, SSSL is then used to pseudo label xu . The sample xu is also input into
+the CLIP image encoder and its similarity is calculated between the image encoding
+and the text encoding of the compositional statement. If SSSL (xu ) > (m × CDmax ),
+xu is added to the pseudo labels, Xd for Stage 3.
+
+
+    Given an unlabelled dataset of X-rays, Xu of size u where Xu ∩ XN = ∅, the
+patch embedding map, F (P (ϕu,l )) consisting of patches p, for each data sample
+x ∈ Xu is obtained. The centre, Cnorm of the normal RS is then calculated as
+in equation 3. An anomaly scoring function, SSSL assigns xu an Anomaly Score
+(AS) equal to the average CD to the centre Cnorm , as shown in equation 4.
+                                                    √   √
+                                          N    p  p
+                                   1     XX      X
+                       Cnorm =    √ √               pi,z,k                           (3)
+                               N · p · p i=1 z=1
+                                                        k=1
+                                        √   √
+                                      p  p
+                                1   X   X       pu,z,k · Cnorm
+                SSSL (xu ) = √ √           1−                                        (4)
+                              p · p z=1       ||pu,z,k ||||Cnorm ||
+                                            k=1
+                                                                                     9
+
+    Each ensemble K identifies a data instance as an anomaly if the AS is greater
+than m times the maximum CD between all possible pairs in the training data
+(denoted as CDmax ), where 1 ≤ m ≤ ∞. Data instances that have been voted
+as an anomaly across all ensembles are then assumed to be severe OA cases.
+The model can be retrained on these cases to improve the sensitivity to OA
+specific anomalies with the newly assigned pseudo label of y = 1. However, knee
+X-rays often contain anomalies unrelated to the OA grade, such as the presence
+of screws and metal in the X-ray due to knee replacement implants [18]. Using
+the pre-trained CLIP [32] model with ViT-B/32 Transformer architecture, the
+similarity between each image and a single compositional statement,‘there is a
+screw present in the image’, was obtained. This statement was chosen based
+on the analysis in section 8.1. The cosine similarity was calculated between
+the compositional statement and all X-rays in the validation data. To identify
+a threshold, tc for detecting screws in X-rays, the lowest similarity score of
+the subset in the validation set that contained a screw was found, resulting in
+tc = 23.05. In Stage 2, X-rays with CLIP similarity scores > tc were identified as
+‘false’ anomalies. These are removed from the pseudo labels, resulting in a dataset
+Xd of denoised pseudo labels. This stage is conducted only during training. No
+X-rays are removed from the dataset at test time.
+
+
+4.3   Stage 3: Dual Centre Representation Learning with FewSOME
+
+
+
+
+Fig. 4. Stage 3 uses DCRL to learn two representation spaces, one for normal instances,
+RSnorm and another for anomalies RSOA (or RSsev ). The figure also shows a hypo-
+thetical representation space demonstrating where the pseudo labels are obtained for
+DCRL-FSsev and DCRL-FSOA .
+
+
+    Given there are now anomalous pseudo labels available for training, this
+section proposes Dual Centre Representation Learning (DCRL) with FewSOME.
+The goal of DCRL is to simultaneously learn two separate RSs for normality
+and anomalies. DCRL has the same methodology as Stage 1 except the SDA is
+switched off and the value of y is determined by where xj is sampled from. For
+example, in iteration i of training, xi ∈ XN is paired with a randomly selected
+data sample xj where yi = 0 if xj ∈ XN and yi = 1 if xj ∈ Xd . The objective of
+10
+
+the training is to transform xi and xj to the RS, calculate the CD between the
+two instances and compare this to the ground truth label yi .
+    It was found that the model learns a more robust representation of healthy
+X-rays when training with pseudo labels of varying OA severity, while it is less
+robust when exposed to only pseudo labels of severe OA cases (cases with high
+AS scores output from the model). However, training the model on pseudo labels
+of more severe OA cases (cases with high AS) results in a highly accurate severe
+OA detector but a less accurate OA detector. This trade-off can be combatted
+by training two models, DCRL-FSsev and DCRL-FSOA .
+    DCRL-FSOA is the continuous disease severity grading system that learns
+a RS for healthy cases, RSnorm and another for all other varying severity OA
+cases, RSOA . DCRL-FSsev is used to learn a RS for healthy cases, RSnorm and
+another for severe OA cases, RSsev and behaves as a severe OA detector. The
+margin, m, described in section 4.2, controls the level of severity of the pseudo
+labels. Therefore m is set higher when training DCRL-FSsev and lower when
+training DCRL-FSOA . DCRL-FSOA can be trained iteratively, meaning it can
+be used to predict additional pseudo labels, which are denoised using the method
+of Stage 2 and then retrained on the newly assigned pseudo labels.
+    The models can then be combined to improve the OA and severe OA de-
+tection accuracy. This model is denoted as DCRL-FScomb . The CD to the cen-
+tre Cnorm of RSnorm (obtained from training DCRL-FSsev ) is denoted as d1
+and the CD to Csev of RSsev is denoted as d2 . The anomaly scoring function,
+SDCRLsev is then equal to the difference between the distances d1 and d2 as can
+be seen from equations 5 to 7. Similarly, SDCRLOA is calculated as in equation
+8, where d3 is the CD to the centre Cnorm of RSnorm (obtained from training
+DCRL-FSOA ) and d4 is the CD to the centre COA of RSOA . Given the range of
+possible output scores for d1, d2, d3 and d4 is [0, 2], the range of possible output
+values from SDCRLOA and SDCRLsev is [−2, 2]. These scores are normalised to
+be between zero and one by adding the minimum value of the range, two and
+adding the inter-range value of four. The DCRL-FSsev behaves as a severe OA
+detector, meaning if SDCRLsev is greater than a threshold, t, xu is assigned a
+score of 1 + SDCRLsev (xu ), as 0 ≤ SDCRLOA (xu ) ≤ 1. Otherwise it is equal to
+SDCRLOA (xu ), as shown in equation 9.
+
+                                  DCRL-FSsev (xu ) · Cnorm
+                     d1 = 1 −                                                   (5)
+                                ||DCRL-FSsev (xu )||||Cnorm ||
+
+                                   DCRL-FSsev (xu ) · Csev
+                      d2 = 1 −                                                  (6)
+                                 ||DCRL-FSsev (xu )||||Csev ||
+
+                                          (d1 − d2 ) + 2
+                            SDCRLsev =                                          (7)
+                                                4
+
+                                          (d3 − d4 ) + 2
+                            SDCRLOA =                                           (8)
+                                                4
+                                                                                                                                                                                       11
+
+       Stage 1: Self-Supervised Learning with SS-                   Stage 2: Pseudo Labelling and Denoising with CLIP                            Stage 3: Dual Centre Representation
+                        FewSOME                                                                                                                       Learning with FewSOME
+
+            𝑋𝑡𝑟𝑎𝑖𝑛                                       𝑋𝑢                                                                       𝑋𝑑
+    Labelled training data of                        Unlabelled                                                           Denoised pseudo
+       normal instances                             training data                                                       labelled training data
+
+
+                                  SS-FewSOME                               SS-FewSOME                𝑆𝑆𝑆𝐿                                          DCRL-FS            𝑆𝐷𝐶𝑅𝐿
+
+                                                                                                    CLIP
+                                                                            CLIP                  Similarity
+                                                                                                    Score
+
+
+
+
+                      Fig. 5. simplified overview of the proposed three stage approach.
+
+
+
+                  (
+                   1 + SDCRLsev (xu ), if SDCRLsev (xu ) > t
+SDCRLcomb (xu ) =                                                                                                                                                                 (9)
+                   SDCRLOA (xu ),      otherwise
+
+   The output of SDCRLOA is continuous with values in the range [0, 1] after
+normalisation. The AS of the combined model, DCRL-FScomb , designed to im-
+prove OA and severe OA detection has a discontinuity in its output values when
+combining SDCRLOA and SDCRLsev using the method in equation 9. When com-
+bining the models for DCRL − F Scomb , the scores between zero and one should
+be interpreted as representing severity levels from healthy to moderate, while
+scores > 1 should be interpreted as representing the level of severity within
+severe cases. Despite the discontinuity, the ranking of scores is preserved, mean-
+ing that scores can be interpreted relative to each other. Figure 5 presents an
+overview of the three stage approach.
+
+
+5        Implementation Details
+The implementation details are summarised in table 2.
+    Hyper-Parameters. The hyper-parameters and model backbones that had
+the best performance on the validation set were selected. The models were
+trained with K = 10, learning rate of 1e − 06, batch size of one, weight decay of
+0.1 and the Adam optimiser [25]. The first five layers of the AlexNET [26] was
+used as the model backbone for Stage 1, while the larger VGG-16 [40] was im-
+plemented for later stages where more training data was available. As previously
+mentioned, DCRL-FSOA can be trained iteratively, meaning it can be used to
+predict additional pseudo labels, which are denoised using the method of Stage 2
+and then retrained on the newly assigned pseudo labels. There was no increase in
+the performance of DCRL-FSOA after two iterations on the validation set. The
+value of t is set based on the distribution of output scores from DCRL-FSsev on
+the complete training set. Using the anomaly score in the 95% percentile resulted
+in the optimal performance on the validation set and therefore, this method for
+defining the threshold was implemented.
+    Margin, m. The code implementation of this method automatically selects
+the margin value of m based on the number of desired pseudo labels. The optimal
+12
+
+performing number of pseudo labels on the validation set was N = 30 for DCRL-
+FSOA and N = 3 for DCRL-FSsev , resulting in margin values of 1.184 and 3.122
+respectively. Keeping the margin static at 1.184 for the remainder of training
+resulted in 263 pseudo labelled anomalies in the second iteration of Stage 3
+DCRL-FSOA .
+    Training Data Size. Table 2 summarises the training data that was avail-
+able at each stage and the hyper-parameters. Based on the analysis shown in sec-
+tion 8.3, the labelled training set size, Xtrain was equal to 150 examples. K = 10
+ensembles were trained with N = 30 for each ensemble as per the original Few-
+SOME implementation. In the second/final iteration of Stage 3, DCRL-FSOA ,
+there was substantially more data available for training due to the 263 pseudo
+labelled anomalies. To avoid a large class imbalance, the number of training in-
+stances for each ensemble was increased from 30 to 150 (all available training
+data).
+    Early Stopping. For Stage 1, FewSOME’s early stopping method of halting
+training once the training loss began to plateau was employed. For all implemen-
+tations in Stage 3, the training was stopped when the CD between the normal
+centre, Cnorm and anomalous centres COA (when training DCRL-FSOA ) or Csev
+(when training DCRL-FSsev ) begins to plateau. Section 8.4 presents an analysis
+of the effects of this early stopping technique.
+
+
+Table 2. The number of training examples available at each stage and hyper-
+parameters. Stage 3 is abbreviated to S3.
+
+      Stage                   # Labelled # Pseudo Architecture K m
+                               Normal    Labelled
+                               Samples Anomalies
+      Stage 1                    150         0     AlexNetl=5 10 ×
+      S3, DCRL-FSsev             150         3      VGG-16     10 3.122
+      S3iter1 , DCRL-FSOA        150        30      VGG-16     10 1.184
+      S3iterfinal , DCRL-FSOA    150       263      VGG-16     10 1.184
+
+
+
+
+5.1   Competing Methods
+Stage 1 SS-FewSOME’s performance is compared to competing methods, DeepSVDD
+[35], SOTA AD technique PatchCore [34] and few shot AD technique FewSOME
+[7]. As the original implementation of DeepSVDD is compatible with small im-
+ages of 32×32, the images are downsampled to 128×128 and the architecture is
+upscaled by increasing the number of kernels. Competing methods were trained
+on 150 samples of normal X-rays as was SS-FewSOME.
+
+Stage 3 Final Iteration The final iteration of the model is compared to DDAD
+[12], a SOTA model in medical AD, as it trains on both labelled and unlabelled
+                                                                                 13
+
+data. DDAD is trained on 150 labelled healthy knee X-rays and 5,628 unlabelled
+X-rays. This is the most similar set-up to the stage 3 of the proposed method
+as it trains on 150 labelled healthy knee X-rays and there were 5,628 unlabelled
+X-rays available for pseudo labelling.
+
+
+6     Evaluation
+
+The methodology is assessed based on its ability to diagnose OA according to
+the KL scale (grades ≥ 2) and the OARSI scale. The Area Under the Receiver
+Operating Characteristic Curve (AUC) is used to evaluate both tasks. The AUC
+is calculated by comparing the output of SSSL with the ground truth label
+for Stage 1. It is calculated by comparing the output of SDCRLOA , SDRCRLsev
+and SDRCRLcomb with the ground truth label for Stage 3. The Spearman Rank
+Correlation Coefficient (SRC) between the model output and the KL grade is
+also reported. Finally, to ensure that the model can identify severe OA cases to
+a high degree of accuracy, the performance of the models on detecting cases with
+KL grades > 3 is also calculated.
+
+
+7     Results
+
+Table 3 reports the AUC in % for the task of OA detection according to the KL
+and OARSI grading systems, denoted as AU CKL and AU CO respectively. The
+SRC between the model output and the KL grade is also reported as SRCKL .
+The table also reports the performance of detecting cases with KL grades > 3
+as AU CKLg>3 . The results were averaged across five seeds and one standard
+deviation is reported.
+
+
+7.1   Stage 1
+
+Each method had 150 training instances available for training. The proposed
+SS-FewSOME significantly outperforms competing methods and a paired t-Test
+shows a statistically significant difference between the performance of the original
+FewSOME implementation and the proposed, increasing the AU CKL from 58.3%
+to 72.9%. The results also show that integrating the patches method into the
+model has resulted in a performance improvement, increasing SRCKL from 0.315
+to 0.432.
+
+
+7.2   Stage 3iter1
+
+The continuous disease severity grading system, DCRL-FSOA improves the SRC
+from 0.432 in Stage 1 to 0.539 in Stage 3iter1 . The trade-off between OA detec-
+tion and severe OA detection accuracy can be evidently seen from the results
+of DCRL-FSOA (stage 3iter1 ) and DCRL-FSsev , with the former outperform-
+ing DCRL-FSsev in terms of OA detection but underperforming in terms of
+14
+
+Table 3. AUC in % with one standard deviation over five seeds. The standard devi-
+ations of ensemble methods are the standard deviations of performance between each
+ensemble. SS-FewSOME abbreviated to SS-FS. The ∗ highlights the two models that
+were combined for DCRL-FSc omb in stage 3iter1
+
+
+ Method          Stage Patches AUCKL        AUCO AUCKLg >3 SRCKL
+DeepSVDD [35]       1      -   54.8 ± 1.0 55.8 ± 0.9 62.3 ± 2.2 0.097 ± 0.0
+Patchcore [34]      1      -   64.6 ± 0.6 65.7 ± 0.5 89.1 ± 0.6 0.270 ± 0.0
+FewSOME [7]         1      D   58.3 ± 0.2 54.8 ± 3.4 67.8 ± 0.7 0.144 ± 0.5
+SS-FS               1      ×   66.8 ± 0.7 66.8 ± 0.9 85.4 ± 0.4 0.315 ± 0.0
+SS-FS               1      D  72.9 ± 1.0 73.7 ± 1.1 89.4 ± 1.9 0.432 ± 0.0
+DCRL-FS∗OA       3iter1    ×   78.6 ± 1.4 79.5 ± 1.2 95.2 ± 1.5 0.539 ± 0.0
+DCRL-FS∗sev         3      ×   76.9 ± 1.1 77.3 ± 1.1 97.6 ± 0.4 0.491 ± 0.0
+DCRL-FS∗∗comb    3 iter1   ×  78.6  ± 1.4 79.5 ± 1.2 97.2 ± 0.4 0.541 ± 0.0
+DCRL-FSOA      3iterf inal ×   81.0 ± 0.2 81.6 ± 0.1 95.7 ± 0.4 0.580 ± 0.0
+DCRL-FScomb 3iterf inal    ×  81.0 ± 1.4 81.6 ± 1.2 97.6 ± 0.4 0.583 ± 0.0
+DDAD [12]            -     -   56.7 ± 0.6 57.2 ± 0.6 69.7 ± 0.9 0.130 ± 0.0
+
+
+
+
+severe OA detection. However, the combined model DCRL-FScomb (stage 3iter1 )
+combines both aspects of the models to accurately detect OA, severe OA and
+correlate with the KL grades with an SRC of 0.541. Figure 6 shows the distance
+of each data instance in the test set from Cnorm at stage 1 and stage 3iter1 .
+Separation between classes can be evidently seen at stage 1 and furthermore
+at stage 3iter1 . Figure 7 presents the most anomalous examples as output by
+DCRL-FScomb (stage 3iter1 ). The common symptoms of OA are apparent such
+as JSN and the presence of osteophytes.
+
+
+
+
+Fig. 6. Boxplot of distances of each instance from the test set to Cnorm in RS at (A)
+stage 1, SS-FewSOME (SS-FS) and (B) stage 3i ter1
+                                                                                                                  15
+
+
+
+
+    Anomaly Score: 0.80   Anomaly Score: 0.80   Anomaly Score: 0.80   Anomaly Score: 0.80   Anomaly Score: 0.80
+        KL Grade: 4           KL Grade: 3           KL Grade: 4           KL Grade: 4           KL Grade: 3
+      OA (OARSI): Yes       OA (OARSI): Yes       OA (OARSI): Yes       OA (OARSI): Yes       OA (OARSI): Yes
+
+
+
+
+Fig. 7. Examples that were assigned the highest anomaly scores by DCRL-FSOA (stage
+3iter1 ). These examples are severe OA cases and display OA characteristics such as JSN
+and osteophytes.
+
+
+7.3       Stage 3iterf inal
+
+The final iteration achieved an SRC of 0.583, a promising result given the
+inter-observer reliability of human experts was reported to be as low as 0.51 in
+some cases [45]. The proposed methodology outperforms the competing method
+DDAD [12] by margins of up to 24%, which was trained on 150 labelled healthy
+knee X-rays and 5,628 unlabelled X-rays. A paired t-Test showed this to be a
+statistically significant difference in performance. Additionally, a Two-Sample
+t-Test showed that the difference between the mean model output for each KL
+grade was statistically significant at the 5% significance level.
+
+8      Further Analysis
+8.1       CLIP Analysis
+
+Compositional Statement Ablation This analysis presents the metal detec-
+tion performance of CLIP on the validation data for variations of compositional
+statements. The similarity score between each statement and the image in the
+validation set was calculated. The AUC was calculated between the output sim-
+ilarity scores and a label that indicates whether there was metal present in the
+image or not. The statement "there is a screw present in the image" resulted in
+the optimal performance with 99.3%.
+
+
+Table 4. Comparison of the performance of CLIP on metal detection for variations of
+compositional statements.
+
+           Compositional Statement                                        AUC (%)
+          "there is a screw present in the image"                           99.3
+          "screw"                                                           98.5
+          "there is a metal present in the image"                           90.3
+          "metal"                                                           94.0
+          "there is another object in the image that is not a knee X-ray"    2.0
+16
+
+
+
+
+                Anomaly Score: 0.98   Anomaly Score: 0.98   Anomaly Score: 0.87
+                   KL Grade: 0           KL Grade: 0           KL Grade: 0
+                  OARSI Grade: 0        OARSI Grade: 0        OARSI Grade: 0
+
+
+
+Fig. 8. Samples from Xu that were assigned high anomaly scores from SS-FewSOME.
+These examples were then denoised using the CLIP model and they were removed from
+the pseudo labels for Stage 3, DCRL training.
+
+
+CLIP Ablation To demonstrate the effectiveness of denoising the pseudo labels
+with CLIP, DCRL-FSOA at stage 3iter1 was also trained without denoising. This
+resulted in a performance degradation as can be seen from table 5. Figure 8
+presents examples of false anomalies that were denoised by CLIP.
+
+
+         Table 5. AUC in % with one standard deviation over five seeds.
+
+
+Method              Stage AUCKL         AUCO AUCKLg >3 SRCKL
+DCRL-FSOA           3iter1 78.6 ± 1.4 79.5 ± 1.2 95.2 ± 1.5 0.539 ± 0.0
+DCRL-FSOA (No CLIP) 3iter1 75.6 ± 2.0 76.3 ± 1.9 93.6 ± 1.1 0.485 ± 0.0
+
+
+
+
+8.2 Analysis of Transforms for Tanom
+The following transforms were assessed for inclusion in Tanom ; posterising which
+limits the number of tones and colours in the image, random rotate, random crop
+and CutPaste [27] which takes a segment of the image and pastes it elsewhere
+on the image. Table 6 presents the results of each transform on the validation
+set. CutPaste outperforms the other transforms by a substantial margin. As a
+combination of cropping and CutPaste resulted in the optimal performance, they
+were selected for the final model. Examples of the transforms are shown in figure
+9.
+
+
+8.3   Training Set Size Analysis
+
+Figure 10 shows the model performance for each metric for varying sizes of
+Xtrain . As SS-FewSOME in stage 1 trains on N = 30, each training set size
+represents an ensemble of models training on N = 30. For example, a training
+set size of 60 is two ensembles training on N = 30. It can be seen from the
+                                                                                                 17
+
+Table 6. The table shows the performance of each transform from Tanom on the
+validation set.
+
+              Method            AUCKL      AUCO AUCKLg ≥3 SRCKL
+             Posterise2bits    59.8 ± 1.5 60.2 ± 1.7 67.6 ± 2.1 0.174 ± 0.0
+             Rotate>90◦ ,<270◦ 58.4 ± 0.8 58.0 ± 0.7 77.2 ± 3.4 0.140 ± 0.0
+             Crop              59.6 ± 1.0 59.6 ± 1.0 76.7 ± 1.5 0.177 ± 0.0
+             CutPaste          72.1 ± 1.1 72.4 ± 1.3 87.1 ± 2.4 0.388 ± 0.0
+             Crop + CutPaste 73.3 ± 0.7 72.9 ± 0.7 92.9 ± 1.0 0.400 ± 0.0
+
+
+
+
+    (a) Original      (b) Posterise2 bits   (c) CutPaste   (d) Random Rotate   (e) Random Crop
+
+
+Fig. 9. Examples of transforms that were assessed for inclusion in Tanom for Stage 1
+SSL.
+
+
+
+figure that there a plateau in performance begins between 90 to 150 training
+instances. Therefore, the experiments were conducted training on 150 labelled
+instances. The figure also demonstrates how SS-FewSOME can achieve optimal
+performance on small training set sizes of as low as 90 examples.
+
+
+
+
+Fig. 10. The average result for each metric, on the test set for stage 1 for varying
+training set sizes, Xtrain .
+18
+
+8.4   Analysis of Early Stopping
+
+In stage 3, training is halted when the CD between the centres, Cnorm and
+COA begins to plateau. Figure 11 (A) shows the average value for each metric
+(AU CKL , AU COARSI , AU Cgrade>3 and SRCKL ) over ten seeds for each epoch
+on the test set for DCRL-FSOA at stage 3iter1 . The black vertical line shows
+where early stopping occurred on average. It can be seen from the figure that
+there is no further performance increase after early stopping and overfitting has
+not occurred by the time of early stopping. Figure 11 (B) shows the CD between
+centres Cnorm and COA at each epoch.
+
+
+
+
+                       (A)                                     (B)
+
+
+
+Fig. 11. (A) shows the average value for each metric (AU CKL , AU COARSI ,
+AU Cgrade>3 and SRCKL ) over ten seeds for each epoch on the test set for Stage
+3i ter1. The black vertical line shows where the average early stopping occurred over
+the ten seeds. Early stopping is based on the plateau of the centre similarities as seen
+in (B).
+
+
+
+
+9     Discussion and Conclusion
+
+This work has presented a three stage approach to developing a continuous
+disease severity grading system. The output anomaly scores of the proposed ap-
+proach have a moderate to strong correlation with OA disease severity, achieving
+an SRC value of 0.58. Additionally, the proposed model can detect OA with an
+AUC of 0.81 according to both the KL and OARSI scales. The severe OA de-
+tection performance of the continuous grading system, DCRL-FSOA can be im-
+proved from 95.7% to 97.6% by combining it with the severe OA detector DCRL-
+FSsev , to form DCRL-FScomb . Although this causes a discontinuity in scores, the
+ranking of severity is preserved. The analysis showed that the proposed method
+outperforms existing methods by significant margins and can achieve human
+level performance whilst training on few labels.
+                                                                                    19
+
+    The advantages of this approach over existing approaches fully supervised
+approaches are three fold. Firstly, the proposed method eliminates the require-
+ment for substantial amounts of labelled data, reducing the barriers to clinical
+implementation. Secondly, this method is not trained to mimic a subjective grad-
+ing system. Thirdly, diagnosing on a continuous grading system holds promise
+for substantial clinical impact by enabling the assessment of disease severity at
+any stage along a continuum, rather than predefined discrete categories. This
+method is particularly useful for capturing subtle variations and changes over
+time, providing a more detailed and dynamic understanding of the condition’s
+progression, ultimately resulting in improved patient care.
+    A limitation of this work is that its evaluation relies on comparisons with
+the KL grading system and the OARSI system, both of which are subjectively
+graded. The gold standard for evaluating the proposed system is assessment by
+clinicians. One potential method of evaluation would involve relative compar-
+isons, where clinicians are presented with two knee X-rays and asked to deter-
+mine which case has more severe OA. Their rankings could then be compared to
+the rankings generated by the proposed system. Additionally, clinicians could be
+asked to express their preference between the discrete KL grading system and
+the proposed continuous grading system for example cases. This would provide a
+high quality evaluation of the proposed system. An additional limitation is that
+the method requires the fine tuning of various hyper-parameters such as m to
+labelled validation data.
+    Future work could explore additional datasets such as MOST [13] to further
+assess the generalisability of the approach. Additionally, the translation of such a
+system into clinical practice would require further work on explainability. Tech-
+niques such as Grad-CAM [38] could be employed to visualize the most salient
+regions of an image, providing insight into the system’s decision-making process.
+Additionally, a more comprehensive analysis would be needed to interpret what
+the values on the proposed scale represent in terms of OA features, such as the
+degree of JSN and the severity of osteophytes. Techniques such as Testing with
+Concept Activation Vectors (TCAV) [24] could be employed to quantify the im-
+portance of various visual biomarkers of OA in knee X-rays, thus improving the
+interpretability of the system.
+
+Acknowledgements
+This work was funded by Science Foundation Ireland through the SFI Centre for
+Research Training in Machine Learning (Grant No. 18/CRT/6183). This work
+is supported by the Insight Centre for Data Analytics under Grant Number
+SFI/12/RC/2289 P2.
+
+References
+ 1. Abedin, J., Antony, J., McGuinness, K., Moran, K., O’Connor, N.E., Rebholz-
+    Schuhmann, D., Newell, J.: Predicting knee osteoarthritis severity: comparative
+    modeling based on patient’s data and plain x-ray images. vol. 9, pp. 392–408 (2019)
+20
+
+ 2. Altman, R.D., Gold, G.: Atlas of individual radiographic features in osteoarthritis,
+    revised. Osteoarthritis and cartilage 15, A1–A56 (2007)
+ 3. Altman, R.D., Hochberg, M., Murphy Jr, W., Wolfe, F., Lequesne, M.: Atlas of
+    individual radiographic features in osteoarthritis. Osteoarthritis and cartilage 3,
+    3–70 (1995)
+ 4. Antony, J., McGuinness, K., Moran, K., O’Connor, N.E.: Automatic detection of
+    knee joints and quantification of knee osteoarthritis severity using convolutional
+    neural networks. In: Machine Learning and Data Mining in Pattern Recognition:
+    13th International Conference, MLDM 2017, New York, NY, USA, July 15-20,
+    2017, Proceedings 13. pp. 376–390. Springer (2017)
+ 5. Bany Muhammad, M., Yeasin, M.: Interpretable and parameter optimized ensem-
+    ble model for knee osteoarthritis assessment using radiographs. Scientific Reports
+    11(1), 14348 (2021)
+ 6. Baur, C., Graf, R., Wiestler, B., Albarqouni, S., Navab, N.: Steganomaly: Inhibit-
+    ing cyclegan steganography for unsupervised anomaly detection in brain mri. In:
+    International Conference on Medical Image Computing and Computer-Assisted
+    Intervention. pp. 718–727. Springer (2020)
+ 7. Belton, N., Hagos, M.T., Lawlor, A., Curran, K.M.: Fewsome: One-class few shot
+    anomaly detection with siamese networks. In: Proceedings of the IEEE/CVF Con-
+    ference on Computer Vision and Pattern Recognition Workshops. pp. 2977–2986
+    (2023)
+ 8. Belton, N., Hagos, M.T., Lawlor, A., Curran, K.M.: Towards a unified approach for
+    unsupervised brain mri motion artefact detection with few shot anomaly detection.
+    Computerized Medical Imaging and Graphics 115, 102391 (2024)
+ 9. Belton, N., Lawlor, A., Curran, K.M.: Semi-supervised siamese network for iden-
+    tifying bad data in medical imaging datasets [short paper presentation]. Medical
+    Imaging with Deep Learning (MIDL) (2021), https://openreview.net/pdf?id=
+    0bpkIn63sNG
+10. Bose, A.S.C., Srinivasan, C., Joy, S.I.: Optimized feature selection for enhanced
+    accuracy in knee osteoarthritis detection and severity classification with machine
+    learning. Biomedical Signal Processing and Control 97, 106670 (2024)
+11. Bozorgtabar, B., Mahapatra, D., Vray, G., Thiran, J.P.: Salad: Self-supervised ag-
+    gregation learning for anomaly detection on x-rays. In: Medical Image Computing
+    and Computer Assisted Intervention–MICCAI 2020: 23rd International Confer-
+    ence, Lima, Peru, October 4–8, 2020, Proceedings, Part I 23. pp. 468–478. Springer
+    (2020)
+12. Cai, Y., Chen, H., Yang, X., Zhou, Y., Cheng, K.T.: Dual-distribution discrepancy
+    with self-supervised refinement for anomaly detection in medical images. Medical
+    Image Analysis 86, 102794 (2023)
+13. of California San Francisco, U.: Multicenter osteoarthritis study (most). https:
+    //agingresearchbiobank.nia.nih.gov/studies/most/ (2003)
+14. Chen, P.: Knee osteoarthritis severity grading dataset. Mendeley Data 1 (2018)
+15. Chen, P., Gao, L., Shi, X., Allen, K., Yang, L.: Fully automatic knee osteoarthritis
+    severity grading using deep neural networks with a novel ordinal loss. Computerized
+    Medical Imaging and Graphics 75, 84–92 (2019)
+16. Culvenor, A.G., Engen, C.N., Øiestad, B.E., Engebretsen, L., Risberg, M.A.: Defin-
+    ing the presence of radiographic knee osteoarthritis: a comparison between the
+    kellgren and lawrence system and oarsi atlas criteria. Knee Surgery, Sports Trau-
+    matology, Arthroscopy 23, 3532–3539 (2015)
+                                                                                     21
+
+17. Culvenor, A.G., Lai, C.C., Gabbe, B.J., Makdissi, M., Collins, N.J., Vicenzino,
+    B., Morris, H.G., Crossley, K.M.: Patellofemoral osteoarthritis is prevalent and
+    associated with worse symptoms and function after hamstring tendon autograft
+    acl reconstruction. British journal of sports medicine (2013)
+18. Cyteval, C.: Imaging of knee implants and related complications. Diagnostic and
+    interventional imaging 97(7-8), 809–821 (2016)
+19. Farooq, M.U., Ullah, Z., Khan, A., Gwak, J.: Dc-aae: Dual channel adversarial
+    autoencoder with multitask learning for kl-grade classification in knee radiographs.
+    Computers in Biology and Medicine p. 107570 (2023)
+20. Jain, R.K., Sharma, P.K., Gaj, S., Sur, A., Ghosh, P.: Knee osteoarthritis severity
+    prediction using an attentive multi-scale deep convolutional neural network. arXiv
+    preprint arXiv:2106.14292 (2021)
+21. Jeong, J., Zou, Y., Kim, T., Zhang, D., Ravichandran, A., Dabeer, O.: Winclip:
+    Zero-/few-shot anomaly classification and segmentation. In: Proceedings of the
+    IEEE/CVF Conference on Computer Vision and Pattern Recognition. pp. 19606–
+    19616 (2023)
+22. Kaur, P., Kohli, G.S., Bedi, J., Wasly, S.: A novel deep learning approach for auto-
+    mated grading of knee osteoarthritis severity. Multimedia Tools and Applications
+    pp. 1–20 (2024)
+23. Kellgren, J.H., Lawrence, J.: Radiological assessment of osteo-arthrosis. Annals of
+    the rheumatic diseases 16(4), 494 (1957)
+24. Kim, B., Wattenberg, M., Gilmer, J., Cai, C., Wexler, J., Viegas, F., et al.: Inter-
+    pretability beyond feature attribution: Quantitative testing with concept activation
+    vectors (tcav). In: International conference on machine learning. pp. 2668–2677.
+    PMLR (2018)
+25. Kingma, D.P., Ba, J.: Adam: A method for stochastic optimization. arXiv preprint
+    arXiv:1412.6980 (2014)
+26. Krizhevsky, A., Sutskever, I., Hinton, G.E.: Imagenet classification with deep con-
+    volutional neural networks. Advances in neural information processing systems 25
+    (2012)
+27. Li, C.L., Sohn, K., Yoon, J., Pfister, T.: Cutpaste: Self-supervised learning for
+    anomaly detection and localization. In: Proceedings of the IEEE/CVF Conference
+    on Computer Vision and Pattern Recognition. pp. 9664–9674 (2021)
+28. Li, M.D., Chang, K., Bearce, B., Chang, C.Y., Huang, A.J., Campbell, J.P., Brown,
+    J.M., Singh, P., Hoebel, K.V., Erdoğmuş, D., et al.: Siamese neural networks for
+    continuous disease severity evaluation and change detection in medical imaging.
+    NPJ digital medicine 3(1), 48 (2020)
+29. M, G.K., Goswami, A.D.: Automatic classification of the severity of knee
+    osteoarthritis using enhanced image sharpening and cnn. Applied Sciences
+    13(3) (2023). https://doi.org/10.3390/app13031658, https://www.mdpi.com/
+    2076-3417/13/3/1658
+30. Nevitt, M., Felson, D., Lester, G.: The osteoarthritis initiative. Protocol for the
+    cohort study 1 (2006)
+31. Olsson, S., Akbarian, E., Lind, A., Razavian, A.S., Gordon, M.: Automating clas-
+    sification of osteoarthritis according to kellgren-lawrence in the knee using deep
+    learning in an unfiltered adult population. BMC musculoskeletal disorders 22(1),
+    1–8 (2021)
+32. Radford, A., Kim, J.W., Hallacy, C., Ramesh, A., Goh, G., Agarwal, S., Sastry, G.,
+    Askell, A., Mishkin, P., Clark, J., et al.: Learning transferable visual models from
+    natural language supervision. In: International conference on machine learning. pp.
+    8748–8763. PMLR (2021)
+22
+
+33. Ross, T.Y., Dollár, G.: Focal loss for dense object detection. In: proceedings of
+    the IEEE conference on computer vision and pattern recognition. pp. 2980–2988
+    (2017)
+34. Roth, K., Pemula, L., Zepeda, J., Schölkopf, B., Brox, T., Gehler, P.: Towards
+    total recall in industrial anomaly detection. In: Proceedings of the IEEE/CVF
+    Conference on Computer Vision and Pattern Recognition. pp. 14318–14328 (2022)
+35. Ruff, L., Vandermeulen, R., Goernitz, N., Deecke, L., Siddiqui, S.A., Binder, A.,
+    Müller, E., Kloft, M.: Deep one-class classification. In: ICML. pp. 4393–4402.
+    PMLR (2018)
+36. Russakovsky, O., Deng, J., Su, H., Krause, J., Satheesh, S., Ma, S., Huang, Z.,
+    Karpathy, A., Khosla, A., Bernstein, M., et al.: Imagenet large scale visual recog-
+    nition challenge. International journal of computer vision 115, 211–252 (2015)
+37. Saini, D., Khosla, A., Chand, T., Chouhan, D.K., Prakash, M.: Automated knee
+    osteoarthritis severity classification using three-stage preprocessing method and
+    vgg16 architecture. International Journal of Imaging Systems and Technology
+    (2023)
+38. Selvaraju, R.R., Cogswell, M., Das, A., Vedantam, R., Parikh, D., Batra, D.: Grad-
+    cam: Visual explanations from deep networks via gradient-based localization. In:
+    Proceedings of the IEEE international conference on computer vision. pp. 618–626
+    (2017)
+39. Shah, P., Keshari, D., Sankar, K., Sugumar, R., Venkatachalam, C., Venkatacha-
+    lam, S.: Advancements in automated classification of knee osteoarthritis severity
+    using efficientnetv2-s. In: 2024 5th International Conference on Smart Electronics
+    and Communication (ICOSEC). pp. 1463–1468. IEEE (2024)
+40. Simonyan, K., Zisserman, A.: Very deep convolutional networks for large-scale
+    image recognition. arXiv preprint arXiv:1409.1556 (2014)
+41. Tiulpin, A., Thevenot, J., Rahtu, E., Lehenkari, P., Saarakkala, S.: Automatic knee
+    osteoarthritis diagnosis from plain radiographs: a deep learning-based approach.
+    Scientific reports 8(1), 1727 (2018)
+42. Vos, T., Flaxman, A.D., Naghavi, M., Lozano, R., Michaud, C., Ezzati, M.,
+    Shibuya, K., Salomon, J.A., Abdalla, S., Aboyans, V., et al.: Years lived with
+    disability (ylds) for 1160 sequelae of 289 diseases and injuries 1990–2010: a sys-
+    tematic analysis for the global burden of disease study 2010. The lancet 380(9859),
+    2163–2196 (2012)
+43. Wahyuningrum, R.T., Anifah, L., Purnama, I.K.E., Purnomo, M.H.: A new ap-
+    proach to classify knee osteoarthritis severity from radiographic images based on
+    cnn-lstm method. In: 2019 IEEE 10th International Conference on Awareness Sci-
+    ence and Technology (iCAST). pp. 1–6. IEEE (2019)
+44. Wang, J., Sun, K., Cheng, T., Jiang, B., Deng, C., Zhao, Y., Liu, D., Mu, Y., Tan,
+    M., Wang, X., et al.: Deep high-resolution representation learning for visual recog-
+    nition. IEEE transactions on pattern analysis and machine intelligence 43(10),
+    3349–3364 (2020)
+45. Wright, R.W., Ross, J.R., Haas, A.K., Huston, L.J., Garofoli, E.A., Harris, D.,
+    Patel, K., Pearson, D., Schutzman, J., Tarabichi, M., et al.: Osteoarthritis classifi-
+    cation scales: interobserver reliability and arthroscopic correlation. The Journal of
+    bone and joint surgery. American volume 96(14), 1145 (2014)
+46. Yoon, J.S., Yon, C.J., Lee, D., Lee, J.J., Kang, C.H., Kang, S.B., Lee, N.K., Chang,
+    C.B.: Assessment of a novel deep learning-based software developed for automatic
+    feature extraction and grading of radiographic knee osteoarthritis. BMC muscu-
+    loskeletal disorders 24(1), 869 (2023)
+                                                                                         23
+
+47. Zavrtanik, V., Kristan, M., Skočaj, D.: Reconstruction by inpainting for visual
+    anomaly detection. Pattern Recognition 112, 107706 (2021)
+48. Zhou, K., Li, J., Luo, W., Li, Z., Yang, J., Fu, H., Cheng, J., Liu, J., Gao, S.: Proxy-
+    bridged image reconstruction network for anomaly detection in medical images.
+    IEEE Transactions on Medical Imaging 41(3), 582–594 (2021)
+49. Zoph, B., Vasudevan, V., Shlens, J., Le, Q.V.: Learning transferable architectures
+    for scalable image recognition. In: Proceedings of the IEEE conference on computer
+    vision and pattern recognition. pp. 8697–8710 (2018)
+
+
+Appendix
+Selection of m
+
+This section presents the results on the validation set obtained from training on
+varying quantities of pseudo labelled training instances (d) at Stage 3 DCRL-
+FSOA . Table 7 shows in the AUC in % on the task of OA detection according to
+the KL grading system for values of d ranging from 10 to 40. It can be observed
+from the table that the performance begins to plateau at d = 30. As d = 30
+results in a class balance with the number of labelled training cases of healthy
+examples, N = 30, d was set to 30, resulting in margin m value of 1.184. Table
+8 shows the AUC in % for the task of severe OA detection at Stage 3 DCRL-
+FSsev . It can be observed that d = 3 is the best performing implementation on
+the validation set, resulting in a value of m of 3.122.
+
+
+Table 7. AUC in % on the task of OA detection according to the KL grading system
+at Stage 3 DCRL-FSOA .
+
+                             d                    DCRL-FSOA
+                             10                      77.8
+                             15                      77.7
+                             20                      77.7
+                             25                      77.8
+                             30                     78.0
+                             35                     78.0
+                             40                     78.0
+24
+
+
+
+
+Table 8. AUC in % on the task of severe OA detection according to the KL grading
+system at Stage 3 DCRL-FSsev .
+
+                         d                  DCRL-FSsev
+                         1                     90.5
+                         2                     96.6
+                         3                    97.4
+                         4                     97.1
+                         5                     97.3
+

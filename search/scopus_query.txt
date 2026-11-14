@@ -1,0 +1,10 @@
+TITLE-ABS-KEY ( ( "knee osteoarthritis" OR "hand osteoarthritis" OR kellgren OR "KL grade*" OR "rheumatoid arthritis" OR "Sharp score" OR "van der Heijde" OR "bone erosion*" OR "joint space narrowing" OR oarsi OR mtss OR "total sharp score" )
+AND ( radiograph* OR "x-ray*" OR xray* OR "plain film*" )
+AND ( "deep learning" OR "neural network*" OR convolutional OR cnn OR transformer* OR "machine learning" )
+AND ( "self-supervised" OR "self supervised" OR contrastive OR "masked autoencoder*" OR "masked image model*" OR simclr OR moco OR byol OR dino OR dinov2 OR pretext OR "foundation model*" OR "pre-train*" OR pretrain* OR "transfer learning"
+   OR imbalance* OR "long-tail*" OR "long tail*" OR "focal loss" OR oversampl* OR undersampl* OR "over-sampl*" OR "under-sampl*" OR "class weight*" OR "weighted loss" OR "cost-sensitive" OR smote OR "ordinal regression" OR "ordinal loss" OR "ordinal classification" OR mixup OR "data augmentation"
+   OR calibrat* OR uncertaint* OR conformal OR "Monte Carlo dropout" OR "deep ensemble*" OR evidential OR bayesian OR "selective prediction" OR "out-of-distribution" OR abstention OR "reject option" OR "confidence estimat*"
+   OR "label noise" OR "noisy label*" OR "label correction" OR "label smoothing" OR "teacher-student" OR "teacher student" OR "mean teacher" OR "knowledge distillation" OR "pseudo-label*" OR "pseudo label*" OR "semi-supervised" OR "semi supervised" OR "co-teaching" OR "inter-rater" OR interobserver OR "inter-observer" OR "label uncertainty" OR "soft label*" OR "weak supervision" OR "weakly supervised" ) )
+AND PUBYEAR > 2020 AND PUBYEAR < 2027
+AND ( LIMIT-TO ( LANGUAGE , "English" ) )
+AND ( LIMIT-TO ( DOCTYPE , "ar" ) OR LIMIT-TO ( DOCTYPE , "cp" ) )

@@ -1,0 +1,101 @@
+M241 E EM2 progression prediction
+M242 E EM3 population shift noted, no G method
+M243 E EM2 RA detection
+M244 E EM3 transfer only
+M245 E EM2 osteoporosis predictors
+M246 E EM3 joint detection, pretrained only
+M247 E EM3 transfer only
+M248 E EM1 MRI
+M249 I G2 comparison of augmentation methods incl. adversarial augmentation (KOA)
+M250 E EM3 no G method
+M251 E EM2 time-to-TKR prognosis
+M252 E EM3 no G method
+M253 E EM1 MRI / osteonecrosis
+M254 E EM2 mortality
+M255 E EM3 transfer only
+M256 E EM3 architecture, imbalance mentioned
+M257 E EM3 no G method
+M258 E EM2 OA diagnosis
+M259 E EM6 conceptual framework, no evaluation (RA erosion, uncertainty + referral; noted as related)
+M260 E EM2 prognosis (diagnostic pretraining noted)
+M261 E EM5 classical ML features
+M262 E EM3 transfer ensemble
+M263 E EM1 ultrasound
+M264 E EM3 transfer only
+M265 E EM1 ultrasound/multimodal RA
+M266 I G2,G4 soft labelling + ordinal classification
+M267 E EM3 adversarial XAI
+M268 E EM3 pretrained only
+M269 I G2 mixup/DAB-mix for imbalance + class weighting + gradual unfreezing
+M270 I G3 evidential deep learning
+M271 E EM3 pretrained comparison
+M272 I G4 CleanLab relabeling (label correction)
+M273 E EM3 transfer only
+M274 E EM3 transfer only
+M275 I G2 augmentation aimed at class imbalance
+M276 E EM2 progression prediction
+M277 E EM3 RA JSN progression, no G method
+M278 E EM2 binary OA prediction
+M279 E EM3 no G method
+M280 I G1,G3 age/sex-aware contrastive + MC dropout + selective prediction
+M281 E EM3 pretrained ensemble
+M282 E EM3 fine-tuned backbones
+M283 I G2 adjusted training for imbalance (same group as M141)
+M284 E EM2 RA detection
+M285 E EM3 transfer only
+M286 E EM3 generic augmentation
+M287 E EM3 transfer only
+M288 E EM3 imbalance mentioned
+M289 E EM3 no G method
+M290 E EM1 MRI
+M291 E EM4 review
+M292 E EM2 pain prediction
+M293 E EM2 osteoporosis
+M294 E EM4 systematic review (use for citation search)
+M295 E EM1 CT
+M296 E EM4 review
+M297 E EM4 review
+M298 E EM4 review
+M299 E EM2 joint detection
+M300 E EM4 systematic review
+M301 E EM3 transfer only
+M302 E EM3 no G method
+M303 I G2 ordinal regression + class weighting
+M304 E EM3 transfer only
+M305 I G2 ordinal loss
+M306 I G1 vision-language contrastive pre-training for OA
+M307 E EM2 joint space width
+M308 E EM3 federated learning
+M309 E EM2 osteoporosis
+M310 E EM2 view classification
+M311 E EM3 no G method
+M312 E EM3 no G method
+M313 E EM3 transfer only
+M314 E EM3 transfer only
+M315 E EM2 TMJ
+M316 E EM2 osteoporosis
+M317 E EM3 pretrained only
+M318 E EM3 transfer only
+M319 E EM1 IMU
+M320 E EM2 binary hip OA
+M321 E EM2 osteoporosis
+M322 E EM2 shape model segmentation
+M323 E EM2 general X-ray classes
+M324 E EM4 review
+M325 E EM3 no G method
+M326 E EM3 no G method
+M327 E EM3 no G method
+M328 E EM2 binary OA (masked SSL strategy noted)
+M329 I G2 imbalance-specific loss
+M330 E EM3 transfer only
+M331 E EM3 generic augmentation
+M332 E EM2 osteoporosis
+M333 E EM2 osteoporosis
+M334 E EM2 osteoporosis
+M335 I G1 SSL ViT + progression-representation recalibration (MMD)
+M336 E EM3 no G method
+M337 E EM2 osteoporosis
+M338 E EM1 thermal
+M339 E EM1 CT
+M340 E EM1 wearable
+M341 E EM4 retraction notice

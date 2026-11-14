@@ -1,0 +1,120 @@
+M121 E EM2 RA diagnosis
+M122 E EM3 transfer only
+M123 E EM3 RA overall score, no G method
+M124 E EM3 transfer only
+M125 E EM3 transfer only
+M126 E EM3 transfer only
+M127 E EM1 vibroacoustic
+M128 E EM1 ultrasound
+M129 E EM3 generic augmentation
+M130 I G3 hip OA KL/Crowe from CT-derived radiographs (DRR), ordinal label + uncertainty
+M131 E EM3 no G method
+M132 I G2 focal ordinal loss
+M133 E EM2 RA detection
+M134 E EM5 SVM method paper
+M135 E EM2 VLM report/interpretation, not grading method
+M136 E EM2 alignment
+M137 E EM3 transfer only
+M138 E EM3 hip KL, no G method
+M139 E EM3 pretrained only
+M140 E EM3 backbone comparison only
+M141 I G2 weighted sampling for imbalance + ensemble
+M142 E EM3 generic augmentation
+M143 E EM3 GA-optimised ensemble, no uncertainty
+M144 E EM2 non-image predictors
+M145 E EM1 pressure images
+M146 E EM2 RA classification
+M147 E EM3 transfer only
+M148 I G2 ordinal ensemble
+M149 E EM1 DXA
+M150 I G2 ordinal classification (verify in full text)
+M151 E EM3 external validation, no G method
+M152 E EM3 transfer only
+M153 I G4 semi-supervised adversarial autoencoder KL
+M154 E EM3 transfer only
+M155 I G4 knowledge distillation + external validation
+M156 E EM3 transfer only
+M157 I G1 foundation-model embeddings (DINO) vs CNN
+M158 E EM3 pretrained only
+M159 E EM3 ensemble without uncertainty
+M160 I G2 class weighting
+M161 I G2 retrieval-augmented classification for small imbalanced data
+M162 I G2 SMOTE with deep features
+M163 E EM3 transfer only
+M164 E EM3 generic augmentation
+M165 I G2 GAN synthetic radiographs as augmentation for KL classification
+M166 I G1 contrastive learning KL
+M167 E EM2 progression prediction
+M168 E EM3 PsA damage scoring, no G method
+M169 E EM3 ensemble only
+M170 E EM4 review
+M171 E EM3 transfer only
+M172 E EM3 transfer only
+M173 I G2 generative models for synthetic radiograph augmentation (check downstream use)
+M174 E EM3 no G method
+M175 I G4 knowledge distillation (compression)
+M176 E EM1 IMU sensors
+M177 E EM3 no G method
+M178 E EM4 review
+M179 E EM3 transfer only
+M180 I G2 GNN with ordinal regression
+M181 E EM2 chronic disease IoMT
+M182 E EM3 architecture comparison
+M183 E EM1 CT
+M184 E EM1 CT
+M185 I G1,G4 hierarchical semi + self-supervised, teacher-student, pseudo labels
+M186 E EM3 hip KL multicentre, no G method
+M187 E EM1 MRI
+M188 I G2 detection with imbalance-aware IoU loss
+M189 E EM3 generic augmentation
+M190 E EM4 workshop summary
+M191 I G2 CycleGAN synthetic OA stages for augmentation
+M192 E EM3 transfer only
+M193 E EM1 MRI
+M194 E EM3 no G method
+M195 E EM3 imbalance mentioned, no method
+M196 E EM1 MRI
+M197 I G1,G4 SSL anomaly-detection continuous grading + pseudo labels
+M198 E EM3 fine-tuning of pretrained CNN
+M199 I G2 finger-joint JSW image synthesis for imbalance
+M200 I G4 learning from highly confident samples (noisy/uncertain labels)
+M201 I G1 contrastive language-image pre-training KL
+M202 E EM3 pretrained only
+M203 E EM2 TKR customisation
+M204 E EM3 transfer only
+M205 E EM1 MRI
+M206 E EM3 no G method
+M207 E EM3 pretrained only
+M208 E EM3 transfer only, imbalance mentioned
+M209 E EM2 landmarks
+M210 E EM1 bioimpedance
+M211 E EM1 signals
+M212 E EM2 chest X-ray fracture risk
+M213 E EM4 overview
+M214 E EM2 surgical planning
+M215 E EM3 no G method
+M216 E EM3 no G method
+M217 E EM3 transfer only
+M218 E EM3 hip CT summation images, no G method
+M219 I G1 contrastive domain adaptation KL (also cross-domain, RQ3)
+M220 E EM2 RA estimation
+M221 E EM3 transfer only
+M222 I G2 RA mTSS joint damage classification, imbalance handling
+M223 E EM3 no G method
+M224 I G2 focal loss + mixup
+M225 I G2 CORN ordinal ensemble
+M226 E EM2 RA vs OA discrimination
+M227 E EM2 question generation
+M228 E EM3 transfer only
+M229 E EM3 no G method
+M230 E EM2 RA diagnosis
+M231 E EM3 no G method
+M232 E EM1 MRI
+M233 I G2 SMOTE in feature fusion
+M234 E EM3 imbalance mentioned, no method
+M235 E EM3 generic augmentation
+M236 E EM1 MRI
+M237 E EM3 no G method
+M238 I G2,G4 weighted sampling + class-weighted CE + label smoothing
+M239 E EM3 imbalance mentioned, no method
+M240 E EM3 pretrained only

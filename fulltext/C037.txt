@@ -1,0 +1,621 @@
+                   Received: 27 October 2025 | Revised: 29 January 2026 | Accepted: 13 February 2026 | Published online: 28 February 2026
+
+                                                                                                                                          Smart Wearable Technology
+RESEARCH ARTICLE                                                                                                                           2026, Vol. 2, A14, 9 Pages
+                                                                                                                                 DOI: 10.47852/bonviewSWT62027989
+
+
+Dual-Model Approach for Knee
+Osteoarthritis Classification Using Custom
+CNN and Fine-Tuned VGG16 with
+Histogram Equalization
+G. Prema1,* , P. Rithanya1 and A. Shiva Priya1
+1
+                   ECE Department, Mepco Schlenk Engineering College, India
+
+
+
+Abstract: Knee osteoarthritis (KOA) is a progressive joint disorder that often remains asymptomatic in early stages, making timely
+diagnosis essential. This study presents a deep learning-based framework for KOA classification using preprocessed knee X-ray images.
+Image enhancement techniques such as histogram equalization and adaptive histogram equalization were applied to improve local
+contrast. Two independent architectures were developed: a custom convolutional neural network (CNN) designed from scratch and a
+fine-tuned VGG16 model based on transfer learning. The custom CNN incorporated L1/L2 regularization, batch normalization, and
+dropout layers to improve generalization. However, initial results revealed reduced performance due to severe class imbalance in the
+dataset. To address this, data augmentation was employed as an oversampling strategy, using rotation, flipping, translation, shearing, and
+zoom transformations to balance all KOA grades. To further improve classification performance, an ensemble strategy was introduced
+by combining the softmax probability outputs of the custom CNN and VGG16 using weighted averaging. This fusion allows the
+complementary strengths of both models to jointly influence the final Kellgren–Lawrence grade prediction, improving robustness and
+early-stage KOA detection. Although augmentation increased data diversity, the custom CNN achieved limited accuracy, prompting the
+adoption of the more robust VGG16 architecture. Comparative evaluation showed that VGG16 and the proposed ensemble achieved
+superior classification performance, demonstrating the effectiveness of transfer learning for KOA detection. The proposed framework
+offers a reliable approach for assisting early KOA diagnosis and supporting clinical decision-making.
+  Keywords: knee osteoarthritis, Kellgren–Lawrence grading, X-ray, classification
+
+
+
+1. Introduction                                                                               simplified model architecture. While previous works utilized com-
+                                                                                              plex ensembles of models such as DenseNet121, DenseNet169,
+      Osteoarthritis (OA) is a degenerative condition characterized                           VGG19, and ResNet34 to reach up to 98% accuracy, our custom
+by the weakening of cartilage in the knee, resulting in damage or                             CNN achieved 75% accuracy. By leveraging the VGG16 model
+deterioration of the joint. When specifically affecting the knee, it                          through transfer learning, we significantly improved performance,
+is termed knee osteoarthritis (KOA) [1, 2]. KOA is characterized                              reaching an accuracy of 96%.
+by the formation of osteophytes (bone growth at the bone edges),                                   This paper is organized as follows. Section 2 presents
+sclerosis (tissue hardening), and joint space narrowing (JSN). This                           the literature review, highlighting relevant studies and existing
+study employs a modified CNN [3] to automatically detect and                                  approaches in the domain. Section 2.1 provides detailed infor-
+classify KOA. The increasing prevalence of KOA, particularly                                  mation about the OAI dataset used in this research. Section 3
+among the aging population, has made early detection and accu-                                describes the overall research methodology. Within this section,
+rate classification essential for effective management. Traditional                           Section 3.1 explains the preprocessing techniques applied to
+diagnostic methods rely heavily on expert radiological assessment                             the dataset. Section 3.2 outlines the proposed custom learn-
+using grading systems such as the Kellgren–Lawrence (KL) scale,                               ing approach based on Convolutional Neural Network (CNN)
+which can be time-consuming and subjective.                                                   architecture. Section 3.3 discusses the transfer learning approach
+      In this study, we present a method for the detection                                    using the VGG16 model. Section 3.4 introduces the hybrid
+and classification of KOA using convolutional neural net-                                     ensemble approach that combines multiple models for improved
+works (CNNs), trained on the Osteoarthritis Initiative (OAI)                                  performance. Section 3.5 presents the results and discussion,
+dataset. Our approach emphasizes achieving high accuracy with a                               including performance evaluation metrics such as accuracy, pre-
+                                                                                              cision, recall, and F1-score. Section 3.6 describes the design and
+                                                                                              implementation of the user-friendly web interface developed for
+                  *Corresponding author: G. Prema, ECE Department, Mepco Schlenk
+                  Engineering College, India. Email: prema@mepcoeng.ac.in                     prediction visualization. Finally, Section 4 concludes the study
+
+
+                  © The Author(s) 2026. Published by BON VIEW PUBLISHING. This is an open access article under the CC BY License (https://creativecommons.org/licenses/
+                  by/4.0/).
+
+
+
+
+Pdf_F ol i o: 1                                                                                                                                                     01
+Smart Wearable Technology              Vol. 2   2026
+
+
+
+by summarizing the key findings and suggesting future research        patients exhibit fewer combined muscle synergies and increased
+directions.                                                           co-contraction during walking, presenting potential biomarkers
+                                                                      for diagnosis.
+2. Literature Review                                                        Chen et al. [19] proposed an entropy-based method using
+                                                                      surface Electromyogram (EMG) singnals with fuzzy entropy,
+     Several related studies support this approach. Wang et al. [1]   achieving 92% accuracy in KOA detection by identifying abnor-
+introduced a novel learning scheme that dynamically divides data      mal muscle co-activation. Eugster et al. [20] measured knee joint
+into two sets—high-confidence and low-confidence samples—             space to inform minimally invasive robotic unicompartmental
+based on their reliability. They proposed a hybrid loss function      knee arthroplasty tool design, recommending a 5–8 mm thickness
+to guide a CNN to learn effectively from both sets. Saini et al.      tool for femoral cuts.
+[2] developed semi-automatic and automatic methods for grad-                He et al. [21] developed a wearable device that reduces knee
+ing KOA severity from plain radiographs. Similarly, Tiulpin and       adduction moment (KAM) by 24.63% in KOA patients and
+Saarakkala [3] suggested a deep learning (DL) approach rely-          approximates KAM using plantar pressure data and a neural net-
+ing on model ensembling and transfer learning to build a fully        work. Karim et al. [22] presented an explainable approach for
+automatic grading pipeline for osteophytes, JSN, and the com-         KOA diagnosis from radiographs and MRI, achieving 91% accu-
+posite KL grade from knee radiographs. Chen et al. [4] proposed       racy through a deep-stacked transformation pipeline and Region
+a technique to automatically quantify KOA severity using the          of Interest (ROI) extraction. Kwon et al. [23] and Lee et al. [24]
+KL grading system. Their method utilized a tailored YOLOv2            proposed ML models combining gait analysis and radiographic
+model for knee joint detection and fine-tuned CNN models with         imaging to classify KOA severity with improved diagnostic accu-
+a novel ordinal loss function for KL grade prediction. Nichols        racy and reliability. Marzorati et al. [25] and Muñoz-Organero
+et al. [5] explored whether knee acoustic emissions, measured         et al. [26] introduced DL frameworks using 3D convolutional
+at the point of care using a wearable device, could differenti-       networks for precise segmentation of the distal femur and proxi-
+ate knees with pre-radiographic osteoarthritis from normal knees.     mal tibia from CT scans, critical for customized knee arthroplasty
+Badshah et al. [6] conducted biochemical analysis of OA using         planning. Shamir et al. [27] proposed an automatic approach
+serum hyaluronic acid enzyme-linked immunosorbent assay and           for OA detection from knee X-rays using a KL-based classifier,
+genetic analysis with amplification refractory mutation system        achieving high accuracy in grading OA severity to aid clinical
+Polymerase chain reaction (PCR). Nasser et al. [7] introduced a       decision-making.
+Discriminative Regularized Auto Encoder to learn discriminative             Tamez-Peña et al. [28] and Wang et al. [29] developed
+features that enhance classification accuracy. Their experiments      automated methods for knee cartilage and bone segmentation
+on the publicly available OAI dataset demonstrated promising          from 3D MRI images with high accuracy and reproducibil-
+results for early KOA detection. Brahim et al. [8] presented a        ity in cartilage and bone shape measurements. DL, particularly
+fully developed computer-aided diagnosis system for early KOA         CNNs, has revolutionized KOA research by enabling automated
+detection based on knee X-rays and machine learning (ML)              feature extraction, classification, and segmentation [30–35].
+algorithms.                                                           CNN-based models have demonstrated robust performance for
+     Zhang et al. [9] proposed a method combining Residual            KOA diagnosis, severity grading, and progression prediction.
+Neural Networks (ResNet) and a convolutional Block Attention          Compared to traditional ML, CNNs learn meaningful pat-
+Module to detect knee joints in radiographs and automatically         terns directly from raw images without handcrafted features,
+predict KL grades. Kim et al. [10] compared the diagnostic per-       increasing diagnostic efficiency and reducing reliance on expert
+formance of DL models with radiologist readings of KL grades          interpretation.
+and evaluated whether additional patient data could enhance DL
+performance. Yong et al. [11] recommended treating KL grad-           2.1. Dataset details
+ing as an ordinal classification task rather than a conventional
+multi-class classification problem.                                        In this study, we use a publicly available dataset from the
+     Antony et al. [12] presented a novel fully CNN to automati-      OAI, which contains 9786 knee X-ray images. These images are
+cally identify knee joints. Tiulpin and Saarakkala [3] suggested an   labeled using the KL grading scale, a widely used system for
+
+                                                                      resized to 224 × 224 pixels before being input into the model.
+automated method to estimate KL and Osteoarthritis Research           assessing the severity of KOA. For consistency, all images are
+Society International (OARSI) grades using an ensemble of
+50-layer residual networks.                                           The KL grading criteria used for classification are summarized
+     Muhammad and Yeasin [13] proposed Eigen-CAM, a tech-             in Table 1. The dataset was obtained from Kaggle and can also
+nique to compute and visualize principal components of learned        be accessed through the official OAI website at https://nda.nih.
+features from convolutional layers. Routson et al. [14] demon-        gov/oai. The dataset was split in an 80:20 ratio, with 80% used
+strated that a smart cane with vibrotactile feedback helps users      for training and 20% for testing. Our proposed system aims to
+with KOA load the cane more effectively, potentially reducing         accurately classify the severity level of KOA using just a single
+joint stress and slowing disease progression.                         X-ray image, based on the KL grading system. Sample images
+     Hu et al. [15] introduced Adversarial Evolving Neural Net-       representing each grade are shown in Figure 1.
+work (A-ENN), an adversarial training DL model achieving 62.7%
+accuracy in predicting KOA progression from baseline X-rays.          3. Research Methodology
+Wu et al. [16] linked KOA pain to increased stiffness in certain
+soft tissues, highlighting the relationship between pain distribu-    3.1. Preprocessing
+tion and the nature of tendons and ligaments, which can guide
+focused therapy. Dodin et al. [17] proposed a fully automated 3D           To enhance the quality and contrast of knee X-ray images,
+MRI-based solution to segment and track knee cartilage volume         a series of preprocessing steps was applied. First, resizing was
+for effective OA monitoring. Kubota et al. [18] found that KOA        performed to standardize all input images to a resolution of
+
+
+
+Pdf_F ol i o: 2   02
+Smart Wearable Technology                              Vol. 2   2026
+
+
+
+                                                                               Table 1
+                                                                    Kellgren and Lawrence grading
+                            Grades       Description                                                                         No. of images
+                            Grade 0      Represents the healthy category with no symptoms in the X-ray                            3857
+                                          images
+                            Grade 1      Indicates doubtful category with the presence of joint space narrowing                   1770
+                                           (JSN) and the possibility of osteophytes.
+                            Grade 2      Involves low grade with definite osteophyte formation and potential JSN                  2578
+                            Grade 3      Suggests moderate state with more than one osteophyte and potential                      1286
+                                           bone deformity
+                            Grade 4      Represents severe category with large osteophyte formation, definite JSN,                 295
+                                          and severe sclerosis
+
+
+
+                                          Figure 1                                   contrast-enhanced intensity Sx,y for a pixel (x,y) in AHE is
+                               Sample images of the OAI dataset                      calculated using:
+
+
+                                                                                                            S x,y = T x,y ( f (x, y))                    (2)
+
+
+                                                                                     where f (x, y) is the original intensity of the pixel, T x,y is the
+                                                                                     local CDF-based transformation function computed from the his-
+                                                                                     togram of the tile containing (x, y), and S x,y is the resulting pixel
+                                                                                     intensity after local equalization. The enhanced output of HE and
+                                                                                     AHE is illustrated in Figure 2. The sample preprocessed output
+                                                                                     of AHE images is illustrated in Figure 3.
+
+
+                                                                                                                 Figure 2
+                                                                                                            Preprocessed images
+
+
+
+                  Grade 0      Grade 1    Grade 2         Grade 3    Grade 4
+
+
+
+224 × 224 pixels, aligning with the input requirements of CNN                           Original image               HE image                AHE image
+and VGG16 architectures. Second, image enhancement tech-
+niques were used, including histogram equalization (HE) and
+adaptive histogram equalization (AHE). HE is a global contrast                                                    Figure 3
+enhancement technique that works by redistributing the pixel                                          Sample preprocessed AHE images
+intensity values across the entire image, thereby producing a more
+uniform histogram. This technique enhances image contrast using
+the transformation function:
+
+
+
+                                      S k = (L − 1) ∑
+                                                    k     nj
+                                                                               (1)
+                                                    j=0
+                                                          N
+
+
+where Sk is the output intensity, L is the total number of gray
+levels, nj is the number of pixels with intensity j, and N is the total
+number of pixels in the image.
+      While HE improves global contrast, it may cause over-
+brightness or loss of local detail, as it does not consider
+spatial variations. To overcome these drawbacks, AHE was
+applied. AHE enhances local contrast by dividing the image
+into smaller regions called tiles and applying HE independently
+within each tile. The resulting intensities are then interpolated                          Original       AHE image          Original        AHE image
+to eliminate border artifacts and ensure smooth transitions. The                            image                             image
+
+
+
+
+Pdf_F ol i o: 3                                                                                                                                          03
+Smart Wearable Technology              Vol. 2    2026
+
+
+
+
+3.2. Custom learning approach: CNN architecture                                                   Figure 5
+                                                                                  Activation maps from convolutional layers
+     A custom CNN was designed with increasing filter sizes
+across layers—Convolutional Layer 1 (C1): 64 filters, Convolu-           (a)                   (b)                   (c)
+tional Layer 2 (C2): 128 filters, Convolutional Layer 3 (C3):
+256 filters—and is depicted in Figure 4. Figure 5(a) depicts the
+64 activation maps from the first convolutional layer (C1), and
+Figure 5(b) shows the 128 activation maps from the second
+convolutional layer (C2). There is a clear increase in feature
+diversity, with more complex textures and shading patterns emerg-
+ing. This layer captures mid-level features by combining sets of
+low-level patterns detected in C1, enabling the identification of          C1 Layer – 64          C2 Layer –            C3 Layer –
+curves, blobs, and intersections. Figure 5(c) presents the 256              Activations         128 Activations       256 Activations
+activation maps from the third convolutional layer (C3). These
+activations exhibit significant variation in texture complexity and
+                                                                      contrast. Some maps show strong activations, while others are
+                                                                      subtler, indicating a focus on higher-level abstract patterns. At
+                                                                      this stage, the network begins to extract semantic features critical
+                              Figure 4
+                                                                      for object recognition and classification tasks. This progression
+                       Custom CNN architecture
+                                                                      from low-level to high-level feature representation demonstrates
+                                                                      the hierarchical learning capability of CNNs.
+
+                                                                      3.3. Transfer learning approach: VGG16 based
+                                                                            To enhance classification accuracy, a fine-tuned VGG16
+                                                                      model was employed as the second approach, as illustrated in
+                                                                      Figure 6. VGG16 is a widely adopted CNN architecture, known
+                                                                      for its robustness and effectiveness in image classification and fea-
+                                                                      ture extraction tasks. It consists of 16 weight layers, including
+
+                                                                      architecture is characterized by its uniform use of small 3 × 3
+                                                                      13 convolutional layers followed by 3 fully connected layers. The
+
+                                                                      convolutional filters with a stride of 1, enabling the extraction of
+
+                                                                      ciency. Max pooling layers with a 2 × 2 window follow select
+                                                                      fine-grained image features while maintaining computational effi-
+
+                                                                      convolutional blocks to downsample the spatial dimensions of
+                                                                      the feature maps, thereby retaining essential features and reduc-
+                                                                      ing computational complexity. In the transfer learning setup, the
+                                                                      pretrained VGG16 layers serve as a feature extractor, and the
+                                                                      final fully connected layers are replaced with a new classifier head
+                                                                      consisting of dense layers with ReLU activation and a softmax
+                                                                      output layer, as shown in the final blocks of the architecture dia-
+                                                                      gram. This approach leverages the learned representations from
+                                                                      large-scale datasets (e.g., ImageNet) and fine-tunes the network
+                                                                      on the target dataset, significantly reducing training time while
+                                                                      improving accuracy and generalization.
+
+                                                                      3.4. Hybrid ensemble approach
+                                                                            In the proposed hybrid ensemble framework, the final KOA
+                                                                      grade prediction is obtained by combining the outputs of two
+                                                                      independent DL models: a custom CNN and a fine-tuned
+                                                                      VGG16 transfer learning model. Each model processes the same
+                                                                      preprocessed knee X-ray image and produces a probability distri-
+                                                                      bution over the five KL grades (0–4) using a softmax layer, and
+
+                                                                           Let P CNN = [P CNN , P CNN , P CNN , P CNN , P CNN ] denote the
+                                                                      its architecture is depicted in Figure 7.
+                                                                                          0       1       2       3       4
+
+
+                                                                      and P VGG = [P VGG     , P VGG , P VGG , P VGG , P VGG ] represent the
+                                                                      softmax probability vector obtained from the custom CNN,
+                                                                                         0       1       2       3       4
+                                                                      probability vector from the fine-tuned VGG16 model.
+                                                                           The ensemble probability for each KL grade k is computed
+                                                                      using a weighted averaging strategy as:
+
+                                                                                  P ensemble (k) = w CNN .P CNN
+                                                                                                            k
+                                                                                                                + w VGG .P VGG
+                                                                                                                           k
+                                                                                                                                        (3)
+
+
+
+Pdf_F ol i o: 4   04
+Smart Wearable Technology Vol. 2 2026
+
+
+
+
+                                                                                w CNN + w VGG = 1
+                               Figure 6                Subject to:
+                      Transfer learning approach
+
+
+
+                                                                         W CNN = 0.5 and W VGG = 0.5
+                                                       At the initial stage, equal weights are assigned:
+
+
+                                                            This ensured an unbiased fusion of both models. Then,
+                                                       the weights were optimized using the validation set to maximize
+                                                       classification accuracy.
+
+                                                                 (w ∗CNN , w ∗VGG ) = argmax Accuracy(P ensemble )        (4)
+
+                                                       The predicted KL grade is obtained by:
+
+                                                                             k̂ = arg max
+                                                                                      k
+                                                                                          P ensemble (k)
+
+                                                       This probability-level fusion allows the ensemble to exploit
+                                                       the complementary strengths of the two models—local texture
+                                                       learning from the custom CNN and deep hierarchical feature rep-
+                                                       resentation from VGG16—resulting in improved robustness and
+                                                       more reliable KOA severity classification, particularly for early
+                                                       disease stages.
+
+                                                       3.5. Results and discussion
+                                                             Data augmentation was employed to improve dataset diver-
+                                                       sity and enhance generalization. Images were randomly rotated
+                                                       up to 40°, shifted horizontally and vertically by 20% of the image
+                                                       dimensions, and subjected to shearing and zooming within a fac-
+                                                       tor of 0.2. Horizontal flipping was also performed to introduce
+
+                                                             All images were resized to 224 × 224 pixels to meet model
+                                                       mirrored variations.
+                               Figure 7
+                  Proposed hybrid ensemble framework   input requirements. The accuracy trends before and after aug-
+                                                       mentation for the custom CNN (CCNN), fine-tuned VGG16
+                                                       (FVGG), and ensemble approach (EA) are summarized in
+                                                       Table 2. Precision, recall, and F1-score at 250 epochs are reported
+                                                       in Table 3. The results reveal a clear performance gap between
+                                                       the shallow CCNN and the VGG-based transfer learning model.
+                                                       For the CCNN, data augmentation led to a reduction in accuracy
+                                                       from 73.09% to 58.8% at 250 epochs, indicating limited capacity
+                                                       to learn the increased variability introduced by augmentation.
+                                                             In contrast, the FVGG model demonstrated substantial
+                                                       improvement, with accuracy increasing from 90.0% to 96.8% after
+                                                       augmentation. This highlights the robustness of pretrained deep
+                                                       architectures in leveraging augmented data for improved gener-
+                                                       alization. The ensemble approach further improved performance
+                                                       by combining CCNN and FVGG predictions through softmax
+                                                       probability averaging, achieving a peak accuracy of 98%.
+                                                             KL grade-wise performance of the proposed model is pre-
+                                                       sented in Table 4. High sensitivity and specificity across grades
+                                                       indicate reliable detection of disease severity, particularly for early
+                                                       and moderate osteoarthritis stages. Comparative analysis with
+                                                       existing state-of-the-art methods (Table 5) confirms the superior-
+                                                       ity of the proposed transfer learning and ensemble approaches.
+                                                       Overall, these results demonstrate that the effectiveness of data
+                                                       augmentation is model-dependent—significantly benefiting deep
+                                                       pretrained networks such as VGG16, while offering limited or
+                                                       negative gains for shallow custom CNNs due to constrained
+                                                       feature-learning capacity.
+
+                                                       3.6. Webpage design
+                                                            The system designed for predicting KOA severity—
+                                                       categorized as Normal, Doubtful, Mild, Moderate, and
+
+
+
+Pdf_F ol i o: 5                                                                                                            05
+Smart Wearable Technology Vol. 2                                                2026
+
+
+
+
+                                                                                              Table 2
+                                                                             Accuracy for the custom learning approach
+                                        Before data augmentation                                                                          After data augmentation
+                                     Accuracy      Accuracy                    Accuracy                                 Accuracy                      Accuracy                     Accuracy
+                   Epochs           (CCNN)(%)     (FVGG)(%)                    (EA)(%)                  Epochs         (CCNN)(%)                     (FVGG)(%)                     (EA)(%)
+                   50                  72                              85          85.7                           50          58                               95                          95
+                   100                72.2                            87.5         86.5                          100         58.7                             95.5                        96.5
+                   150                73.4                             89           87                           150          59                              95.8                        96.6
+                   200                72.8                            89.5         88.6                          200         59.3                              96                         97.8
+                   225                75.3                            89.5         90.9                          225          60                              96.6                        97.8
+                   250                73.09                            90           90                           250         58.8                             96.8                         98
+
+
+
+                                                                                                  Table 3
+                                                                                              Overall accuracy
+
+
+
+
+                                                  Data augmentation
+                                                                                                       Accuracy (%)       Precision (%)                Recall (%)                  F1-score (%)
+                            Model                                                Epoch
+
+
+
+                            CCNN                    No                          250               73.09                   74.5                        75.0                         74.7
+                            CCNN                    Yes                         250               58.8                    58.0                        60.5                         59.2
+                            FVGG                    No                          250               90.0                    89.0                        90.5                         89.7
+                            FVGG                    Yes                         250               96.8                    96.5                        97.0                         96.7
+                            EA                      No                          250               91.5                     91                          92                          91.5
+                            EA                      Yes                         250                98                     97.8                        98.5                         98.1
+
+
+
+                                                                                                   Table 4
+                                                                                          KL grade-wise performance
+                                KL grade                                             Sensitivity (%)                   Specificity (%)                                F1-score (%)
+                                KL-0 (Normal)                                              98.5                                 95.6                                        97.5
+                                KL-1 (Doubtful)                                            72.3                                 89.1                                        79.6
+                                KL-2 (Mild)                                                75.5                                 82.2                                        77.1
+                                KL-3 (Moderate)                                            79.7                                 85.9                                        76.6
+                                KL-4 (Severe)                                              73.5                                 89.2                                        77.6
+
+
+
+                                                                                                 Table 5
+                                                                                            Comparative analysis
+                                Model                                                                                                                    Accuracy (%)
+                                ResNet-50 [31]                                                                                                                      63.4
+                                LSTM [32]                                                                                                                           71.97
+                                SVM [33]                                                                                                                            67.71
+                                GLCM + LBP [34]                                                                                                                     69.7
+                                12 Layer CNN [35]                                                                                                                   92.3
+                                Proposed custom approach                                                                                                            58.8
+                                Proposed transfer learning approach                                                                                                 96.8
+                                Ensemble approach                                                                                                                    98
+
+
+
+
+Pdf_F ol i o: 6   06
+Smart Wearable Technology Vol. 2                             2026
+
+
+
+                                          Figure 8                           Conflicts of Interest
+                  User interface of the knee osteoarthritis prediction web
+                                         application                              The authors declare that they have no conflicts of interest to
+                                                                             this work.
+
+                                                                             Data Availability Statement
+                                                                                   This study utilized data from the OAI database, a pub-
+                                                                             lic resource available at https://nda.nih.gov/oai/. The OAI is a
+                                                                             multicenter, longitudinal study of KOA, funded by the National
+                                                                             Institutes of Health.
+
+                                                                             Author Contribution Statement
+                                                                                  G. Prema: Conceptualization, Methodology, Validation,
+                                                                             Formal analysis, Investigation, Resources, Data curation, Writing
+                                                                             – review & editing, Visualization, Supervision, Project administra-
+                                                                             tion. P. Rithanya: Software, Resources, Data curation, Writing –
+                                                                             original draft, Writing – review & editing, Visualization. A. Shiva
+                                                                             Priya: Software, Resources, Data curation, Writing – original
+                                                                             draft, Writing – review & editing, Visualization.
+
+                                                                             References
+                                                                             [1] Wang, Y., Bi, Z., Xie, Y., Wu, T., Zeng, X., Chen, S., &
+                                                                                 Zhou, D. (2022). Learning from highly confident samples for
+                                                                                 automatic knee osteoarthritis severity assessment: Data from
+Severe—was implemented using Python in the IDLE environ-                         the osteoarthritis initiative. IEEE Journal of Biomedical and
+ment. The deployment was facilitated using the Flask web                         Health Informatics, 26(3), 1239–1250. https://doi.org/10.1109/
+framework, which enables seamless integration of ML models into                  JBHI.2021.3102090
+a web-based application. In this setup, X-ray images are uploaded            [2] Saini, D., Chand, T., Chouhan, D. K., & Prakash, M. (2021).
+via the web interface, and the model processes them to gener-                    A comparative analysis of automatic classification and grad-
+ate the corresponding severity prediction. The application can be                ing methods for knee osteoarthritis focussing on X-ray images.
+tested with a variety of X-ray inputs to evaluate its performance.               Biocybernetics and Biomedical Engineering, 41(2), 419–444.
+Figure 8 illustrates the user interface of the developed web appli-              https://doi.org/10.1016/j.bbe.2021.03.002
+cation, showcasing the step-by-step workflow, from launching the             [3] Tiulpin, A., & Saarakkala, S. (2020). Automatic grading
+webpage to obtaining the prediction result.                                      of individual knee osteoarthritis features in plain radio-
+                                                                                 graphs using deep convolutional neural networks. Diagnostics,
+4. Conclusion                                                                    10(11), 932. https://doi.org/10.3390/diagnostics10110932
+                                                                             [4] Chen, P., Gao, L., Shi, X., Allen, K., & Yang, L. (2019).
+     OA of the knee is a disabling and frequent condition that                   Fully automatic knee osteoarthritis severity grading using deep
+significantly affects patients’ quality of life and leads to a tremen-           neural networks with a novel ordinal loss. Computerized Med-
+dous burden on healthcare systems. The use of ML in KOA                          ical Imaging and Graphics, 75, 84–92. https://doi.org/10.1016/
+research has been of immense utility in enhancing early diagnosis,               j.compmedimag.2019.06.002
+disease progression prediction, and personalization of treatment.            [5] Nichols, C. J., Özmen, G. C., Richardson, K., Inan, O. T., &
+ML algorithms, particularly DL models, have shown that they                      Ewart, D. (2023). Classifying pre-radiographic osteoarthritis
+can interpret medical images, detect risk factors, and maximize                  of the knee using wearable acoustics sensing at the point of
+patient care. However, certain problems remain, including data                   care. IEEE Sensors Journal, 23(23), 29619–29629. https://doi.
+limitations, model interpretability, and clinical adoption. Resolu-              org/10.1109/JSEN.2023.3325153
+tion of these issues is required to ensure that ML-based solutions           [6] Badshah, Y., Shabbir, M., Hayat, H., Fatima, Z., Burki,
+become reliable and widely used in real healthcare environments.                 A., Khan, S., & Rehman, S. U. (2021). Genetic markers of
+Despite the existing challenges, ML keeps improving and offers                   osteoarthritis: Early diagnosis in susceptible Pakistani popula-
+better prospects in KOA management. The future directions                        tion. Journal of Orthopaedic Surgery and Research, 16(1), 124.
+should involve improving data quality, developing explainable                    https://doi.org/10.1186/s13018-021-02230-x
+models, and improving clinical relevance. Improving these areas              [7] Nasser, Y., Jennane, R., Chetouani, A., Lespessailles, E.,
+will enable ML to play a stronger role in KOA diagnosis and                      & Hassouni, M. E. (2020). Discriminative regularized auto-
+treatment.                                                                       encoder for early detection of knee osteoarthritis: Data from
+                                                                                 the osteoarthritis initiative. IEEE Transactions on Medical
+Ethical Statement                                                                Imaging, 39(9), 2976–2984. https://doi.org/10.1109/TMI.2020.
+                                                                                 2985861
+     This study used case images obtained from a publicly avail-             [8] Brahim, A., Jennane, R., Riad, R., Janvier, T., Khedher, L.,
+able dataset and does not contain any studies with human or                      Toumi, H., & Lespessailles, E. (2019). A decision support tool
+animal subjects performed by any of the authors.                                 for early detection of knee OsteoArthritis using X-ray imaging
+
+
+
+Pdf_F ol i o: 7                                                                                                                               07
+ Smart Wearable Technology               Vol. 2    2026
+
+
+
+     and machine learning: Data from the OsteoArthritis Initia-               volume inside the knee joint capsule for minimally invasive
+     tive. Computerized Medical Imaging and Graphics, 73, 11–18.              robotic unicondylar knee arthroplasty. IEEE Transactions on
+     https://doi.org/10.1016/j.compmedimag.2019.01.007                        Biomedical Engineering, 68(8), 2412–2422. https://doi.org/10.
+ [9] Zhang, B., Tan, J., Cho, K., Chang, G., & Deniz, C. M. (2020).           1109/TBME.2020.3041512
+     Attention-based CNN for KL grade classification: Data from          [21] He, Z., Liu, T., & Yi, J. (2019). A wearable sensing and training
+     the osteoarthritis initiative. In 2020 IEEE 17th International           system: Towards gait rehabilitation for elderly patients with
+     Symposium on Biomedical Imaging, 731–735. https://doi.org/               knee osteoarthritis. IEEE Sensors Journal, 19(14), 5936–5945.
+     10.1109/ISBI45749.2020.9098456                                           https://doi.org/10.1109/JSEN.2019.2908417
+[10] Kim, D. H., Lee, K. J., Choi, D., Lee, J. I., Choi, H. G., & Lee,   [22] Karim, M. R., Jiao, J., Döhmen, T., Cochez, M., Beyan,
+     Y. S. (2020). Can additional patient information improve the             O., Rebholz-Schuhmann, D., & Decker, S. (2021). DeepKnee-
+     diagnostic performance of deep learning for the interpretation           Explainer: Explainable knee osteoarthritis diagnosis from
+     of knee osteoarthritis severity. Journal of Clinical Medicine,           radiographs and magnetic resonance imaging. IEEE Access, 9,
+     9(10), 3341. https://doi.org/10.3390/jcm9103341                          39757–39780. https://doi.org/10.1109/ACCESS.2021.3062493
+[11] Yong, C. W., Teo, K., Murphy, B. P., Hum, Y. C., Tee, Y.            [23] Kwon, S. B., Han, H.-S., Lee, M. C., Kim, H. C., Ku, Y.,
+     K., Xia, K., & Lai, K. W. (2022). Knee osteoarthritis sever-             & Ro, D. H. (2020). Machine learning-based automatic clas-
+     ity classification with ordinal regression module. Multimedia            sification of knee osteoarthritis severity using gait data and
+     Tools and Applications, 81(29), 41497–41509. https://doi.org/            radiographic images. IEEE Access, 8, 120597–120603. https://
+     10.1007/s11042-021-10557-0                                               doi.org/10.1109/ACCESS.2020.3006335
+[12] Antony, J., McGuinness, K., Moran, K., & O’Connor, N.               [24] Lee, Y., Toan, B., Ahn, C., & Shin, J. (2014). Cartilage-defect
+     E. (2017). Automatic detection of knee joints and quantifica-            assessment by measuring thickness of knee MRI: Data from
+     tion of knee osteoarthritis severity using convolutional neural          the osteoarthritis initiative. In The 18th IEEE International
+     networks. In Machine Learning and Data Mining in Pattern                 Symposium on Consumer Electronics, 1–2. https://doi.org/10.
+     Recognition: 13th International Conference, 376–390. https://            1109/ISCE.2014.6884524
+     doi.org/10.1007/978-3-319-62416-7_27                                [25] Marzorati, D., Sarti, M., Mainardi, L., Manzotti, A.,
+[13] Muhammad, M. B., & Yeasin, M. (2020). Eigen-CAM: Class                   & Cerveri, P. (2020). Deep 3D convolutional networks
+     activation map using principal components. In 2020 Interna-
+                                                                              to segment bones affected by severe osteoarthritis in
+     tional Joint Conference on Neural Networks, 1–7. https://doi.
+                                                                              CT scans for PSI-based knee surgical planning. IEEE
+     org/10.1109/IJCNN48605.2020.9206626
+                                                                              Access, 8, 196394–196407. https://doi.org/10.1109/ACCESS.
+[14] Routson, R. L., Bailey, M., Pumford, I., Czerniecki, J.
+                                                                              2020.3034418
+     M., & Aubin, P. M. (2016). A smart cane with vibrotac-
+                                                                         [26] Muñoz-Organero, M., Littlewood, C., Parker, J., Powell, L.,
+     tile biofeedback improves cane loading for people with knee
+                                                                              Grindell, C., & Mawson, S. (2017). Identification of walking
+     osteoarthritis. In 2016 38th Annual International Conference
+                                                                              strategies of people with osteoarthritis of the knee using insole
+     of the IEEE Engineering in Medicine and Biology Society,
+                                                                              pressure sensors. IEEE Sensors Journal, 17(12), 3909–3920.
+     3370–3373. https://doi.org/10.1109/EMBC.2016.7591450
+                                                                              https://doi.org/10.1109/JSEN.2017.2696303
+[15] Hu, K., Wu, W., Li, W., Simic, M., Zomaya, A., & Wang, Z.
+                                                                         [27] Shamir, L., Ling, S. M., Scott, W. W., Bos, A., Orlov,
+     (2022). Adversarial evolving neural network for longitudinal
+                                                                              N., Macura, T. J., . . . , & Goldberg, I. G. (2009). Knee
+     knee osteoarthritis prediction. IEEE Transactions on Medi-
+     cal Imaging, 41(11), 3207–3217. https://doi.org/10.1109/TMI.             X-ray image analysis method for automated detection of
+     2022.3181060                                                             osteoarthritis. IEEE Transactions on Biomedical Engineering,
+[16] Wu, J., Qian, Z., Xu, R., Liu, J., Ren, L., & Ren, L. (2021).            56(2), 407–415. https://doi.org/10.1109/TBME.2008.2006025
+     Association between pain in knee osteoarthritis and mechani-        [28] Tamez-Peña, J. G., Farber, J., González, P. C., Schreyer,
+     cal properties of soft tissue around knee joint. IEEE Access, 9,         E., Schneider, E., & Totterman, S. (2012). Unsupervised seg-
+     14599–14607. https://doi.org/10.1109/ACCESS.2021.3050776                 mentation and quantification of anatomical knee features:
+[17] Dodin, P., Pelletier, J.-P., Martel-Pelletier, J., & Abram,              Data from the Osteoarthritis Initiative. IEEE Transactions on
+     F. (2010). Automatic human knee cartilage segmentation                   Biomedical Engineering, 59(4), 1177–1186. https://doi.org/10.
+     from 3-D magnetic resonance images. IEEE Transactions on                 1109/TBME.2012.2186612
+     Biomedical Engineering, 57(11), 2699–2711. https://doi.org/10.      [29] Wang, C., Chan, P. P. K., Lam, B. M. F., Wang, S., Zhang, J.
+     1109/TBME.2010.2058112                                                   H., Chan, Z. Y. S., . . . , & Cheung, R. T. H. (2020). Real-time
+[18] Kubota, K., Hanawa, H., Yokoyama, M., Kita, S., Hirata,                  estimation of knee adduction moment for gait retraining in
+     K., Fujino, T., . . . , & Kanemura, N. (2021). Usefulness of             patients with knee osteoarthritis. IEEE Transactions on Neu-
+     muscle synergy analysis in individuals with knee osteoarthritis          ral Systems and Rehabilitation Engineering, 28(4), 888–894.
+     during gait. IEEE Transactions on Neural Systems and Reha-               https://doi.org/10.1109/TNSRE.2020.2978537
+     bilitation Engineering, 29, 239–248. https://doi.org/10.1109/       [30] Abdullah, S. S., & Rajasekaran, M. P. (2022). Automatic
+     TNSRE.2020.3043831                                                       detection and classification of knee osteoarthritis using deep
+[19] Chen, X., Chen, J., Liang, J., Li, Y., Courtney, C. A., &                learning approach. La Radiologia Medica, 127(4), 398–406.
+     Yang, Y. (2019). Entropy-based surface electromyogram fea-               https://doi.org/10.1007/s11547-022-01476-7
+     ture extraction for knee osteoarthritis classification. IEEE        [31] Wahyuningrum, R. T., Anifah, L., Eddy Purnama, I. K.,
+     Access, 7, 164144–164151. https://doi.org/10.1109/ACCESS.                & Hery Purnomo, M. (2019). A new approach to classify
+     2019.2950665                                                             knee osteoarthritis severity from radiographic images based on
+[20] Eugster, M., Zoller, E. I., Krenn, P., Blache, S., Friederich,           CNN-LSTM method. In 2019 IEEE 10th International Con-
+     N. F., Müller-Gerbl, M., . . . , & Rauter, G. (2021). Quantita-          ference on Awareness Science and Technology, 1–6. https://doi.
+     tive evaluation of the thickness of the available manipulation           org/10.1109/ICAwST.2019.8923284
+
+
+
+ Pdf_F ol i o: 8   08
+ Smart Wearable Technology             Vol. 2   2026
+
+
+
+[32] Bonakdari, H., Jamshidi, A., Pelletier, J.-P., Abram, F.,            CNN-based classification. BMC Musculoskeletal Disorders,
+     Tardif, G., & Martel-Pelletier, J. (2021). A warning machine         25(1), 817. https://doi.org/10.1186/s12891-024-07942-9
+     learning algorithm for early knee osteoarthritis structural     [35] Zakerian, H., Yadollahzadeh-Tabari, M., Shirgahi, H.,
+     progressor patient screening. Therapeutic Advances in Muscu-         & Motameni, H. (2026). A hybrid invasive weed opti-
+     loskeletal Disease, 13, 1759720X21993254. https://doi.org/10.        mization–Convolutional neural network and bidirectional
+     1177/1759720X21993254                                                generative adversarial network for white blood cell image
+[33] Yang, T., Zhu, H., Gao, X., Zhang, Y., Hui, Y., &                    segmentation and classification in leukemia analysis. Inter-
+     Wang, F. (2020). Grading of metacarpophalangeal rheuma-              national Journal of Engineering, 39(6), 1496–1508. https://doi.
+     toid arthritis on ultrasound images using machine learning           org/10.5829/ije.2026.39.06c.16
+     algorithms. IEEE Access, 8, 67137–67146. https://doi.org/10.
+     1109/ACCESS.2020.2982027                                          How to Cite: Prema, G., Rithanya, P., & Shiva Priya, A. (2026). Dual-Model
+[34] Rani, S., Memoria, M., Almogren, A., Bharany, S., Joshi, K.,      Approach for Knee Osteoarthritis Classification Using Custom CNN and Fine-
+                                                                       Tuned VGG16 with Histogram Equalization. Smart Wearable Technology, 2,
+     Altameem, A., . . . , & Hamam, H. (2024). Deep learning to        A14. https://doi.org/10.47852/bonviewSWT62027989
+     combat knee osteoarthritis and severity assessment by using
+
+
+
+
+ Pdf_F ol i o: 9                                                                                                                               09
+

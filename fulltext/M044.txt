@@ -1,0 +1,1522 @@
+                                                                                                                  TYPE Original Research
+                                                                                                                  PUBLISHED 31 August 2026
+                                                                                                                  DOI 10.3389/fmed.2026.1925244
+
+
+
+
+                                            An explainable
+OPEN ACCESS
+                                            ResNet50-BiLSTM-attention
+EDITED BY
+Nasser Kashou,
+                                            framework with spatial token
+Kash Global Tech, United States
+
+REVIEWED BY
+                                            modeling and imbalance-aware
+Mohamed Kassem,
+Kafrelsheikh University, Egypt
+V. Vijaya Kishore,
+                                            learning for multi-class knee
+KSRM College of Engineering, India
+
+*CORRESPONDENCE
+                                            osteoarthritis severity grading
+Fareeha Hanif
+   fareehahanif.sau@gmail.com
+                                            Ali Raza1 , Asma Abbas2 and Fareeha Hanif1*
+RECEIVED 01 July 2026
+                                            1
+REVISED 23 July 2026                          College of Computer Science, King Saud University Electronic Training Platform (KSUx), King Saud
+ACCEPTED 12 August 2026                     University, Riyadh, Saudi Arabia, 2 Department of Computer Science, Applied College, Girls Section,
+PUBLISHED 31 August 2026
+                                            King Khalid University, Mahayil, Saudi Arabia
+CITATION
+Raza A, Abbas A and Hanif F (2026) An
+explainable ResNet50-BiLSTM-attention       Knee osteoarthritis (KOA) severity grading from radiographs remains challenging
+framework with spatial token modeling
+and imbalance-aware learning for
+                                            because adjacent Kellgren–Lawrence stages exhibit subtle and overlapping
+multi-class knee osteoarthritis             structural characteristics. This study proposes ResBiAtt-KOA-Net, an explainable
+severity grading. Front. Med. 13:1925244.   image-level framework that introduces spatial-sequence reasoning into
+doi: 10.3389/fmed.2026.1925244
+                                            convolutional KOA classiﬁcation. A pre-trained ResNet50 extracts a (2, 048×7×7)
+COPYRIGHT                                   feature map, which is transformed into 49 ordered spatial tokens. A two-layer
+© 2026 Raza, Abbas and Hanif. This is an
+open-access article distributed under the
+                                            bidirectional long short-term memory network models contextual dependencies
+terms of the Creative Commons               among these tokens, while additive attention identiﬁes the most informative
+Attribution License (CC BY). The use,       anatomical regions. The attention-guided representation is subsequently
+distribution or reproduction in other
+forums is permitted, provided the
+                                            fused with global average- and maximum-pooled convolutional descriptors.
+original author(s) and the copyright        Weighted random sampling, class-weighted cross-entropy, and label smoothing
+owner(s) are credited and that the          are incorporated to improve learning from underrepresented severity categories.
+original publication in this journal is
+cited, in accordance with accepted
+                                            The framework was evaluated on 9,786 knee radiographs using a patient-level
+academic practice. No use, distribution     split, direct same-protocol baselines, component-wise ablation, bootstrap
+or reproduction is permitted which does     conﬁdence intervals, McNemar testing, expert explainability assessment, and
+not comply with these terms.
+                                            external validation. On the internal test set, ResBiAtt-KOA-Net achieved an
+                                            accuracy of 0.9392, balanced accuracy of 0.9283, macro-F1 of 0.9263, and
+                                            macro ROC-AUC of 0.9478. It improved macro-F1 by 0.0177 over the strongest
+                                            baseline, with an adjusted McNemar (p)-value of 0.0181. External evaluation
+                                            on the MOST cohort produced an accuracy of 0.8615 and macro-F1 of
+                                            0.8389, indicating reasonable cross-dataset transfer despite domain differences.
+                                            Expert assessment identiﬁed 82.7% of Grad-CAM maps and 78.0% of spatial-
+                                            token attention maps as clinically relevant. The model required 32.47 million
+                                            parameters and an average inference time of 7.6 ms per image. These ﬁndings
+                                            demonstrate that combining convolutional representation learning, spatial-
+                                            token dependency modeling, attention-guided fusion, and imbalance-aware
+                                            optimization provides an accurate, interpretable, and reproducible approach to
+                                            multi-class KOA severity grading.
+
+                                            KEYWORDS
+
+                                            attention mechanism, BiLSTM, explainable artiﬁcial intelligence, Grad-CAM, knee
+                                            osteoarthritis, medical image analysis, ResNet50, X-ray classiﬁcation
+
+
+
+
+Frontiers in Medicine                                              01                                                               frontiersin.org
+Raza et al.                                                                                                                  10.3389/fmed.2026.1925244
+
+
+
+
+1 Introduction
+    Knee osteoarthritis (KOA) is a progressive musculoskeletal
+disorder associated with chronic pain, stiﬀness, reduced mobility,
+and functional disability. Radiographic X-ray imaging remains
+widely used for KOA assessment because it is inexpensive,
+accessible, and clinically accepted for evaluating osteophytes, joint-
+space narrowing, sclerosis, and other structural changes (1, 2).
+Severity is commonly expressed using the Kellgren–Lawrence (KL)
+scale, but manual grading can be aﬀected by subjectivity, inter-
+reader variability, and subtle overlap between adjacent stages,
+particularly Healthy, Doubtful, Minimal, and Moderate disease (3).
+    Deep learning has improved automated KOA analysis through                    FIGURE 1
+convolutional neural networks, ensembles, attention mechanisms,                  Dataset class distribution for the Knee Osteoarthritis Severity Grading
+and transformer-based models (4–7). Related medical-imaging                      dataset.
+
+studies have also demonstrated the value of explainable hybrid
+learning, transfer learning, saliency analysis, and residual
+                                                                                 global descriptors, while weighted random sampling, class-
+architectures for skin-lesion classiﬁcation, pelvis and cervical-spine
+                                                                                 weighted loss, and label smoothing address the strongly
+fracture assessment, uni-/bicompartmental KOA classiﬁcation, and
+                                                                                 imbalanced class distribution (16).
+knee osteoporosis or osteopenia detection (8–13). These studies
+                                                                              4. The evaluation includes same-split baseline comparisons,
+support the use of explainability and feature-fusion strategies but
+                                                                                 component-wise ablation, conﬁdence intervals, McNemar
+do not directly address contextual dependency modeling among
+                                                                                 testing, computational-cost reporting, class-sensitive metrics,
+spatial regions for ﬁve-class KOA severity grading.
+                                                                                 and explainability analysis using Grad-CAM and attention maps
+                                                                                 (17, 18).
+
+1.1 Research gap and motivation
+
+    Conventional CNN classiﬁers commonly compress the ﬁnal
+feature map through global pooling, which may reduce explicit                 2 Materials and dataset
+relationships among local anatomical regions. KOA grading can
+                                                                              2.1 Dataset description, source, and class
+depend jointly on medial and lateral compartment appearance,
+marginal osteophytes, tibiofemoral alignment, bone-margin                     labels
+irregularity, and joint-space narrowing. Pure transformer models
+can capture long-range context but often require larger datasets                  The Knee Osteoarthritis Severity Grading dataset used in this
+and greater computational resources. The proposed ResBiAtt-                   study contains 9,786 radiographic knee X-ray images categorized
+KOA-Net therefore combines a pre-trained ResNet50 backbone,                   into ﬁve severity classes: Healthy, Doubtful, Minimal osteoarthritis,
+spatial tokenization, BiLSTM-based bidirectional dependency                   Moderate osteoarthritis, and Severe osteoarthritis. X-ray imaging is
+modeling, additive attention, and GAP/GMP fusion in a controlled              widely used for knee osteoarthritis assessment because it provides
+image-level classiﬁcation pipeline. It is not an object detector              visible structural information related to joint-space narrowing,
+and does not require bounding boxes, region proposals, or                     osteophyte formation, sclerosis, and progressive joint degeneration
+segmentation masks.                                                           (19). The ﬁve-class setting follows the common radiographic
+                                                                              severity-grading concept used in knee osteoarthritis studies, where
+                                                                              the model must distinguish normal, early, intermediate, and
+                                                                              advanced disease patterns.
+1.2 Main contributions                                                            The exact dataset repository is the Osteoarthritis Initiative
+                                                                              (OAI)-derived Knee Osteoarthritis Severity Grading collection,
+     The main contributions of this study are summarized as
+                                                                              available at https://nda.nih.gov/oai/ under controlled research
+follows:
+                                                                              access under the OAI/NDA data-use agreement. The images
+1. ResBiAtt-KOA-Net is proposed as an explainable ﬁve-class KOA               were acquired using standardized bilateral weight-bearing ﬁxed-
+   severity-classiﬁcation framework that combines convolutional               ﬂexion posteroanterior radiography with SynaFlexer positioning
+   feature extraction, spatial sequence modeling, and additive                at four clinical centers between 2004 and 2015, and the dataset
+   attention in a uniﬁed image-level pipeline (2).                            contains 4,796 patients. Bilateral examinations were included
+2. The ﬁnal ResNet50 feature map is represented as 49 spatial                 where available: 4,650 participants contributed bilateral baseline
+   tokens and processed by a two-layer bidirectional LSTM,                    examinations, and 146 contributed unilateral examinations; 340
+   preserving local spatial organization while modeling forward               additional follow-up radiographs were retained. The class labels
+   and backward contextual dependencies (14, 15).                             correspond to KL 0 = Healthy, KL 1 = Doubtful, KL 2 =
+3. Additive attention and GAP/GMP fusion combine                              Minimal, KL 3 = Moderate, and KL 4 = Severe. Labeling was
+   discriminative token-level evidence with complementary                     performed by two board-certiﬁed musculoskeletal radiologists,
+
+
+
+Frontiers in Medicine                                                    02                                                                 frontiersin.org
+Raza et al.                                                                                                                        10.3389/fmed.2026.1925244
+
+
+
+
+   FIGURE 2
+   Class imbalance analysis across dataset splits and corresponding class-weight distribution. (a) Class distribution across training, validation, and testing
+   splits. (b) Class imbalance weights used for imbalance-aware learning.
+
+
+
+                                                                                    subset contains 6,850 images, the validation subset contains
+                                                                                    979 images, and the testing subset contains 1,957 images.
+                                                                                    The splitting unit was patient level, and splitting was
+                                                                                    completed before augmentation. Patient identiﬁers were
+                                                                                    available; therefore, all images, repeated examinations,
+                                                                                    and bilateral knee radiographs from the same patient
+                                                                                    were assigned to a single subset. The corresponding train,
+                                                                                    validation, and test patient counts were 3,357, 480, and
+                                                                                    959, respectively.
+                                                                                        Duplicate and near-duplicate screening was performed
+                                                                                    using SHA-256 exact-hash matching followed by 64-bit
+                                                                                    perceptual hashing and structural-similarity review, with
+                                                                                    thresholds of perceptual-hash Hamming distance ≤ 4 and
+                                                                                    SSIM ≥ 0.98. This analysis identiﬁed 0 exact duplicates
+   FIGURE 3                                                                         and 12 near duplicates across subsets; patient-group
+   Dataset split distribution showing the number of images used for                 reassignment of all related images to a single subset was applied
+   training, validation, and testing.
+                                                                                    before training.
+                                                                                        The Severe class is highly underrepresented compared with
+with a senior musculoskeletal radiologist serving as adjudicator                    the Healthy and Minimal osteoarthritis classes. Therefore, accuracy
+using independent KL grading followed by adjudication of                            alone is not suﬃcient for evaluating the proposed model.
+disagreements, with inter-reader agreement of weighted Cohen’s                      Balanced accuracy, macro-F1, PR-AUC, class-wise metrics, and
+κ = 0.82 (95% CI: 0.80–0.84). Where the original source does                        confusion matrix analysis were used, while class weights and
+not report a requested ﬁeld, it is stated explicitly that patient-level,            weighted random sampling were applied to reduce majority-class
+acquisition, or annotation information was not provided in the                      bias (20–23).
+original dataset documentation.                                                         As shown in Figure 2, the class distribution remains
+    All images are resized to 224 × 224 pixels before being used                    imbalanced across the dataset splits, and the Severe class
+as input to the proposed ResBiAtt-KOA-Net model. Although                           receives the largest imbalance weight because it contains the fewest
+knee X-ray images are commonly grayscale, they are processed as                     training images.
+three-channel images because the ImageNet-pre-trained ResNet50                          Figure 3 summarizes the image-level partitioning used in the
+backbone expects RGB-format input. This enables the proposed                        experimental pipeline. The training set contains the largest portion
+model to beneﬁt from transfer learning while maintaining a                          of images for model optimization, the validation set is used for
+consistent input representation. The class distribution is shown in                 model selection, and the test set is reserved for internal evaluation.
+Figure 1. The dataset is imbalanced, with Healthy and Minimal                       Further details related to dataset are included in Tables 1, 2.
+osteoarthritis containing more images than the Severe class.
+
+
+                                                                                    2.3 Preprocessing, data augmentation, and
+2.2 Dataset splitting, class distribution, and                                      whole-image classiﬁcation
+leakage control
+                                                                                        All knee X-ray images were preprocessed before being given
+     The dataset was divided into training, validation, and                         to the proposed ResBiAtt-KOA-Net model. First, each image was
+testing subsets to support model learning, hyperparameter                           resized to 224 × 224 pixels to ensure a ﬁxed input size for
+monitoring, and internal ﬁnal evaluation. The training                              the ResNet50 backbone. Since the backbone was initialized using
+
+
+
+Frontiers in Medicine                                                          03                                                                 frontiersin.org
+Raza et al.                                                                                                                                                  10.3389/fmed.2026.1925244
+
+
+
+
+TABLE 1 Dataset provenance, patient composition, acquisition, and annotation information required for reproducibility.
+
+
+
+    Item                                              Veriﬁed dataset information
+    Original dataset name and source                  OAI-derived Knee Osteoarthritis Severity Grading collection; OAI/NDA repository
+
+    Public availability and URL                       https://nda.nih.gov/oai/; accessed 10 July 2026; controlled research access under OAI/NDA terms
+
+    Acquisition protocol                              Weight-bearing ﬁxed-ﬂexion posteroanterior radiographs using SynaFlexer positioning; four OAI clinical centers;
+                                                      2004–2015
+
+    Number of patients                                4,796 unique participants
+
+    Knees per patient                                 4,650 bilateral baseline examinations, 146 unilateral examinations, plus 340 retained follow-up radiographs
+
+    Class-label deﬁnition                             KL 0, 1, 2, 3, and 4 mapped directly to Healthy, Doubtful, Minimal, Moderate, and Severe, respectively
+
+    Annotation procedure                              Two board-certiﬁed musculoskeletal radiologists graded independently; disagreements were adjudicated by a senior
+                                                      musculoskeletal radiologist
+
+    Inter-reader agreement                            Weighted Cohen’s κ = 0.82 (95% CI: 0.80–0.84)
+
+
+
+
+TABLE 2 Image-level and patient-level distribution across the training, validation, and testing subsets.
+
+
+
+    Class                  Train              Validation               Test                 Total             Train             Validation                Test                 Total
+                          images               images                images                images            patients            patients               patients              patients
+    Healthy                  2,700                  386                  771                  3,857             1,420                 203                   406                    2,029
+
+    Doubtful                 1,239                  177                  354                  1,770              690                   99                   197                    986
+
+    Minimal                  1,805                  258                  515                  2,578             1,015                 145                   290                    1,450
+
+    Moderate                  900                   129                  257                  1,286              520                   74                   149                    743
+
+    Severe                    206                   29                    60                   295               125                   18                    36                    179
+
+    Total                    6,850                  979                 1,957                 9,786             3,357                 480                   959                    4,796
+Class-wise patient counts are not additive because a participant may contribute bilateral or longitudinal images with diﬀerent KL grades; the total row reports unique patients.
+
+
+
+ImageNet-pre-trained weights, each X-ray image was converted                                          severity grading from X-ray images. The complete pipeline
+into a three-channel format, transformed into a tensor, and                                           follows the sequence: input knee X-ray image, preprocessing
+normalized using the ImageNet mean and standard deviation                                             and augmentation, ResNet50 backbone, spatial feature map
+(24, 25). During training, data augmentation included random                                          extraction, spatial token sequence conversion, layer normalization,
+horizontal ﬂipping, random rotation up to 12◦ , random aﬃne                                           BiLSTM-based contextual modeling, additive attention, global
+transformation, translation of 0.05, scaling from 0.90 to 1.10, shear                                 CNN descriptor fusion, dense classiﬁer, and softmax output. The
+transformation, brightness adjustment, and contrast adjustment                                        model is designed as a non-YOLO and non-Faster-R-CNN image-
+(26, 27). For validation and testing, no random augmentation                                          level classiﬁer. Therefore, it does not use bounding-box localization,
+was applied.                                                                                          region proposal networks, anchor boxes, or object detection heads.
+     No segmentation masks, automatic or manual joint                                                 Instead, the complete knee X-ray image is directly classiﬁed into
+segmentation, bounding boxes, region proposals, anchor boxes, or                                      one of the ﬁve severity categories.
+object-detection heads were used. The complete preprocessed knee                                           Let X ∈ R3×224×224 denote an input knee X-ray image. The
+X-ray image was classiﬁed directly. The auxiliary “defector-region”                                   overall mapping of ResBiAtt-KOA-Net can be expressed as
+images displayed later in Figure 4 were generated only for post-hoc
+visualization using a ﬁxed geometry-based central tibiofemoral                                                                                      
+                                                                                                                                 ŷ = Softmax fθc (z) ,                                    (1)
+crop covering 70% of image width and 40% of image height,
+followed by CLAHE enhancement and a Canny-edge overlay
+                                                                                                      where ŷ ∈ R5 is the predicted class-probability vector, fθc (·) denotes
+(thresholds 50 and 150); they were not used as model inputs,
+                                                                                                      the dense classiﬁer, and z is the ﬁnal fused feature representation.
+training labels, or localization supervision (Table 3).
+                                                                                                      The fused representation is obtained by combining the attention-
+                                                                                                      guided BiLSTM descriptor with global CNN descriptors:
+
+3 Proposed methodology                                                                                                                           
+                                                                                                                             z = c; GAP(F); GMP(F) ,                                       (2)
+3.1 Overview of ResBiAtt-KOA-Net
+                                                                                                      where c is the attention-weighted contextual representation,
+    The proposed ResBiAtt-KOA-Net is an explainable hybrid deep                                       GAP(·) denotes global average pooling, GMP(·) denotes global max
+learning framework developed for ﬁve-class knee osteoarthritis                                        pooling, and [·; ·; ·] represents feature concatenation.
+
+
+
+Frontiers in Medicine                                                                            04                                                                            frontiersin.org
+Raza et al.                                                                                                                                     10.3389/fmed.2026.1925244
+
+
+
+
+    FIGURE 4
+    Representative visual explanation examples for knee osteoarthritis severity grading using ResBiAtt-KOA-Net. Row 1 shows original knee X-ray images
+    from the ﬁve severity categories. Row 2 shows auxiliary defector-region visualizations generated using a ﬁxed central tibiofemoral crop (70% image
+    width and 40% image height), CLAHE enhancement, and Canny-edge overlay with thresholds 50 and 150. Row 3 presents Grad-CAM heatmaps
+    generated from the ﬁnal convolutional layer of the ResNet50 backbone. The auxiliary views are not segmentation labels or model inputs. (a) Original:
+    Healthy, (b) Original: Doubtful. (c) Original: Minimal OA. (d) Original: Moderate OA. (e) Original: Severe OA. (f) Auxiliary ROI: Healthy. (g) Auxiliary ROI:
+    Doubtful. (h) Auxiliary ROI: Minimal OA. (i) Auxiliary ROI: Moderate OA. (j) Auxiliary ROI: Severe OA. (k) Grad-CAM: Healthy. (l) Grad-CAM: Doubtful.
+    (m) Grad-CAM: Minimal OA. (n) Grad-CAM: Moderate OA. (o) Grad-CAM: Severe OA.
+
+
+
+                                                                                      TABLE 3 Combined dataset split and class-wise distribution for knee osteoarthritis severity
+    More formally, the complete forward process can be written as                     grading.
+
+
+                                                        
+ŷ = Softmax fθc A BiLSTM LN T fθb (X)     ; GAP fθb (X) ; GMP fθb (X)     ,              Dataset               Number of                   Class             Number of
+                                                                             (3)          split                  images                                        images
+                                                                                          Training                    6,850                Healthy                 3,857
+  where fθb (·) is the ResNet50 backbone, T (·) is the spatial                            Validation                   979                 Doubtful                1,770
+tokenization function, LN(·) is layer normalization, BiLSTM(·)                            Testing                     1,957                Minimal                 2,578
+models bidirectional contextual dependencies, and A(·) denotes
+                                                                                          Total                       9,786               Moderate                 1,286
+additive attention.
+                                                                                          Average per                1,957.2                Severe                  295
+    The motivation for this architecture is that CNNs are
+eﬀective at extracting local and hierarchical visual patterns, while                      class
+
+sequential and attention-based modules can strengthen contextual
+representation learning. Recent studies have shown that hybrid
+CNN–LSTM and attention-based designs can improve medical
+image interpretation by combining spatial feature extraction with                         As shown in Figure 5, the proposed network ﬁrst extracts
+dependency modeling and discriminative feature selection (28, 29).                    a high-level spatial feature map from the input X-ray image.
+In knee osteoarthritis grading, where adjacent grades may diﬀer                       This feature map is converted into a sequence of local spatial
+only by subtle radiographic changes, this type of hybrid design is                    tokens so that the model can treat the knee representation as
+useful for representing both local anatomical evidence and global                     a structured spatial sequence. The BiLSTM module captures
+image-level severity patterns.                                                        contextual relationships among these tokens, while additive
+
+
+
+Frontiers in Medicine                                                            05                                                                               frontiersin.org
+Raza et al.                                                                                                                   10.3389/fmed.2026.1925244
+
+
+
+
+    FIGURE 5
+    Proposed ResBiAtt-KOA-Net architecture. The ResNet50 backbone extracts a 2, 048 × 7 × 7 spatial feature map, which is converted into 49 spatial
+    tokens. The token sequence is processed using layer normalization, BiLSTM, and additive attention. The attention-guided representation is fused with
+    global average pooling and global max pooling descriptors before ﬁnal ﬁve-class knee osteoarthritis severity classiﬁcation.
+
+
+
+
+Frontiers in Medicine                                                       06                                                               frontiersin.org
+Raza et al.                                                                                                                                    10.3389/fmed.2026.1925244
+
+
+
+
+TABLE 4 Tensor dimensionality throughout ResBiAtt-KOA-Net.
+                                                                                            where F contains 2,048 feature channels and a spatial resolution of
+                                                                                            7 × 7. Each spatial position in F corresponds to a high-level local
+    Stage                                         Output dimensionality
+                                                                                            region of the original knee X-ray image. Instead of directly applying
+    Input image batch                                        B × 3 × 224 × 224              only global pooling to this feature map, the spatial dimensions are
+    ResNet50 feature map                                     B × 2048 × 7 × 7               ﬂattened and reorganized into a sequence of spatial tokens:
+    Spatial token sequence                                    B × 49 × 2048
+                                                                                                      S = T (F) = {s1 , s2 , . . . , s49 } ,      si ∈ R2048 .            (5)
+    Layer-normalized tokens                                   B × 49 × 2048
+
+    Two-layer BiLSTM output                                    B × 49 × 512                     Therefore, the token sequence is represented as
+    Attention scores/weights                                    B × 49 × 1
+
+    Attention context vector                                     B × 512
+                                                                                                                          S ∈ R49×2048 .                                  (6)
+
+    Global-average descriptor                                    B × 2048
+                                                                                                The token-indexing operation can be written as
+    Global-maximum descriptor                                    B × 2048
+
+    Fused feature vector                                         B × 4608                     st = F(:, u, v),       t = 7(u − 1) + v,           u, v ∈ {1, 2, . . . , 7}. (7)
+    Classiﬁer hidden representations               B × 512 → B × 256 → B × 128
+                                                                                                The 7 × 7 grid is ﬂattened in row-major order: Tokens progress
+    Class logits/probabilities                                    B×5
+                                                                                            from left to right within each row and then from the upper row
+                                                                                            to the lower row, as speciﬁed by t = 7(u − 1) + v. No explicit
+                                                                                            learnable positional embedding is added. Spatial order is retained
+attention assigns larger importance to the most discriminative                              implicitly by the ﬁxed row-major sequence supplied to the BiLSTM.
+regions. Finally, global average and max pooling descriptors are                            Augmentation changes image appearance during training but does
+fused with the attention-guided representation to preserve both                             not alter the ﬂattening rule, and batching does not permute token
+local and holistic radiographic information.                                                order within an image.
+    Table 4 reports the tensor dimensionality after every major                                 This operation transforms the 7 × 7 spatial grid into 49
+block. The batch dimension is denoted by B.                                                 ordered feature tokens. Each token contains high-level semantic
+    The ResBiAtt-KOA-Net framework includes the overall input-                              information from one local region of the knee feature map. This is
+to-prediction mapping (Equation 1), fused feature representation                            important because knee osteoarthritis severity is not determined by
+from attention-guided and global CNN descriptors (Equation 2),                              only one isolated visual sign. Instead, severity grading may depend
+and the complete forward classiﬁcation process (Equation 3).                                on relationships among several radiographic patterns, including
+                                                                                            joint-space narrowing, osteophyte-related changes, bone-margin
+                                                                                            irregularities, and overall joint morphology.
+                                                                                                To stabilize the sequence before recurrent modeling, layer
+3.2 ResNet50 feature extraction and spatial                                                 normalization is applied:
+token conversion                                                                                                                                   
+                                                                                                      
+                                                                                                      S = LN(S) = LN(s1 ), LN(s2 ), . . . , LN(s49 ) .                    (8)
+    Before introducing the proposed spatial token conversion
+process, Figure 6 presents a general CNN-based image classiﬁcation                               The normalized token sequence      S is then passed to the
+ﬂow. In a conventional CNN classiﬁer, the image is passed through                           BiLSTM module. By preserving spatial tokens rather than
+convolutional layers, pooling operations, and a classiﬁer head to                           immediately compressing the feature map into a single vector,
+produce the ﬁnal class label. Although this structure is eﬀective                           the proposed model enables later stages to learn contextual
+for visual representation learning, it commonly compresses the                              dependencies among local anatomical regions. This design
+ﬁnal feature map into a global vector, which may reduce explicit                            follows the broader trend in medical image analysis toward
+spatial relationships among local anatomical regions. In contrast,                          hybrid CNN, sequence, and attention-based models that
+ResBiAtt-KOA-Net preserves the ﬁnal spatial feature map and                                 combine local convolutional representation with contextual
+converts it into a sequence of tokens for contextual modeling.                              or attention-guided feature reasoning (32). The spatial feature
+    The proposed framework uses ResNet50 as a pre-trained                                   extraction and tokenization process includes ResNet50 feature-map
+convolutional backbone. ResNet-based models are widely used                                 generation (Equation 4), spatial token construction (Equation 5),
+in transfer-learning-based medical image classiﬁcation because                              token-sequence representation (Equation 6), row-major token
+residual connections allow deeper networks to learn stable                                  indexing (Equation 7), and layer-normalized sequence formation
+hierarchical representations (30, 31). In the proposed model, the                           (Equation 8).
+ﬁnal average pooling and fully connected layers of ResNet50 are
+removed. Therefore, the backbone is used only for high-level
+convolutional feature extraction.                                                           3.3 BiLSTM-based spatial dependency
+    For an input image X ∈ R3×224×224 , the ResNet50 backbone                               modeling
+produces a spatial feature map:
+                                                                                                After extracting the ResNet50 feature map and converting it
+                    F = fCNN (X),           F ∈ R2048×7×7 .                      (4)        into 49 spatial tokens, a bidirectional long short-term memory
+
+
+
+Frontiers in Medicine                                                                  07                                                                    frontiersin.org
+Raza et al.                                                                                                                                10.3389/fmed.2026.1925244
+
+
+
+
+   FIGURE 6
+   General conceptual CNN architecture used to illustrate the baseline image-classiﬁcation ﬂow before spatial token modeling in ResBiAtt-KOA-Net.
+
+
+
+TABLE 5 BiLSTM conﬁguration used for spatial dependency modeling in ResBiAtt-KOA-Net.
+                                                                                              sequence representation. This representation is then passed to the
+                                                                                              additive attention module, which selects the most discriminative
+    Component                                                  Value
+                                                                                              spatial tokens for knee osteoarthritis severity classiﬁcation. The
+    LSTM hidden size                                              256                         BiLSTM-based contextual modeling process includes bidirectional
+    LSTM layers                                                    2                          sequence encoding (Equation 9), contextual token representation
+                                                                                              (Equation 10), and the resulting 49 × 512-dimensional contextual
+    Direction                                                Bidirectional
+                                                                                              feature sequence (Equation 11).
+    LSTM dropout                                                 0.25
+
+    Output token dimension                                        512
+
+                                                                                              3.4 Additive attention, global feature
+                                                                                              fusion, and classiﬁer
+(BiLSTM) module is used to model contextual relationships
+among diﬀerent knee regions. CNN features mainly represent                                        For the contextual sequence H = {h1 , . . . , h49 }, additive
+local and hierarchical visual patterns, whereas BiLSTM can                                    attention assigns one scalar score to each spatial token:
+learn dependencies across the ordered spatial token sequence in
+both forward and backward directions. This is useful for knee                                          et = vTa tanh (Wa ht + ba ) ,        t = 1, . . . , 49,        (12)
+osteoarthritis grading because the ﬁnal severity decision may
+depend on relationships among multiple anatomical regions rather                              where Wa ∈ Rda ×512 , ba ∈ Rda , and va ∈ Rda . The veriﬁed
+than a single isolated feature (33, 34).                                                      attention hidden size is da = 256. The normalized attention weights
+    Let the normalized spatial token sequence be denoted by 
+                                                            S. The                            are
+BiLSTM operation is expressed as
+                                                                                                                       exp(et )
+                                                                                                             αt =                  ,      α ∈ R49 ,                   (13)
+                               H = BiLSTM(
+                                          S),                                      (9)                                49
+                                                                                                                      j=1 exp(ej )
+
+where                                                                                         and the context vector is computed as
+
+                           H = {h1 , h2 , . . . , h49 } .                         (10)                                49
+                                                                                                                c=         αt ht ,     c ∈ R512 .                     (14)
+    Each ht represents the contextual feature representation of the                                                  t=1
+corresponding spatial token. Since the hidden size is 256 and the
+LSTM is bidirectional, each output token has a dimension of 512.                                   The attention module uses the hyperbolic tangent activation
+Therefore,                                                                                    followed by softmax normalization across the 49 tokens. Its
+                                                                                              trainable parameters are initialized using Xavier-uniform
+                                 H ∈ R49×512 .                                    (11)        initialization for linear weights and zero initialization for biases,
+                                                                                              and attention dropout of 0.10 is applied at the attention context
+    The conﬁguration of the BiLSTM module used in ResBiAtt-                                   vector immediately before global-feature fusion. The context
+KOA-Net is summarized in Table 5. The two-layer BiLSTM,                                       vector is computed from the BiLSTM outputs and learned
+therefore, transforms the spatial token sequence into a contextual                            attention weights; it is not an independent trainable vector.
+
+
+
+Frontiers in Medicine                                                                    08                                                                 frontiersin.org
+Raza et al.                                                                                                                                 10.3389/fmed.2026.1925244
+
+
+
+
+                                                                                      TABLE 6 Implementation and training hyperparameters used for ResBiAtt-KOA-Net.
+   The context vector is concatenated with the global average-
+pooled and global maximum-pooled ResNet50 descriptors:
+                                                                                          Hyperparameter                                            Setting
+                                                             4608
+                z = c; GAP(F); GMP(F) ∈ R                             .   (15)            Input size                                     224 × 224 pixels, three channels
+
+                                                                                          Maximum epochs                                                 50
+    The classiﬁer maps this fused representation through
+                                                                                          Batch size                                                     32
+4608 → 512 → 256 → 128 → 5, with ReLU after the ﬁrst
+                                                                                          Optimizer                                                  AdamW
+three linear layers before producing ﬁve logits. The classiﬁer
+dropout probability is 0.45, and the ﬁnal softmax layer converts                          Optimizer β1 , β2 ,                              β1 = 0.90, β2 = 0.999, and
+
+the logits into class probabilities. The additive attention and                                                                                       = 10−8
+
+feature-fusion process includes token-level attention score                               Initial classiﬁer/head learning rate                       2 × 10−4
+computation     (Equation 12),    normalized    attention-weight                          Initial backbone learning rate                             1 × 10−5
+calculation (Equation 13), attention-weighted context-vector
+                                                                                          Warm-up duration                                           3 epochs
+generation (Equation 14), and fusion of contextual and global
+                                                                                          Learning-rate schedule                           Warm-up followed by cosine
+CNN descriptors (Equation 15).
+                                                                                                                                                     annealing
+
+                                                                                          Cosine schedule minimum learning rate                      1 × 10−6
+
+3.5 Imbalance-aware sampling and loss                                                     Weight decay                                               1 × 10−4
+
+function                                                                                  Label smoothing                                               0.05
+
+                                                                                          LSTM layers/hidden size                          2 layers, 256 hidden units per
+    Class weights were calculated from the training subset only.                                                                                     direction
+Let nc be the number of training images in class c and let C = 5.
+                                                                                          LSTM dropout                                                  0.25
+Normalized inverse-frequency weights were calculated as
+                                                                                          Classiﬁer dropout                                             0.45
+                                           1/nc                                           Attention hidden size/dropout                      256 and 0.10, respectively
+                            wc = 1         C
+                                                         .                (16)
+                                   C       j=1 (1/nj )                                    Backbone freezing                                        First 3 epochs
+
+                                                                                          Fine-tuning policy                             all ResNet50 stages unfrozen after
+    For the training counts (2,700, 1,239, 1,805, 900, and 206), the
+                                                                                                                                            epoch 3, with the backbone
+resulting weight vector for Healthy, Doubtful, Minimal, Moderate,
+                                                                                                                                         learning rate kept lower than the
+and Severe classes was
+                                                                                                                                               classiﬁer learning rate
+
+          w = (0.2406, 0.5243, 0.3599, 0.7218, 3.1534).                   (17)            Gradient clipping                                    Maximum norm 5.0
+
+                                                                                          Early stopping                                Patience 12, monitored validation
+    Each training image i received the sampling weight                                                                                               macro-F1
+
+                                                                                          Mixed precision                                   Automatic mixed precision
+                                   si = wyi ,                             (18)                                                                        enabled
+
+                                                                                          Checkpoint selection                             Highest validation macro-F1
+where yi is its class label. Weighted sampling was performed with
+                                                                                          Random seeds                                           42, 123, and 2026
+replacement, using 6,850 samples per epoch. The class-weighted
+loss used the same normalized inverse-frequency weight vector                             Data-loader workers                                            4
+shown in Equation 17.                                                                     Framework and version                          PyTorch 2.4.1, torchvision 0.19.1,
+    With label-smoothing coeﬃcient εLS = 0.05, the smoothed                                                                               timm 1.0.9, NumPy 1.26.4, and
+target for class c is                                                                                                                            scikit-learn 1.5.2
+
+                                                             εLS                          Python/CUDA/cuDNN                               Python 3.11.9, CUDA 12.1, and
+                  i,c = (1 − εLS )I(c = yi ) +
+                  y                                              ,        (19)                                                                      cuDNN 9.1
+                                                              C
+                                                                                          Operating system                                     Ubuntu 22.04.5 LTS
+and the class-weighted cross-entropy objective is
+                                                                                          GPU/CPU/RAM                                   NVIDIA RTX 3090 (24 GB), AMD
+
+                                       B   C                                                                                             Ryzen 9 5950X, and 64 GB RAM
+                               1
+                LWCE = −                         i,c log p̂i,c .
+                                               wc y                       (20)
+                               B
+                                    i=1 c=1
+
+
+    The class-imbalance handling strategy includes normalized
+inverse-frequency class-weight calculation (Equation 16), the                         3.6 Implementation details and
+resulting class-weight vector (Equation 17), per-sample weighting                     reproducibility
+for weighted sampling (Equation 18), label-smoothed target
+construction (Equation 19), and class-weighted cross-entropy loss                        The complete implementation settings are summarized in
+computation (Equation 20).                                                            Table 6.
+
+
+
+Frontiers in Medicine                                                            09                                                                            frontiersin.org
+Raza et al.                                                                                                                         10.3389/fmed.2026.1925244
+
+
+
+
+     All preprocessing, sampling, model initialization, and data-           proportion of correct predictions, while balanced accuracy, macro-
+loader random generators were seeded using the reported                     F1, and PR-AUC are more reliable for imbalanced medical image
+seed values. Deterministic behavior was conﬁgured using                     classiﬁcation because they give greater attention to minority classes
+torch.use_deterministic_algorithms(True),                                   (35, 36).
+cudnn.deterministic=True,                                    and                Let C be the number of classes. For class i, TPi , FPi , and
+cudnn.benchmark=False. The code repository, conﬁguration                    FNi denote true positives, false positives, and false negatives,
+ﬁle, and trained checkpoint are available at https://github.com/            respectively. Accuracy is deﬁned as
+ali-raza-research/ResBiAtt-KOA-Net. All quantitative plots
+                                                                                                                            C
+and confusion matrices were regenerated directly from the                                                                   i=1 TPi
+                                                                                                 Accuracy =                            ,                             (21)
+saved evaluation outputs and exported at 600-dpi PNG for                                                                       N
+quantitative plots and PDF/SVG for architecture artwork;
+                                                                            where N is the total number of samples. Precision and recall for
+conceptual architecture artwork was checked against the tensor
+                                                                            class i are computed as
+dimensions in Table 4.
+                                                                                                  TPi                                                TPi
+                                                                              Precisioni =                 ,                Recalli =                         .
+                                                                                             TPi + FPi +                                       TPi + FNi + 
+3.7 Comparative, ablation, statistical, and                                                                                                                          (22)
+efficiency protocols
+                                                                                The class-wise F1-score is given by
+     All direct baseline models were trained using the same veriﬁed
+                                                                                                      2 × Precisioni × Recalli
+split, preprocessing, augmentation, class deﬁnitions, checkpoint-                            F1i =                             .                                     (23)
+                                                                                                      Precisioni + Recalli + 
+selection criterion, and evaluation code. The direct baselines
+comprised standalone ResNet50, DenseNet121, EﬃcientNet-B0,                      The classiﬁcation evaluation includes overall accuracy
+ViT-B/16, and a ResNet50-based CNN-attention model. A                       computation (Equation 21), class-wise precision and recall
+reproducible existing KOA grading framework was additionally                calculation (Equation 22), and class-wise F1-score estimation
+evaluated when its implementation and class mapping were                    (Equation 23).
+compatible. Literature-reported results are discussed separately and            Balanced accuracy and macro-F1 are calculated as
+are not treated as same-protocol comparisons.
+     The ablation study retained the same optimization settings                                         C                                                     C
+                                                                                                   1                                                     1
+while successively evaluating ResNet50 only, ResNet50+BiLSTM,               Balanced accuracy =                 Recalli ,           Macro-F1 =                     F1i .
+                                                                                                   C                                                     C
+                                                                                                       i=1                                                   i=1
+ResNet50+attention, ResNet50+BiLSTM+attention, the full model
+                                                                                                                                                                     (24)
+without GAP/GMP fusion, the full model without imbalance-aware
+learning, and the complete ResBiAtt-KOA-Net. Absolute changes
+                                                                                Weighted-F1 considers the number of samples in each class:
+in balanced accuracy and macro-F1 were used to identify the
+contribution of each component.                                                                                             C
+                                                                                                                                   ni
+     For uncertainty estimation, 95% conﬁdence intervals were                                  Weighted-F1 =                          F1i ,                          (25)
+                                                                                                                                   N
+obtained by 2,000-sample bootstrap resampling. Resampling                                                                   i=1
+was performed at the patient level; patient-level resampling
+                                                                            where ni is the support of class i.
+was used whenever multiple images belonged to one patient.
+                                                                               The confusion matrix is                       used          to    study       class-wise
+Paired prediction diﬀerences between ResBiAtt-KOA-Net and each
+                                                                            misclassiﬁcation:
+baseline were assessed using a two-sided McNemar test. Multiple
+baseline comparisons were corrected using the Holm–Bonferroni
+                                                                                    M = [mij ]C×C ,             mij = {xk : yk = i, ŷk = j} .                       (26)
+procedure, with statistical signiﬁcance deﬁned at α = 0.05. Each
+model was trained using at least three ﬁxed seeds, and the results
+                                                                                ROC-AUC and PR-AUC are computed using a one-vs.-rest
+are reported as mean ± standard deviation.
+                                                                            strategy. For class i, they are deﬁned as
+     Computational measurements were obtained on the hardware
+reported in Table 6. Inference timing used batch size 1, 50 warm-                                           1
+up iterations, and 500 timed iterations with synchronization before                    AUCROC
+                                                                                          i   =                 TPRi (FPRi )dFPRi ,
+                                                                                                        0
+and after each measurement. Parameter counts include all model                                              1
+parameters; trainable parameters were additionally reported after                        AUCPR
+                                                                                            i  =                Precisioni (Recalli )dRecalli .                      (27)
+                                                                                                        0
+backbone unfreezing, and model size was measured from the
+serialized state dictionary.                                                   Prediction conﬁdence is measured using the maximum softmax
+                                                                            probability:
+
+3.8 Evaluation metrics                                                                                γk = max p̂k,i .                                               (28)
+                                                                                                                 i∈{1,...,C}
+
+
+   The proposed model was evaluated using several metrics                      The conﬁdence distribution is analyzed separately for correct
+because the dataset is imbalanced. Accuracy gives the overall               and incorrect predictions. Low-conﬁdence errors may indicate
+
+
+
+Frontiers in Medicine                                                  10                                                                             frontiersin.org
+Raza et al.                                                                                                                    10.3389/fmed.2026.1925244
+
+
+
+
+   FIGURE 7
+   Training and validation behavior of ResBiAtt-KOA-Net using loss, accuracy, and balanced accuracy curves. (a) Loss curves. (b) Accuracy curves. (c)
+   Balanced accuracy curves.
+
+
+
+
+   FIGURE 8
+   Validation macro-level behavior and optimization stability of ResBiAtt-KOA-Net. (a) Validation macro-F1 curve. (b) Validation macro-AUC curve. (c)
+   Learning-rate schedule. (d) Epoch training time.
+
+
+ambiguous or borderline cases, whereas high-conﬁdence errors                     learning-rate schedule, and epoch training time curves. These
+may indicate overconﬁdent misclassiﬁcation, label ambiguity, or                  curves provide important evidence about convergence behavior,
+visually misleading samples. Therefore, the evaluation includes                  validation stability, optimization consistency, and computational
+accuracy, balanced accuracy, precision, recall, F1-score, macro-F1,              reliability. In medical image classiﬁcation, especially under class
+weighted-F1, ROC-AUC, PR-AUC, confusion matrix, conﬁdence                        imbalance, training performance should be interpreted using both
+distribution, and low-conﬁdence/high-conﬁdence error analysis.                   general and class-sensitive metrics because accuracy alone may not
+    The evaluation framework includes balanced accuracy                          fully represent minority-class behavior (37, 38).
+and macro-F1 computation (Equation 24), support-weighted                              As shown in Figure 7, the training loss decreases gradually
+F1 calculation (Equation 25), confusion-matrix formulation                       as the number of epochs increases, indicating that the proposed
+(Equation 26), one-vs.-rest ROC-AUC and PR-AUC estimation                        model learns discriminative features from knee X-ray images.
+(Equation 27), and maximum-softmax prediction conﬁdence                          The validation loss follows the overall trend of the training
+measurement (Equation 28).                                                       loss and remains stable in the later epochs, which suggests that
+                                                                                 the model does not suﬀer from severe overﬁtting. The training
+                                                                                 and validation accuracy curves increase consistently, and the
+                                                                                 gap between them remains controlled. This indicates that the
+4 Results and analysis                                                           model converges smoothly and generalizes reasonably well to
+                                                                                 unseen validation images. The balanced accuracy curve is especially
+4.1 Training dynamics and optimization                                           important because the dataset contains unequal class distributions.
+behavior                                                                         Its improvement shows that the model learns across all severity
+                                                                                 classes rather than being dominated only by majority classes.
+    The training dynamics of ResBiAtt-KOA-Net were evaluated                          Figure 8 shows the validation macro-F1, macro-AUC, learning-
+using loss, accuracy, balanced accuracy, macro-F1, macro-AUC,                    rate schedule, and epoch training time curves. The macro-F1
+
+
+
+Frontiers in Medicine                                                       11                                                               frontiersin.org
+Raza et al.                                                                                                                                 10.3389/fmed.2026.1925244
+
+
+
+
+TABLE 7 Final validation and test performance of ResBiAtt-KOA-Net, summarizing all key
+metrics for comprehensive model evaluation.
+
+
+
+    Metric                                    Validation                Test
+    Loss                                        0.0684                  0.0837
+
+    Accuracy                                    0.9469                  0.9392
+
+    Balanced accuracy                           0.9427                  0.9283
+
+    Macro precision                             0.9419                  0.9252
+
+    Macro recall                                0.9427                  0.9283
+
+    Macro-F1                                    0.9418                  0.9263
+                                                                                                 FIGURE 9
+    Weighted-F1                                 0.9468                  0.9391                   Final validation and test metric comparison for ResBiAtt-KOA-Net.
+
+    Macro ROC-AUC                               0.9496                  0.9478
+
+    Weighted ROC-AUC                            0.9498                  0.9485
+
+    Macro PR-AUC                                0.9437                  0.9368
+
+
+
+
+curve improves progressively, conﬁrming that class-wise prediction
+quality becomes more balanced during training. This is important
+for knee osteoarthritis grading because minority classes and
+adjacent severity grades can be diﬃcult to classify. The macro-
+AUC curve remains stable in the later epochs, showing that the
+model maintains consistent one-vs.-rest discrimination across the
+ﬁve classes. The learning-rate curve follows a cosine decay pattern
+after the warm-up stage, which helps reduce abrupt parameter
+updates and supports stable convergence. The epoch training time
+curve remains relatively consistent, indicating stable computational
+                                                                                                 FIGURE 10
+behavior across epochs. Overall, the reduction in training loss,                                 Final loss comparison between validation and test sets.
+stable validation loss, controlled training–validation accuracy gap,
+improved balanced accuracy, increasing macro-F1, stable macro-
+AUC, smooth cosine learning-rate behavior, and consistent epoch
+time demonstrate that ResBiAtt-KOA-Net converges smoothly and                                      Figure 9 compares the ﬁnal validation and test metrics. The
+shows reliable optimization behavior.                                                         validation and test scores are close across accuracy, weighted-F1,
+                                                                                              macro ROC-AUC, and macro PR-AUC, showing stable predictive
+                                                                                              behavior. However, macro-F1 and balanced accuracy are slightly
+                                                                                              lower on the test set, indicating that minority and diﬃcult adjacent
+4.2 Final validation and test performance                                                     classes remain more challenging than majority classes.
+                                                                                                   Figure 10 shows that both validation and test losses remain
+    The ﬁnal validation and test performance of ResBiAtt-KOA-                                 below 0.1, indicating conﬁdent and stable ﬁnal predictions.
+Net is summarized in Table 7. The best checkpoint was selected                                Although accuracy is useful for overall evaluation, balanced
+using validation macro-F1 and then evaluated on both validation                               accuracy and macro-F1 are more important in this study
+and independent test sets. Reporting both validation and test                                 because the dataset is imbalanced and the Severe class contains
+results is important because close performance across these sets                              fewer samples. Similarly, PR-AUC is important because it
+indicates that the model generalizes well and does not only ﬁt the                            evaluates precision–recall behavior and is more sensitive to
+validation distribution. In medical image classiﬁcation, especially                           minority-class performance than accuracy alone. Therefore,
+for imbalanced multi-class problems, balanced accuracy, macro-                                the ﬁnal results demonstrate that ResBiAtt-KOA-Net achieves
+F1, and PR-AUC are more informative than raw accuracy because                                 strong validation and test performance while maintaining
+they better reﬂect minority-class behavior and class-wise reliability                         reliable generalization across imbalanced KOA severity classes.
+(39, 40).
+    The validation accuracy of 0.9469 and test accuracy of 0.9392
+show that the model maintains strong performance on unseen data.
+The small validation–test gap indicates acceptable generalization
+and suggests that the learned representation is not strongly                                  4.3 Comparison with baseline and
+overﬁtted to the validation set. The test loss of 0.0837 is slightly                          state-of-the-art models
+higher than the validation loss of 0.0684, which is expected because
+the test set provides an independent evaluation and may contain                                   Table 8 presents direct experimental comparisons obtained
+more challenging samples.                                                                     using the same veriﬁed split and evaluation pipeline. The
+
+
+
+Frontiers in Medicine                                                                    12                                                                frontiersin.org
+Raza et al.                                                                                                                                                                                                                                                                                                                              10.3389/fmed.2026.1925244
+
+
+
+
+                                                                                                                                                                                                                                                                               TABLE 9 Literature context for existing KOA grading frameworks.
+
+
+
+                                                                                                                                                                                                                                                                                   Study              Dataset/task               Reported         Reason direct
+                                                                                                                                                                                                                                                                                                                                 principal        comparison
+                                                                                                                                                                                                                                                                                                                                 result           is limited
+
+
+
+
+                                                                                               Inference/image
+                                                                                                                                                                                                                                                                                   Pi et al. (4)      OAI-derived knee           Accuracy         Diﬀerent protocol
+                                                                                                                                                                                                                                                                                                      radiographs; ﬁve KL        0.926 and        and split
+                                                                                                                 4.2 ms     5.1 ms        3.8 ms          7.6 ms     4.8 ms                     5.4 ms                                                 7.6 ms                                         grades                     Macro-F1
+                                                                                                                                                                                                                                                                                                                                 0.910
+
+                                                                                                                                                                                                                                                                                   Abdullah et        Tibiofemoral knee          Accuracy         Diﬀerent protocol
+                                                                                                                                                                                                                                                                                   al. (37)           radiographs; ﬁve KL        0.951            and split
+
+
+
+
+                                                                                               Parameters
+                                                                                                                                                                                                                                                                                                      grades
+
+                                                                                                                 23.52 M    6.96 M        4.01 M          85.80 M    24.12 M                    25.08 M                                                32.47 M                     Vaattovaara        Five-grade KL              Quadratic-       External-reader and
+                                                                                                                                                                                                                                                                                   et al. (41)        assessment with            weighted         dataset setting
+                                                                                                                                                                                                                                                                                                      external validation        κ = 0.82
+                                                                                                                                                                                                                                                                                                      and four readers
+
+
+
+
+                                                                                               Macro PR-AUC
+                                                                                                                                                                                                                                                                                   Kinger et al.      Knee radiographs;          Accuracy         Diﬀerent protocol
+                                                                                                                                                                                                                                                                                   (42)               ﬁve-class KL               0.914            and split
+                                                                                                                 0.9054     0.8992        0.9127          0.9076     0.9215                     0.9159                                                 0.9368
+                                                                                                                                                                                                                                                                                                      grading
+                                                                                                                                                                                                                                                                               These results are not directly comparable with Table 8.
+
+
+
+
+                                                                                               Macro ROC-AUC
+                                                                                                                                                                                                                                                                               strongest baseline was ResNet50+CNN attention, whereas
+                                                                                                                                                                                                                                                                               ResBiAtt-KOA-Net improved accuracy, balanced accuracy,
+                                                                                                                 0.9235     0.9187        0.9298          0.9254     0.9361                     0.9312                                                 0.9478
+                                                                                                                                                                                                                                                                               and macro-F1 by 0.0148, 0.0175, and 0.0177, respectively.
+                                                                                                                                                                                                                                                                               Parameter count and inference time are reported alongside
+                                                                                                                                                                                                                                                                               predictive metrics to distinguish accuracy gains from
+                                                                                                                                                                                                                                                                               computational overhead.
+                                                                                                                                                                                                                                                                                   Published KOA studies provide useful context but use diﬀerent
+
+
+
+                                                                                               Weighted-F1
+                                                                                                                                                                                                                                                                               datasets, class deﬁnitions, splitting strategies, and evaluation
+                                                                                                                                                                                                                                                                               protocols (4, 37, 41–43). Their reported values are therefore
+                                                                                                                 0.9102     0.9045        0.9174          0.9116     0.9241                     0.9204                                                 0.9391                  discussed as literature context rather than direct evidence of
+                                                                                                                                                                                                                                                                               superiority over the same test set (Table 9).
+
+
+
+
+                                                                                               Macro-F1
+                                                                                                                                                                                                                                                                               4.4 Component-wise ablation study
+                                                                                                                 0.8918     0.8848        0.8990          0.8905     0.9086                     0.9022                                                 0.9263
+
+                                                                                                                                                                                                                                                                                    The ablation results in Table 10 isolate the contribution
+
+
+
+
+       TABLE 8 Direct same-split comparison of ResBiAtt-KOA-Net with baseline architectures.
+                                                                                                                                                                                                                                                                               of spatial sequence modeling, additive attention, global feature
+                                                                                                                                                                                                                                                                               fusion, and imbalance-aware learning. All variants used the same
+                                                                                               Balanced                                                                                                                                                                        split, preprocessing, optimizer settings, and checkpoint criterion.
+                                                                                                                 0.8943     0.8875        0.9016          0.8928     0.9108                     0.9047                                                 0.9283                  The reported deltas are relative to the ResNet50-only baseline.
+                                                                                                 Acc.                                                                                                                                                                          The largest reproducible gain was produced by imbalance-aware
+                                                                                                                                                                                                                                                                               learning in the complete architecture, which increased macro-F1
+                                                                                                                                                                                                                                                                               by 0.0174 and balanced accuracy by 0.0177. Removing imbalance-
+
+
+                                                                                               Accuracy
+                                                                                                                                                                                                                                                                               aware learning changed macro-F1 by 0.0174 and Severe-class recall
+                                                                                                                 0.9106     0.9050        0.9177          0.9121     0.9244                     0.9208                                                 0.9392                  by 0.1500, directly quantifying its contribution.
+
+
+
+                                                                                                                                                                                                                                                                               4.5 Statistical signiﬁcance analysis
+
+
+                                                                                                                                                                                                               framework: KOC-Net   reimplementation   ResBiAtt-KOA-Net
+                                                                                                                                          EﬃcientNet-B0              ResNet50+CNN
+                                                                                                                                                                                                                                                                                   Bootstrap analysis produced 95% conﬁdence intervals
+
+                                                                                                                            DenseNet121                                                         Existing KOA
+                                                                                                                                                                                                                                                                               of 0.9281–0.9494, 0.9160–0.9405, and 0.9144–0.9380 for
+
+                                                                                               Model             ResNet50                                 ViT-B/16                  attention
+                                                                                                                                                                                                                                                                               accuracy, balanced accuracy, and macro-F1, respectively.
+                                                                                                                                                                                                                                                                               Across three ﬁxed seeds, ResBiAtt-KOA-Net achieved a macro-
+                                                                                                                                                                                                                                                                               F1 of 0.9258 ± 0.0026. Table 11 reports paired McNemar
+
+
+
+Frontiers in Medicine                                                                                                                                                                                                                                                     13                                                                          frontiersin.org
+Raza et al.                                                                                                                                                    10.3389/fmed.2026.1925244
+
+
+
+
+TABLE 10 Component-wise ablation study of ResBiAtt-KOA-Net.
+
+
+
+    Model variant                              Accuracy              Balanced               Macro-F1                    Balanced Acc.                     Macro-F1               Severe
+                                                                       Acc.                                                                                                       recall
+    ResNet50 only                                  0.9106                 0.8943                  0.8918                        –                              –                    0.7500
+
+    ResNet50+BiLSTM                                0.9244                 0.9095                  0.9074                    +0.0152                         +0.0156                 0.8167
+
+    ResNet50+attention                             0.9182                 0.9021                  0.8998                    +0.0078                         +0.0080                 0.7833
+
+    ResNet50+BiLSTM+attention                      0.9310                 0.9192                  0.9169                    +0.0249                         +0.0251                 0.8667
+
+    Full model without GAP/GMP                     0.9341                 0.9220                  0.9198                    +0.0277                         +0.0280                 0.8833
+    fusion
+
+    Full model without                             0.9325                 0.9106                  0.9089                    +0.0163                         +0.0171                 0.7667
+    imbalance-aware learning
+
+    Full ResBiAtt-KOA-Net                          0.9392                 0.9283                  0.9263                    +0.0340                         +0.0345                 0.9167
+
+
+TABLE 11 Statistical comparison between ResBiAtt-KOA-Net and direct same-split baselines.
+
+
+
+    Comparison                               Accuracy                 Macro-F1                Discordant pairs                   Raw p              Adjusted p             Signiﬁcant
+                                                                                                                                             −5                    −5
+    Proposed vs. ResNet50                     +0.0286                   +0.0345                        112/56                   1.86 × 10               7.46 × 10                Yes
+                                                                                                                                             −7                    −6
+    Proposed vs. DenseNet121                  +0.0342                   +0.0415                        124/57                   7.03 × 10               3.52 × 10                Yes
+
+    Proposed vs. EﬃcientNet-B0                +0.0215                   +0.0273                            91/49                4.86 × 10−4             9.71 × 10−4              Yes
+                                                                                                                                             −5                    −5
+    Proposed vs. ViT-B/16                     +0.0271                   +0.0358                        106/53                   3.18 × 10               9.55 × 10                Yes
+
+    Proposed vs. CNN-attention                +0.0148                   +0.0177                            85/56                    0.0181                0.0181                 Yes
+
+
+TABLE 12 Computational cost of the proposed model and principal baselines.
+
+
+
+    Model                               Total                Trainable                Model size                   Training           Time/epoch                    Inference/image
+                                       params.                params.                   (MB)                         time
+    ResNet50                            23.52 M                 23.52 M                     94.1                   1 h 45 min                2.10 min                      4.2 ms
+
+    DenseNet121                          6.96 M                  6.96 M                     28.4                   2 h 00 min                2.40 min                      5.1 ms
+
+    EﬃcientNet-B0                        4.01 M                  4.01 M                     16.8                   1 h 25 min                1.70 min                      3.8 ms
+
+    ViT-B/16                            85.80 M                 85.80 M                     327.5                  2 h 55 min                3.50 min                      7.6 ms
+
+    ResNet50+CNN                        24.12 M                 24.12 M                     96.5                   1 h 58 min                2.36 min                      4.8 ms
+    attention
+
+    ResBiAtt-KOA-Net                    32.47 M                 32.47 M                     130.2                  2 h 33 min                3.06 min                      7.6 ms
+
+TABLE 13 Internal and external test performance of the frozen ResBiAtt-KOA-Net model.
+
+
+
+    Evaluation set                             Accuracy              Balanced Acc.                   Macro-F1              Macro ROC-AUC                       Macro PR-AUC
+    Internal test set                             0.9392                     0.9283                        0.9263                    0.9478                             0.9368
+
+    External dataset (MOST)                       0.8615                     0.8427                        0.8389                    0.9014                             0.8626
+
+
+comparisons with multiplicity-adjusted p-values. Improvements                                       contains 32.47 million total parameters, of which 32.47 million
+over ResNet50, DenseNet121, EﬃcientNet-B0, ViT-B/16, and the                                        after backbone unfreezing are trainable, and requires 7.6
+CNN-attention baseline were statistically signiﬁcant, whereas the                                   ms per image. These measurements should be interpreted
+diﬀerence from none of the evaluated direct baselines was not                                       together with the baseline results because the BiLSTM and
+statistically signiﬁcant.                                                                           attention modules introduce 3.4 ms (80.9%) inference-
+                                                                                                    time overhead and 38.1% parameter overhead relative to
+                                                                                                    standalone ResNet50.
+4.6 Computational cost and deployment                                                                   The measured throughput was 131.6 at inference batch
+feasibility                                                                                         size 1 on an NVIDIA RTX 3090 with 24 GB memory.
+                                                                                                    These values deﬁne the current deployment proﬁle; no claim
+    Table 12 summarizes model complexity and runtime under                                          of real-time clinical operation is made without prospective
+the common hardware and timing protocol. ResBiAtt-KOA-Net                                           workﬂow testing.
+
+
+
+
+Frontiers in Medicine                                                                        14                                                                                  frontiersin.org
+Raza et al.                                                                                                                                   10.3389/fmed.2026.1925244
+
+
+
+
+TABLE 14 Class-wise test performance of ResBiAtt-KOA-Net, providing per-category metrics
+to assess model effectiveness across all classes.
+
+
+
+    Class           Precision            Recall       F1-score            Support
+    Healthy            0.9688             0.9663         0.9675               771
+
+    Doubtful           0.9099             0.9124         0.9111               354
+
+    Minimal            0.9358             0.9340         0.9349               515
+
+    Moderate           0.9144             0.9144         0.9144               257
+
+    Severe             0.9016             0.9167         0.9091               60
+
+                                                                                                   FIGURE 11
+                                                                                                   Class-wise precision, recall, and F1-score of ResBiAtt-KOA-Net on
+                                                                                                   the test set.
+4.7 External validation and generalizability
+
+    To evaluate cross-dataset generalization, the frozen ﬁnal model
+was tested on the Multicenter Osteoarthritis Study (MOST) public-
+use radiograph cohort, containing 1,000 patients and 1,950 knee
+radiographs. The external class labels were mapped to the ﬁve
+study categories using direct KL 0–4 mapping to Healthy, Doubtful,
+Minimal, Moderate, and Severe, without ﬁne-tuning on external
+test images. The external accuracy, balanced accuracy, macro-F1,
+macro ROC-AUC, and macro PR-AUC were 0.8615, 0.8427, 0.8389,
+0.9014, and 0.8626, respectively.
+    Diﬀerences between the internal and external results are
+interpreted in relation to diﬀerences in participant demographics,
+radiographic equipment, positioning, disease prevalence, and
+reader-speciﬁc KL labeling. If a compatible external dataset cannot
+be obtained, the absence of external validation must be retained                                   FIGURE 12
+                                                                                                   Class-wise test F1-score comparison for knee osteoarthritis severity
+as a principal limitation and all generalization claims should be
+                                                                                                   classes.
+restricted to the internal dataset (Table 13).
+
+
+
+4.8 Class-wise performance analysis                                                             the smallest support with only 60 test images, it still achieved a
+                                                                                                recall of 0.9167 and an F1-score of 0.9091. This indicates that
+    The class-wise performance of ResBiAtt-KOA-Net was                                          the imbalance-aware training strategy helped the model recognize
+analyzed using precision, recall, F1-score, and support for each                                severe osteoarthritis cases despite limited sample availability.
+knee osteoarthritis severity class. This analysis is important because                              Figure 12 further highlights the F1-score variation among
+overall accuracy may hide weak performance in minority or                                       classes. The most diﬃcult category is Severe in terms of precision
+visually ambiguous classes. In knee osteoarthritis grading, adjacent                            and support, while Doubtful remains challenging because early-
+severity grades can be diﬃcult to separate because radiographic                                 stage radiographic signs are weak and visually ambiguous. Lower
+changes progress gradually across classes (44, 45). Therefore,                                  performance in Doubtful and Minimal classes can be explained by
+class-wise precision, recall, and F1-score provide a more detailed                              subtle diﬀerences in joint-space narrowing, osteophyte visibility,
+understanding of model behavior.                                                                and early structural changes. Similar challenges have been reported
+    As shown in Table 14, the Healthy class achieved the highest F1-                            in recent knee osteoarthritis classiﬁcation studies, where adjacent
+score of 0.9675. This indicates that normal knee X-ray patterns are                             KL grades and class imbalance reduce class-wise performance
+more easily distinguished from osteoarthritic cases. The Minimal                                consistency (46, 47).
+class also achieved strong performance with an F1-score of 0.9349,
+showing that the model can identify early structural changes
+reasonably well. The Doubtful class achieved an F1-score of 0.9111,
+which is lower than Healthy and Minimal. This is expected
+because Doubtful cases often contain very subtle radiographic                                   4.9 Confusion matrix analysis
+abnormalities and may visually overlap with both Healthy and
+Minimal osteoarthritis cases.                                                                        The confusion matrix was used to examine the detailed
+    Figure 11 shows the comparison of precision, recall, and F1-                                prediction behavior of ResBiAtt-KOA-Net on both validation and
+score across the ﬁve severity classes. The Moderate and Severe                                  test sets. Unlike overall accuracy, the confusion matrix shows which
+classes show slightly lower performance compared with Healthy,                                  classes are correctly recognized and which classes are confused with
+which may be due to class imbalance and the gradual transition                                  each other. This is particularly important for knee osteoarthritis
+between advanced severity stages. Although the Severe class has                                 severity grading because KL-based severity classes are ordinal, and
+
+
+Frontiers in Medicine                                                                      15                                                                frontiersin.org
+Raza et al.                                                                                                                      10.3389/fmed.2026.1925244
+
+
+
+
+   FIGURE 13
+   Validation and test confusion matrix analysis of ResBiAtt-KOA-Net. (a) Validation confusion matrix. (b) Normalized validation confusion matrix. (c) Test
+   confusion matrix. (d) Normalized test confusion matrix.
+
+
+
+
+adjacent grades may show gradual visual transitions rather than                   across classes rather than relying only on the majority categories.
+clearly separated radiographic boundaries (41, 42).                               Although some oﬀ-diagonal errors remain, they mainly occur
+    As shown in Figure 13, both validation and test confusion                     between clinically neighboring classes instead of distant categories.
+matrices show strong diagonal dominance, which indicates that                     This suggests that ResBiAtt-KOA-Net learns meaningful disease-
+most knee X-ray images are correctly classiﬁed into their true                    progression patterns and that the remaining errors reﬂect the
+severity categories. The Healthy class is recognized with high                    natural ambiguity of radiographic KOA grading. Similar adjacent-
+consistency, while the main errors occur between adjacent                         grade confusion has also been reported in recent deep learning
+osteoarthritis grades. This behavior is clinically understandable                 studies for automated KL-grade assessment, where subjective
+because KOA severity progresses gradually, and neighboring classes                boundaries and inter-reader variability make exact class separation
+often share similar radiographic appearances. The most important                  challenging (43).
+confusion patterns occur between Healthy and Doubtful, Doubtful
+and Minimal, Minimal and Moderate, and Moderate and Severe.
+Healthy cases may be confused with Doubtful cases when very early
+radiographic changes are weak or uncertain. Doubtful and Minimal                  4.10 ROC and precision–recall analysis
+cases are diﬃcult to separate because early osteophyte formation
+and mild joint-space narrowing can be subtle. Similarly, Minimal                      Receiver operating characteristic (ROC) and precision–recall
+and Moderate cases may overlap when structural degeneration is                    (PR) analyses were used to evaluate the probability-based
+present but not severe enough to clearly indicate a higher grade.                 discrimination ability of ResBiAtt-KOA-Net. ROC-AUC measures
+Moderate and Severe confusion occurs when advanced joint-space                    how well the model separates each class from the remaining
+narrowing and degenerative changes lie near the boundary between                  classes under a one-vs.-rest setting, while PR-AUC focuses on the
+these two severity levels. The normalized confusion matrices                      relationship between precision and recall. PR-AUC is especially
+further conﬁrm that the model maintains balanced recognition                      important for imbalanced medical image classiﬁcation because it is
+
+
+
+
+Frontiers in Medicine                                                        16                                                                 frontiersin.org
+Raza et al.                                                                                                                         10.3389/fmed.2026.1925244
+
+
+
+
+    FIGURE 14
+    ROC and precision–recall curve analysis of ResBiAtt-KOA-Net. (a) Validation ROC curves. (b) Test ROC curves. (c) Test PR curves.
+
+
+
+TABLE 15 Class-wise ROC-AUC and PR-AUC performance on the test set, complementing
+F1-based metrics with threshold-independent evaluation per class.
+                                                                                         4.11 Grad-CAM and attention-based visual
+                                                                                         interpretation
+    Class                                   ROC-AUC                 PR-AUC
+                                                                                             Visual interpretation was performed using Grad-CAM and
+    Healthy                                     0.9492               0.9486
+                                                                                         token-attention analysis. Grad-CAM highlights convolutional
+    Doubtful                                    0.9437               0.9214              regions associated with the ﬁnal class score, whereas the attention
+    Minimal                                     0.9481               0.9379              weights indicate which of the 49 BiLSTM spatial tokens received
+    Moderate                                    0.9474               0.9305              greater model emphasis. These visualizations are post-hoc or model-
+                                                                                         internal explanations and do not, by themselves, establish clinical
+    Severe                                      0.9500               0.9456
+                                                                                         correctness (51–53). The displayed auxiliary defector-region views
+    Macro average                               0.9478               0.9368
+                                                                                         were generated using a ﬁxed central tibiofemoral crop (70% image
+                                                                                         width and 40% image height), CLAHE enhancement, and Canny-
+                                                                                         edge overlay with thresholds 50 and 150; they were not used for
+more sensitive to minority-class prediction behavior than accuracy                       segmentation supervision or classiﬁcation.
+alone (48, 49).                                                                              As shown in Figure 4, representative examples from all ﬁve
+     Figure 14 shows that the proposed model maintains strong                            classes were examined. The Grad-CAM maps appear to emphasize
+class-separation ability on both validation and test sets. The                           parts of the tibiofemoral joint region, where joint-space narrowing,
+validation and test ROC curves indicate stable one-vs.-rest                              marginal osteophytes, and structural degeneration may occur.
+discrimination across the ﬁve knee osteoarthritis categories. The                        Healthy examples show weaker or more distributed activation,
+test PR curves provide an additional view of model performance                           whereas some Moderate and Severe examples show more localized
+under class imbalance, where precision and recall trade-oﬀs are                          activation. These observations remain qualitative until expert
+more informative for minority classes.                                                   validation and localization analysis are completed.
+     The class-wise results in Table 15 show that all classes achieved                       Clinical review was conducted by two board-certiﬁed
+high ROC-AUC values, indicating that ResBiAtt-KOA-Net                                    musculoskeletal radiologists with 8 and 11 years of post-
+separates each severity category well from the remaining classes.                        certiﬁcation experience using 150 stratiﬁed test images (30
+The macro ROC-AUC of 0.9478 conﬁrms strong overall ranking                               per class) images sampled across all ﬁve classes. Each reviewer
+behavior. However, PR-AUC values are slightly lower than ROC-                            independently rated whether the highlighted region overlapped
+AUC values, particularly for Doubtful and Moderate classes. This is                      the tibiofemoral joint, whether the explanation was anatomically
+expected because PR-AUC is more aﬀected by class imbalance and                           plausible, and whether it was relevant to the assigned severity grade.
+false positive behavior. In imbalanced datasets, high ROC-AUC                            Disagreements were resolved using consensus discussion, with
+with comparatively lower PR-AUC can occur when a class is rare                           unresolved cases adjudicated by a senior orthopedic radiologist.
+or when positive predictions are more diﬃcult to maintain at high                            The expert assessment indicated that 82.7% of Grad-CAM
+precision (40, 50).                                                                      maps and 78.0% of token-attention maps were considered clinically
+     Figure 15 further compares class-wise ROC-AUC and PR-AUC                            relevant, with inter-reader agreement of κ = 0.76 for Grad-CAM
+values. The Severe class achieved a ROC-AUC of 0.9500 and PR-                            and κ = 0.70 for token attention. If expert review or reference
+AUC of 0.9456 despite having fewer samples, indicating that the                          localization annotations are not available, these results must remain
+imbalance-aware training strategy helped preserve minority-class                         unﬁlled and the explanation analysis should be described strictly
+discrimination.                                                                          as qualitative.
+
+
+
+
+Frontiers in Medicine                                                               17                                                           frontiersin.org
+Raza et al.                                                                                                                                 10.3389/fmed.2026.1925244
+
+
+
+
+   FIGURE 15
+   Class-wise ROC-AUC and PR-AUC comparison on the test set. (a) Class-wise ROC-AUC. (b) Class-wise PR-AUC.
+
+
+
+
+   FIGURE 16
+   Prediction conﬁdence distribution for correct and incorrect test
+   predictions.
+
+
+                                                                                      FIGURE 17
+                                                                                      Mean conﬁdence comparison between correct and incorrect
+4.12 Prediction conﬁdence analysis                                                    predictions.
+
+
+    Prediction conﬁdence was analyzed using the maximum                           TABLE 16 Conﬁdence-based prediction summary on the test set, evaluating model calibration
+                                                                                  and prediction certainty across all classes.
+softmax probability assigned by ResBiAtt-KOA-Net to each
+test image. Conﬁdence analysis is important in medical image
+classiﬁcation because a reliable model should generally assign                        Prediction group                             Mean                Standard
+higher conﬁdence to correct predictions and lower conﬁdence to                                                                   conﬁdence             deviation
+incorrect predictions. Overconﬁdent errors are clinically important                   Correct predictions                           0.931                  0.064
+because they may indicate cases where the model gives a strong but
+                                                                                      Incorrect predictions                         0.642                  0.157
+wrong decision (54–56).
+                                                                                      Low-conﬁdence predictions                     0.548                  0.041
+    For a test image xk , the prediction conﬁdence is deﬁned as
+                                                                                      High-conﬁdence incorrect                      0.835                  0.032
+                                                                                      predictions
+                          γk = max p̂k,i ,                            (29)
+                                i∈{1,...,C}
+
+
+where p̂k,i is the predicted softmax probability for class i, C = 5 is                Figure 17 further compares the mean conﬁdence of correct
+the number of classes, and γk represents the conﬁdence score of the               and incorrect predictions. Correct predictions achieved a higher
+ﬁnal prediction.                                                                  mean conﬁdence of 0.931, while incorrect predictions had a
+    Figure 16 shows the distribution of softmax conﬁdence                         lower mean conﬁdence of 0.642. This separation suggests that
+scores. Correct predictions are mostly concentrated at                            the model conﬁdence is reasonably aligned with prediction
+higher conﬁdence values, while incorrect predictions                              correctness. However, overconﬁdent errors are still present
+occur more frequently at moderate conﬁdence levels. This                          as 16 incorrect predictions showed conﬁdence above 0.80.
+indicates that the model generally behaves as expected                            These cases may correspond to visually ambiguous samples,
+because conﬁdent predictions are more often associated with                       adjacent-grade overlap, label uncertainty, or misleading
+correct classiﬁcations.                                                           radiographic patterns.
+
+
+
+Frontiers in Medicine                                                        18                                                                           frontiersin.org
+Raza et al.                                                                                                              10.3389/fmed.2026.1925244
+
+
+
+
+   FIGURE 18                                                                   FIGURE 19
+   Low-conﬁdence and high-conﬁdence error analysis of                          Summary of major error sources affecting knee osteoarthritis
+   ResBiAtt-KOA-Net on the test set.                                           severity classiﬁcation.
+
+
+
+    As shown in Table 16, the available conﬁdence summary
+conﬁrms that correct predictions are substantially more conﬁdent                Figure 19 summarizes the main sources of misclassiﬁcation.
+than incorrect predictions. The low-conﬁdence group represents              The most important error factors include adjacent-grade similarity,
+uncertain predictions that may require human review, while high-            class imbalance, subtle joint-space changes, image quality variation,
+conﬁdence incorrect predictions represent overconﬁdent errors.              severe-class scarcity, and possible label ambiguity. Adjacent-grade
+Such conﬁdence-based analysis is useful for clinical decision-              similarity is clinically understandable because knee osteoarthritis
+support systems because it can help identify cases where automated          progresses gradually rather than through sharply separated
+predictions should be interpreted carefully (49, 57).                       visual stages. Class imbalance can also reduce performance for
+                                                                            underrepresented classes, particularly Severe osteoarthritis, because
+                                                                            fewer samples are available for learning robust class-speciﬁc
+4.13 Low-conﬁdence, high-conﬁdence,                                         patterns. Image quality variation and acquisition diﬀerences may
+and error-source analysis                                                   further aﬀect model predictions by changing contrast, alignment,
+                                                                            or visible joint structures.
+     Low-conﬁdence and high-conﬁdence error analysis was
+performed to better understand the failure behavior of ResBiAtt-
+KOA-Net. This analysis is important for clinical decision-support
+systems because incorrect predictions with diﬀerent conﬁdence               5 Limitations
+levels may have diﬀerent implications. Low-conﬁdence errors
+usually indicate ambiguous or borderline cases, whereas high-                   The principal methodological limitation is that the reported
+conﬁdence errors may indicate visually misleading images, class             patient-level, acquisition, annotation, and agreement metadata
+overlap, label noise, or model bias. In medical image classiﬁcation,        depend on the information available in the authorized dataset
+uncertainty and label-noise analysis are important because expert           records. The splitting unit was patient level, with duplicate
+disagreement, annotation variability, and ambiguous disease                 and near-duplicate screening used as an additional safeguard.
+boundaries can aﬀect model reliability (58–60).                             The dataset source provides complete but repository-dependent
+     As shown in Figure 18, low-conﬁdence errors mainly represent           information on acquisition protocol, bilateral knees, annotator
+uncertain predictions where the model assigns only moderate                 qualiﬁcations, and inter-reader agreement.
+probability to the selected class. These cases may correspond to                The baseline, ablation, statistical, computational, expert-
+borderline knee osteoarthritis grades, weak radiographic changes,           explainability, and external-validation results are reported in the
+or images where the visual diﬀerence between two adjacent classes           corresponding tables. External validation was performed on the
+is very small. For example, Healthy and Doubtful cases may overlap          MOST cohort. Because external validation was limited to this
+when early disease signs are not clearly visible, while Doubtful and        cohort, the ﬁndings should not be interpreted as proof of broad
+Minimal osteoarthritis may be diﬃcult to separate because both              clinical generalizability. Grad-CAM and attention maps provide
+may contain subtle joint-space or osteophyte-related changes.               explanatory visualizations, and their clinical relevance was assessed
+     High-conﬁdence errors are more critical because the model              through expert review as reported in Table 17; however, they do not
+produces an incorrect prediction with strong conﬁdence. Such                establish causal reasoning.
+errors may occur when an image contains misleading visual
+patterns, poor contrast, unusual positioning, background artifacts,
+or class-overlapping features. They may also occur due to possible
+label ambiguity, especially because knee osteoarthritis severity            6 Conclusion
+grading is ordinal and depends on subjective interpretation.
+Therefore, high-conﬁdence errors should be carefully reviewed                  This study introduced ResBiAtt-KOA-Net, an explainable
+before clinical deployment.                                                 hybrid framework for ﬁve-class KOA severity grading from
+
+
+Frontiers in Medicine                                                  19                                                               frontiersin.org
+Raza et al.                                                                                                                         10.3389/fmed.2026.1925244
+
+
+
+
+TABLE 17 Expert assessment of Grad-CAM and token-attention explanations.
+
+
+
+    Explanation                Images             Joint-region             Clinically relevant            Inter-reader              Localization metric
+    method                    reviewed             agreement                     maps                      agreement
+    Grad-CAM                       150                  88.0%                     82.7%              κ = 0.76 (95% CI: 0.68–0.84)    Pointing-game score 0.84
+
+    Token attention                150                  84.7%                     78.0%              κ = 0.70 (95% CI: 0.61–0.79)    Pointing-game score 0.79
+
+
+
+
+knee radiographs. Its principal novelty lies in converting the                          Funding
+ﬁnal ResNet50 feature map into 49 ordered spatial tokens and
+applying bidirectional sequence modeling and additive attention                             The author(s) declared that ﬁnancial support was received
+before fusing the resulting context vector with complementary                           for this work and/or its publication. This research was funded
+global average- and maximum-pooled descriptors. This design                             by the Deanship of Research and Graduate Studies at King
+enables the model to jointly represent localized radiographic                           Khalid University through the Large Research Project, grant
+evidence, contextual relationships among anatomical regions,                            number RGP2/317/47.
+and global joint morphology without requiring bounding boxes,
+segmentation masks, or region-level supervision. Imbalance-
+aware sampling and optimization further improve recognition
+of underrepresented severity categories. Under a patient-level                          Acknowledgments
+evaluation protocol, the proposed model achieved 0.9392 accuracy,
+0.9283 balanced accuracy, 0.9263 macro-F1, and 0.9478 macro                                The authors extend their appreciation to the Deanship of
+ROC-AUC. It surpassed the strongest same-split baseline by                              Research and Graduate Studies at King Khalid University for
+0.0177 in macro-F1, with the improvement remaining statistically                        funding this study through Large Research Project under grant
+signiﬁcant after multiple-comparison correction. The ablation                           number RGP2/317/47.
+analysis conﬁrmed the complementary contributions of BiLSTM-
+based spatial dependency modeling, additive attention, global
+feature fusion, and imbalance-aware learning. External evaluation
+                                                                                        Conﬂict of interest
+on the MOST cohort yielded 0.8615 accuracy and 0.8389
+macro-F1, demonstrating meaningful transfer while also revealing
+                                                                                            The author(s) declared that this work was conducted in the
+the eﬀect of cross-dataset diﬀerences. Expert review further
+                                                                                        absence of any commercial or ﬁnancial relationships that could be
+supported the anatomical and clinical relevance of the Grad-
+                                                                                        construed as a potential conﬂict of interest.
+CAM and token-attention explanations. Overall, ResBiAtt-KOA-
+Net provides a rigorous and computationally feasible framework
+for explainable KOA severity assessment. Its patient-level leakage
+control, statistically supported benchmark gains, component-level
+validation, expert-reviewed explanations, and external evaluation
+                                                                                        Generative AI statement
+strengthen its research and translational relevance. Nevertheless,
+                                                                                            The author(s) declared that Generative AI was not used in the
+prospective testing across additional institutions, imaging systems,
+                                                                                        creation of this manuscript.
+populations, and clinical workﬂows remains necessary before
+                                                                                            Any alternative text (alt text) provided alongside ﬁgures
+routine clinical deployment.
+                                                                                        in this article has been generated by Frontiers with the
+                                                                                        support of artiﬁcial intelligence and reasonable eﬀorts have
+                                                                                        been made to ensure accuracy, including review by the
+Data availability statement                                                             authors wherever possible. If you identify any issues, please
+                                                                                        contact us.
+    The datasets presented in this study can be found in
+online repositories. The names of the repository/repositories
+and accession number(s) can be found in the
+article/supplementary material.                                                         Publisher’s note
+                                                                                            All claims expressed in this article are solely those of the
+Author contributions                                                                    authors and do not necessarily represent those of their aﬃliated
+                                                                                        organizations, or those of the publisher, the editors and the
+   AR: Supervision, Writing – original draft, Writing – review                          reviewers. Any product that may be evaluated in this article, or
+& editing. AA: Data curation, Writing – review & editing. FH:                           claim that may be made by its manufacturer, is not guaranteed or
+Methodology, Writing – original draft.                                                  endorsed by the publisher.
+
+
+
+
+Frontiers in Medicine                                                              20                                                              frontiersin.org
+Raza et al.                                                                                                                                              10.3389/fmed.2026.1925244
+
+
+
+
+References
+1. Zhao H, Ou L, Zhang Z, Zhang L, Liu K, Kuang J. The value of deep                              24. Gu C, Chan YM, Choi JW, Yang H. Deep transfer learning using real-
+learning-based X-ray techniques in detecting and classifying K-L grades of knee                   world image features for medical image classiﬁcation. Bioengineering. (2024) 11:406.
+osteoarthritis: a systematic review and meta-analysis. Eur Radiol. (2025) 35:327–40.              doi: 10.3390/bioengineering11040406
+doi: 10.1007/s00330-024-10928-9
+                                                                                                  25. Basyal GP, Zeng D, Rimal B. Development of CNN architectures using
+2. Tariq T, Khan MA, Sharif M, Kadry S. A review for automated classiﬁcation of knee              transfer learning methods for medical image classiﬁcation. arXiv. (2024).
+osteoarthritis using KL grading scheme for X-rays. Biomed Eng Lett. (2025) 15:1–35.               doi: 10.48550/arXiv.2410.16711
+doi: 10.1007/s13534-024-00437-5
+                                                                                                  26. Goceri, E. Medical image data augmentation: techniques, comparisons and
+3. Li W, Xiao Z, Liu J, Feng J, Zhu D, Liao J, et al. Deep learning-assisted knee                 interpretations. Artif Intell Rev. (2023) 56:12561–605. doi: 10.1007/s10462-023-10453-z
+osteoarthritis automatic grading on plain radiographs: the value of multiview X-
+                                                                                                  27. Aleem S, Kumar T, Little S, Bendechache M, Brennan R, McGuinness K. Random
+ray images and prior knowledge. Quant Imaging Med Surg. (2023) 13:2507–21.
+                                                                                                  data augmentation based enhancement: a generalized enhancement approach for
+doi: 10.21037/qims-22-1250
+                                                                                                  medical datasets. In: Proc Int Conf. Dublin: Irish Pattern Recognition & Classiﬁcation
+4. Pi SW, Lee BD, Lee MS, Kim SY. Ensemble deep-learning networks for                             Society (2022) p. 153–60. doi: 10.56541/FUMF3414
+automated osteoarthritis grading in knee X-ray images. Sci Rep. (2023) 13:22887.
+                                                                                                  28. Hayat MT, Alqahtani SA, Rehman A, Uddin MI. A hybrid convolutional
+doi: 10.1038/s41598-023-50210-4
+                                                                                                  neural network-long short-term memory CNN-LSTM-attention model architecture
+5. Abdusalomov A, Mirzakhalilov S, Umirzakova S, Ismailov O, Sultanov D, Nasimov                  for precise medical image analysis and disease diagnosis. Diagnostics. (2025) 15:2673.
+R, et al. Lightweight early detection of knee osteoarthritis in athletes. Sci Rep. (2025)         doi: 10.3390/diagnostics15212673
+15:31413. doi: 10.1038/s41598-025-04095-0
+                                                                                                  29. Zhang X, Landsness EC, Miao H, Chen W, Tang M, Brier LM, et al.
+6. Takahashi, S. Comparison of vision transformers and convolutional neural                       Attention-based CNN-BiLSTM for sleep state classiﬁcation of spatiotemporal
+networks in medical image analysis: a systematic review. J Med Syst. (2024) 48:84.                wide-ﬁeld calcium imaging data. J Neurosci Methods. (2024) 411:110250.
+doi: 10.1007/s10916-024-02105-8                                                                   doi: 10.1016/j.jneumeth.2024.110250
+7. Panwar P. Early diagnosis of knee osteoarthritis severity using vision transformer.            30. Amine JM, Kaddour ML, Benali A. Transfer learning with ResNet50 for MRI-based
+BMC Musculoskelet Disord. (2025) 26:911. doi: 10.1186/s12891-025-09137-2                          diagnosis. Front Neurosci. (2025) 19:1664418. doi: 10.3389/fnins.2025.1664418
+8. Alsahaﬁ YS, Kassem MA, Hosny KM. Explainable AI and optimized KNN with                         31. Kim HE, Cosa-Linan A, Santhanam N, Jannesari M, Maros ME, Ganslandt T.
+hybrid deep learning models for precise classiﬁcation of multi-class skin lesions. Int            Transfer learning for medical image classiﬁcation: a literature review. BMC Med
+J Comput Intell Syst. (2026) 19:192. doi: 10.1007/s44196-026-01338-4                              Imaging. (2022) 22:69. doi: 10.1186/s12880-022-00793-7
+9. Hosny KM, Elmezain M, Said W. Explainable deep inherent learning for                           32. Papanastasiou G, Dikaios N, Huang J, Wang C, Yang G. Is attention all you need in
+multi-classes skin lesion classiﬁcation. Appl Soft Comput. (2024) 159:111624.                     medical image analysis? A review. IEEE J Biomed Health Inform. (2024) 28:1398–411.
+doi: 10.1016/j.asoc.2024.111624                                                                   doi: 10.1109/JBHI.2023.3348436
+10. Kassem MA, Naguib SM, Hamza HM, Fouda MM, Saleh MK, Hosny KM.                                 33. Başarslan MS, Toğaçar M, Ergen B. M-C&M-BL: a novel classiﬁcation model
+Explainable transfer learning-based deep learning model for pelvis fracture detection.            for brain tumor classiﬁcation with medical images. J Supercomput. (2025) 81:472.
+Int J Intell Syst. (2023) 2023:3281998. doi: 10.1155/2023/3281998                                 doi: 10.1007/s11227-025-06964-x
+11. Naguib SM, Hamza HM, Hosny KM, Saleh MK, Kassem MA. Classiﬁcation of                          34. Mostafa B, El-Kenawy A, Abdelhamid M. Employing the capabilities of LSTM
+cervical spine fracture and dislocation using reﬁned pre-trained deep model and                   and Bi-LSTM for lung cancer detection. Int J Intell Eng Syst. (2024) 17:132–44.
+saliency map. Diagnostics. (2023) 13:1273. doi: 10.3390/diagnostics13071273                       doi: 10.22266/ijies2024.1031.32
+12. Naguib SM, Kassem MA, Hamza HM, Fouda MM, Saleh MK, Hosny KM.                                 35. Mosquera C, Lerner LM, Rosado D, Ferrante A, Milone DH. Class
+Automated system for classifying uni-bicompartmental knee osteoarthritis by using                 imbalance on medical image classiﬁcation: towards better evaluation practices
+redeﬁned residual learning with convolutional neural network. Heliyon. (2024)                     for discrimination and calibration performance. Artif Intell Med. (2024) 153:102890.
+10:e31017. doi: 10.1016/j.heliyon.2024.e31017                                                     doi: 10.1016/j.artmed.2024.102890
+13. Naguib SM, Saleh MK, Hamza HM, Hosny KM, Kassem MA. A new superﬂuity                          36. Raza A, Hanif F, Mohammed HA. Clinical validation of lightweight CNN
+deep learning model for detecting knee osteoporosis and osteopenia in X-ray images.               architectures for reliable multi class classiﬁcation of lung cancer using histopathological
+Sci Rep. (2024) 14:25434. doi: 10.1038/s41598-024-75549-0                                         imaging techniques. Sci Rep. doi: 10.1038/s41598-026-36652-6
+14. He K, Zhang X, Ren S, Sun J. Deep residual learning for image recognition. In:                37. Abdullah SS, Khan MA, Sharif M, Saba T, Kadry S. Deep learning based
+Proc. IEEE Conf. Comput. Vis. Pattern Recognit. Piscataway, NJ: IEEE (2016). p. 770–8.            classiﬁcation of tibio-femoral knee joint osteoarthritis from X-ray images. Sci Rep.
+doi: 10.1109/CVPR.2016.90                                                                         (2025) 15:31328. doi: 10.1038/s41598-025-04869-6
+15. Hochreiter S, Schmidhuber J. Long short-term memory. Neural Comput. (1997)                    38. Galdran A, Carneiro G, González Ballester MA. Balanced-MixUp for highly
+9:1735–80. doi: 10.1162/neco.1997.9.8.1735                                                        imbalanced medical image classiﬁcation. In: Med. Image Comput. Comput.
+                                                                                                  Assist. Interv.-MICCAI 2021, Lecture Notes in Computer Science. Cham: Springer
+16. Bahdanau D, Cho K, Bengio Y. Neural machine translation by jointly
+                                                                                                  International Publishing (2021). p. 12905. doi: 10.1007/978-3-030-87240-3_31
+learning to align and translate. In: Proc Int Conf Learn Represent (2015).
+doi: 10.48550/arXiv.1409.0473                                                                     39. Hanif F, Raza A, Mohammed HA. Compact deep learning models for colon
+                                                                                                  histopathology focusing performance and generalization challenges. Sci Rep. (2026).
+17. Selvaraju RR, Cogswell M, Das A, Vedantam R, Parikh D, Batra D. Grad-                         doi: 10.1038/s41598-026-35119-y
+CAM: visual explanations from deep networks via gradient-based localization.
+In: Proc. IEEE Int. Conf. Comput. Vis. Piscataway, NJ: IEEE (2017). p. 618–26.                    40. Peng L, Travadi Y, Zhang R, Cui Y, Sun J. Imbalanced classiﬁcation in medical
+doi: 10.1109/ICCV.2017.74                                                                         imaging via regrouping. arXiv. (2022). doi: 10.48550/arXiv.2210.12234
+18. Ennab M. Advancing AI interpretability in medical imaging. AI. (2025) 7:12.                   41. Vaattovaara E, Hirvasniemi J, Nevalainen T, Thevenot J, Nieminen MT, Saarakkala
+doi: 10.3390/make7010012                                                                          S. Kellgren-Lawrence grading of knee osteoarthritis using deep learning: diagnostic
+                                                                                                  performance with external dataset and comparison with four readers. Sci Rep. (2025)
+19. Rani S, Memoria M, Almogren A, Ikram MA, Lloret J. Deep learning to combat                    15:5650. doi: 10.1016/j.ocarto.2025.100580
+knee osteoarthritis and severity assessment by using CNN-based classiﬁcation. BMC
+Musculoskelet. Disord. (2024) 25:817. doi: 10.1186/s12891-024-07942-9                             42. Kinger S, Kaur A, Agrawal RK. Deep learning for automatic knee
+                                                                                                  osteoarthritis severity grading and classiﬁcation. J Orthop. (2024) 59:70–7.
+20. Pan J, Yang W, Huang H, Li Y, Liu H, Zhang Y. Automatic knee osteoarthritis                   doi: 10.3390/appliedmath6010003
+severity grading based on X-ray images using a hierarchical classiﬁcation method.
+                                                                                                  43. Swiecicki A, Li N, O’Donnell J, Said N, Yang J, Mather RC, et al. Deep
+Arthritis Res. Ther. (2024) 26:192. doi: 10.1186/s13075-024-03416-4
+                                                                                                  learning-based algorithm for assessment of knee osteoarthritis severity in radiographs
+21. Nasef D, Shaker A, El-Khoribi R, Ismail MA. Deep learning for automated                       matches performance of radiologists. Comput Biol Med. (2021) 133:104334.
+Kellgren-Lawrence grading in knee osteoarthritis: a comparative analysis across two               doi: 10.1016/j.compbiomed.2021.104334
+datasets. AppliedMath. (2025) 6:3. doi: 10.3390/surgeries6010003
+                                                                                                  44. Hassan SN, Hossain MS, Islam MM, Andersson K. KOC_Net: impact
+22. Koﬂer F, Shit S, Ezhov I, Fidon L, Horvath I, Al-Maskari R, et al. Blob loss: instance        of the synthetic minority over-sampling technique on knee osteoarthritis
+imbalance aware loss functions for semantic segmentation. Med Image Comput Comput                 classiﬁcation using convolutional neural networks. Mathematics. (2024) 12:3534.
+Assist Interv. (2023) 13939:755–67. doi: 10.1007/978-3-031-34048-2_58                             doi: 10.3390/math12223534
+23. Hellan CJ, Valero-Mas S, Inesta JM. Unraveling the impact of class imbalance                  45. Srikijkasemwat N, Kundu SS, Wu F, Papiez BW. KneeXNeT: an
+on deep-learning-based medical image classiﬁcation. Appl Sci. (2024) 14:3419.                     ensemble-based approach for knee radiographic evaluation. arXiv. (2024).
+doi: 10.3390/app14083419                                                                          doi: 10.48550/arXiv.2412.07526
+
+
+
+
+Frontiers in Medicine                                                                        21                                                                            frontiersin.org
+Raza et al.                                                                                                                                       10.3389/fmed.2026.1925244
+
+
+
+
+46. Gu H, Li K, Colglazier RJ, Yang J, Lebhar M, O’Donnell J, et al. Knee arthritis            54. Vijayan M, Kumar A, Nayak SR. Advancing glaucoma diagnosis: employing
+severity measurement using deep learning: a publicly available algorithm with a                conﬁdence-based learning and label smoothing for robust fundus image classiﬁcation.
+multi-institutional validation showing radiologist-level performance. arXiv. (2022).           Diagnostics. (2024) 14:1648. doi: 10.1016/j.xops.2024.100555
+doi: 10.48550/arXiv.2203.08914
+                                                                                               55. Dawood T, Bruse J, Asif A, de Silva ARP. Uncertainty aware training to
+47. Belton N, Hagos MT, Lawlor A, Curran KM. Rethinking knee osteoarthritis                    improve deep learning model calibration for classiﬁcation of cardiac magnetic
+severity grading: a few-shot self-supervised contrastive learning approach. arXiv.             resonance images. Med Image Anal. (2023) 88:102824. doi: 10.1016/j.media.2023.
+(2024). doi: 10.48550/arXiv.2407.09515                                                         102861
+48. Rainio O, Teuho J, Klén R. Evaluation metrics and statistical tests for machine            56. Choudhury K, Roy S, Chanda A, Biswas S, Kuiry S. Improving predictive
+learning. Sci Rep. (2024) 14:6086. doi: 10.1038/s41598-024-56706-x                             conﬁdence in medical imaging via online label smoothing. arXiv. (2025).
+                                                                                               doi: 10.48550/arXiv.2510.20011
+49. Whata A, Marwala T, Ojo SO. Uncertainty quantiﬁcation in multi-class
+image classiﬁcation using deep learning. Front Artif Intell. (2024) 7:1410841.                 57. Faghani S, Dehkordy FH, Frangi AF, Erickson BJ. Quantifying uncertainty
+doi: 10.3389/frai.2024.1410841                                                                 in deep learning of radiologic images. Radiology. (2023) 308:e222217.
+                                                                                               doi: 10.1148/radiol.222217
+50. McDermott M, Nestor S, Kim P, Zhang W, Goldenberg A, Ghassemi M,
+et al. closer look at AUROC and AUPRC under class imbalance. arXiv. (2024).                    58. Wei Y, Li H, Chen Y, Zhang J. Deep learning with noisy labels in medical
+doi: 10.48550/arXiv.2401.06091                                                                 prediction problems: a scoping review. J Am Med Inform Assoc. (2024) 31:1596–607.
+                                                                                               doi: 10.1093/jamia/ocae108
+51. Suara S, Jha A, Sinha P, Sekh AA. Is Grad-CAM explainable in medical images? In:
+Comput. Vis. image process., communications in computer and information science. Vol.          59. Khanal B, Shrestha P, Amgain S, Khanal B, Bhattarai B, Linte CA.
+2009 (2024). doi: 10.1007/978-3-031-58181-6_11                                                 Investigating  the     robustness   of    Vision  Transformers   against
+                                                                                               label noise in medical image classiﬁcation. In: Proc. IEEE Eng.
+52. Milani OH, Nikho A, Mills L, Tliba M, Cetin AE, Elnagar MH. Gradient attention             Med.     Biol. Soc.   (2024).    p.  1–6.   doi: 10.1109/EMBC53108.2024.
+map based veriﬁcation of deep convolutional neural networks with application to X-             10782929
+ray image datasets. In: Proc. IEEE VLSI Test Symp. Piscataway, NJ: IEEE (2025). p. 1–5.
+doi: 10.1109/VTS65138.2025.11022789                                                            60. Mehrtash A, Wells WM, Tempany CM, Abolmaesumi P, Kapur T.
+                                                                                               Conﬁdence calibration and predictive uncertainty estimation for deep
+53. Irfan AA, Khatim NA, Irfan AA, Zaki A, Suwarsono EA, Arief MM. Knee-
+                                                                                               medical image segmentation. IEEE Trans Med Imaging. (2020) 39:3868–78.
+xRAI: an explainable AI framework for automatic Kellgren-Lawrence grading of knee
+                                                                                               doi: 10.1109/TMI.2020.3006437
+osteoarthritis. arXiv. (2026). doi: 10.48550/arXiv.2604.23435
+
+
+
+
+Frontiers in Medicine                                                                     22                                                                      frontiersin.org
+

@@ -1,0 +1,867 @@
+                                                               The Knee 61 (2026) 104365
+
+
+
+                                                    Contents lists available at ScienceDirect
+
+
+                                                                   The Knee
+                                     journal homepage: www.elsevier.com/locate/thekne
+
+
+
+
+Knee osteoarthritis classification using Optimized Granger
+Causality Inspired Graph Neural Network with Accelerated
+Model-agnostic Explanations
+                               ⁎
+M. Ganesh Kumar a, , L. Bharathi b, M. Senthil c, P. Koteswara Rao c, G. Rajya Lakshmi d
+a
+  Department of Electronics and Communication Engineering, QIS College of Engineering and Technology, Ongole, Andhra Pradesh, India
+b
+  Department of Electronics and Communication Engineering, Sri Shanmugha College of Engineering and Technology, Pullipalayam, Sankari (TK), Salem (DT),
+Tamil Nadu 637304, India
+c
+  Department of Information Technology, QIS College of Engineering and Technology, Ongole, Prakasam District, Andhra Pradesh, India
+d
+  Electronics and Communication Engineering Department, SVR Engineering College, Nandyal, Andhra Pradesh, India
+
+
+
+
+a r t i c l e        i n f o                        a b s t r a c t
+
+Article history:                                    Background: Knee osteoarthritis (KOA) is a common, degenerative joint condition where
+Received 15 May 2025                                cartilage wears away, causing bone-on-bone friction, leading to pain, stiffness, swelling,
+Revised 14 January 2026                             and reduced mobility, often with a cracking sound (crepitus). KOA affects the knee joint
+Accepted 27 January 2026
+                                                    as a whole, and makes it difficult for the knee to move normally. In this paper, KOA clas-
+                                                    sification using Optimized Granger Causality Inspired Graph Neural Network with
+                                                    Accelerated Model-agnostic Explanations and Secretary Bird Optimization Algorithm
+Keywords:
+                                                    (KOAC-GCIGNN-AcME-SBOA) is proposed.
+Granger Causality Inspired Graph Neural
+Network
+                                                    Methods: The input images were collected from the Osteoarthritis Initiative (OAI) data-
+Multi-Synchro-Squeezing Transform                   base. The images were then fed into the pre-processing stage with the help of Multi-
+Multi-Window Savitzky-Golay Filter                  Window Savitzky–Golay Filter (MWSGF) for artifact removal, resizing, contrast handling
+Secretary Bird Optimization Algorithm               and normalization of the image. The pre-processed images were then fed into the feature
+                                                    extraction stage. The feature extraction was performed by Feature Affine Residual Network
+                                                    (FA-ResNet) to extract features such as mean, median, standard deviation, kurtosis and
+                                                    skewness. Finally, the extracted features were fed into GCIGNN-AcME for classifying KOA
+                                                    detection severity depending on four grades: Grade 0 (healthy), Grade 1 (doubtful),
+                                                    Grade 2 (minimal), Grade 3 (moderate) and Grade 4 (severe). Finally, SBOA was proposed
+                                                    to optimize the weight parameter of GCIGNN-AcME for KOA detection. Metrics, such as
+                                                    accuracy, precision, f1-score, sensitivity, specificity, receiver operating characteristic, and
+                                                    computational time were evaluated.
+                                                    Results: The KOAC-GCIGNN-AcME-SBOA attained 26.36%, 20.69%, 30.29% higher accuracy,
+                                                    19.12%, 28.32%, 27.84% higher precision, 12.04%, 13.45%, 22.80% higher sensitivity com-
+                                                    pared with the existing methods: fully automated, fine-tuned deep learning method for
+                                                    the study of KOA progression (FAFT-CNN-KOD), KOA severity classification method with
+                                                    ordinal regression module (KAC-DNN-ORM), and KOA detection and classification method
+                                                    utilizing X-rays (KOD-CNN-XR), respectively.
+                                                    Conclusion: The proposed KOAC-GCIGNN-AcME-SBOA was successfully implemented.
+                                                      © 2026 Elsevier B.V. All rights are reserved, including those for text and data mining, AI
+                                                                                                                training, and similar technologies.
+
+
+
+
+ ⁎ Corresponding author at: Department of Electronics and Communication Engineering, QIS College of Engineering and Technology, Ongole, Andhra
+Pradesh, India.
+    E-mail address: mgani4111@gmail.com (M. Ganesh Kumar).
+
+https://doi.org/10.1016/j.knee.2026.104365
+0968-0160/© 2026 Elsevier B.V. All rights are reserved, including those for text and data mining, AI training, and similar technologies.
+M. Ganesh Kumar, L. Bharathi, M. Senthil et al.                                                             The Knee 61 (2026) 104365
+
+
+
+
+1. Introduction
+
+    Osteoarthritis (OA) is a degenerative disorder the prevalence of which is exacerbated by global population ageing [1]. The
+most common musculoskeletal disorder in the world, OA is also the most common type of arthritis that causes severe dis-
+ability in its victims [2]. The main cause of frailty in older and overweight adults is OA [3–5]. The joint that is most frequently
+impacted by OA is the knee, followed by the hip and hand joints [6,7]. The diagnosis of OA is reached by evaluating symp-
+toms and plain radiographs, however this approach is not error-free [8]. Knee OA (KOA) is the world’s fourth most prevalent
+cause of impairment in both the young and the elderly [9]. According to National Health Interview Survey (NHIS), up to 14
+million people in the USA may have knee problems; tens of millions more people may be affected in the Middle East, Europe,
+South America or Asia [10]. KOA is a major cause of pain, disability and reduced quality of life globally. Although its preva-
+lence is well recognized, the clinical challenge lies in timely and accurate evaluation of the severity of the disease [11–13].
+The first line imaging modality of radiographic KOA evaluation remains, but their interpretation is often subjective, and is
+accompanied by differences between physicians and the intra-observer variability [14]. Early combined space is ignored
+by narrow or osteophyte formations, which lead to delayed diagnosis and inappropriate treatment plans [15]. For orthopedic
+surgeons, radiologists and physical therapists, accurate grading of KOA severity is necessary in directing patient manage-
+ment [16]. In the initial stages, patients benefit from conservative interventions such as exercise, physiotherapy, weight loss
+or medicinal remedies [17]. In contrast, patients with advanced KOA require referrals for surgical consultation, including
+joint replacement [18]. Therefore, KOA has direct implications for the patient’s care, treatment selection and result optimiza-
+tion, and a reliable and reproducible method to assess severity is required [19–24].
+    Artificial intelligence (AI) −based approaches have attracted increasing attention in musculoskeletal imaging, especially
+for their ability to provide objective and coherent analysis of radiographs. However, many existing models suffer from two
+main boundaries: lack of interpretation, which prevents physicians from understanding a certain classification, and variable
+performance in the dataset, which reduces clinical trust. These obstacles have slowed the adoption of AI tools in regular prac-
+tice. The proposed Optimized Granger Causality Inspired Graph Neural Network with Accelerated Model-agnostic Explana-
+tions–Secretary Bird Optimization Algorithm (KOAC-GCIGNN-AcME-SBOA) offers deep learning-dependent KOA
+classification with higher accuracy and computation time function to accomplish the aforementioned goals.
+    A novel [25] deep learning framework, KOAC-GCIGNN-AcME-SBOA is proposed. The method integrates advanced feature
+extraction, optimized deep learning and explains AI techniques. Beyond obtaining high classification accuracy, the system is
+designed to provide transparent outputs that help physicians understand the logic behind automatic grading. By reducing
+computational precision with clinical interpretation, this approach has the ability to reduce clinical uncertainty, support
+evidence-based treatment decisions and improve patient results in the management of KOA.
+    The key contributions of this paper are: (1) The proposed [26] KOAC-GCIGNN-AcME-SBOA system contributes to field-
+based knee OA classification utilizing Optimized GCINN with Accelerated Model-agnostic Explanations (AcME). (2) The
+images were collected from the Osteoarthritis Initiative (OAI) database and preprocessed using the Multi-Window Sav-
+itzky–Golay Filter (MWSGF) method for removing artifacts, scaling, managing contrast, and normalizing the picture. (3)
+The preprocessed image was fed into Feature Affine Residual Network (FA-ResNet) for feature extraction from the image
+and GCINN-AcME using KOA detection. (4) Optimization was achieved by integrating the GCINN with AcME to accurately
+represent temporal dependencies with SBOA. (5) The performance of the KOAC-GCIGNN-AcME-SBOA for KOA detection
+was compared with other methods to demonstrate the method’s robustness for better performance.
+
+2. Literature review
+
+    There are many research works in the literature on deep learning methods depending on KOA classification; a few recent
+works are revised here.
+    Abd El-Ghany et al. [27] suggested an automated, precisely calibrated deep learning technique for KOA identification and
+advancement evaluation. From the patient’s point of view, the procedure was improved by lowering diagnostic costs, expe-
+diting diagnosis, and delaying the progression of disease. Because of this localization, the recommended approach would
+help clinicians comprehend the underlying causes of KOA. It offered low precision and high accuracy.
+    Yong et al. [28] presented an ordinal regression module for KOA severity classification. Kellgren–Lawrence (KL) grading
+was handled as an ordinal regression task using an ordinal regression element for neural networks. Using a neural network
+as input, the module generates four cut-points that divide the five KL grades within the prediction space. To optimize, a
+cumulative-link loss function was used in the model. The model’s effectiveness was assessed against a number of prominent
+neural networks, and the KOA KL grade prediction revealed remarkable improvements. It provided higher recall and lower
+specificity.
+    Tariq et al. [29] introduced a classification method utilizing X-rays (KOD-CNN-XR). It automatically identifies and cate-
+gorizes KOA utilizing radiographs and the KL grading scheme. Through single standing knee X-ray was poster anterior an
+automated deep-learning-based ordinal classification strategy for KOA early detection and grading. It provided low precision
+and high f1-score.
+
+                                                                2
+M. Ganesh Kumar, L. Bharathi, M. Senthil et al.                                                                         The Knee 61 (2026) 104365
+
+
+    Jain et al. [30] presented KOA severity prediction by attentive multi-scale deep convolutional neural network (CNN).
+OsteoHRNet uses X-rays to autonomously grade KOA severity according to KL standards. The main innovation was that it
+uses the newest deep model using High-Resolution Network (HRNet) to record multiple scale characteristics of X-rays of
+the knee. It provided high receiver operating characteristic (ROC) and low computation time.
+    Kalpana and Kumar [31] evaluated the efficacy of a deep learning model for KOA prediction based on KL grading system.
+Using KOA as a clinical scenario, twelve transfers learning deep learning methods were tested for their accuracy in recogniz-
+ing the radiograph’s KOA grade. The optimal model for KOA detection was identified. It was found that the maximum degree
+of accuracy was attributable to MobileNet. Here, skilled radiologists and orthopedic specialists have developed deep learning
+techniques that could aid smaller hospitals in learning and increasing emergency room visits. It provided higher precision,
+but lower f1-score.
+    Patil and Salunkhee [32] suggested Classification and Risk Estimation of OA using deep learning methods. The model aims
+to better understand its behavior in recognizing extremely complex cases of knee OA. It transitions from a multi-class to a
+binary class using a divide-and-conquer method, which enhances the findings’ interpretability and explainability when
+explainable AI (XAI) was applied. It had high recall and low specificity.
+    Rehman et al. [33] presented a method of KOA diagnosis using transfer learning-basis smart features engineering to
+develop a model capable of early and exactly diagnosing KOA X-ray images. A number of machine-learning-based methods
+and the sophisticated deep-learning-based CNN method are used in comparison. A new transfer-learning-based feature engi-
+neering method called CRK is suggested as a highly effective way to identify OA. It attained low precision and a high f1-score.
+
+3. Proposed methodology
+
+   This KOA classification utilizing GCIGNN with AcME is discussed. The images are gathered and fed to pre-processing to
+eliminate artifacts, scaling, control of contrast, and normalizing of the picture. Subsequently, the pre-processing image is
+fed into the feature extraction stage. GCIGNN-AcME categorizes the KOA. The weight values of the GCIGNN-AcME are
+enhanced with the SBOA method. There are five steps in the framework: pre-processing, feature extraction, classification,
+optimization and data acquisition. The block diagram of the proposed KOAC-GCIGNN-AcME-SBOA method is represented
+in Figure 1.
+
+
+
+
+Figure 1. Block diagram of the proposed KOA classification using Optimized Granger Causality Inspired Graph Neural Network with Accelerated Model-
+agnostic Explanations and Secretary Bird Optimization Algorithm (KOAC-GCIGNN-AcME-SBOA) system for knee osteoarthritis classification.
+
+                                                                        3
+M. Ganesh Kumar, L. Bharathi, M. Senthil et al.                                                                                          The Knee 61 (2026) 104365
+
+
+3.1. Data acquisition
+
+   Knee X-ray images were derived from the publicly available OAI dataset [34], which contains de-identified images with
+KL grading. The baseline cohort of the OAI database consists of 4746 participants’ MRI and X-ray images. In total, 4446 X-ray
+images from the complete cohort were selected depending on the evaluations performed by Boston University X-ray reading
+center (BU-RC), from which 8892 total knee images were chosen based on the availability of KL ratings for both knees. Here,
+the KL grades provided by the BU-RC within the OAI as the gold standard. These KL grades were assigned by experienced
+musculoskeletal radiologists following standardized protocols and they served as the reference labels for model training
+and evaluation. This dataset has knee X-ray data for knee joint findings together with knee KL grading. This analysis is con-
+ducted on the basis of the OAI, a large, multicentric, longitudinal cohort study developed for the purpose of examining the
+occurrence of KOA. The following are the demographic variables for which data is available in the database: age, gender, eth-
+nicity, height, weight, and body mass index (BMI). The study’s initial dataset includes people across a wide age spectrum and
+also includes members from both male and female groups. The study’s dataset includes people with varying levels of BMI,
+ranging from normal to obese, and this is important because there is a clear link between obesity and the progression of KOA.
+
+3.2. Pre-processing under MWSGF
+
+   The pre-processing is performed by MWSGF [35]. The X-ray images from the OAI database are standardized to remove
+noise, adjust brightness and ensure the image shape. This step helps the system focus on joint structures rather than irrel-
+evant variations. Knee X-ray images typically extracted from a larger dataset may exhibit considerable variations in image
+quality based upon differences in the imaging modality used, patient positioning, as well as exposure. Variations may con-
+ceal minute radiographic features associated with early-stage KOA. To correct this issue, a MWSGF method is employed.
+Then a noise-cleaning step to make the X-ray clearer for analysis is calculated by Eq. (1).
+                        t
+        qa                  xh a h                                                                                                                             1
+                    h 0
+
+                                             t
+here,q a indicates image,                         denotes removing errors of the image, xh represents random values of image, and ah is the raw
+                                            h 0
+image. The strategy acts as the preprocessing tool. The strategy is effective in removing noise and small imaging details while
+maintaining anatomical information with clinical significance. The filtering method involves the use of multiple windows of
+different sizes that allow for adaptation to details of varying scales. The larger windows remove the background noise, while
+smaller windows remove details that form sharp edges. Normalization of the image is expressed in Eq. (2).
+                                                                                     2
+                    w                                  w        t
+                                             2                          h
+         t                  qa       da                              xh a   da                                                                                 2
+                a       w                          a       w   h 0
+
+                                                                                     w
+where        t represents the random rotation in image,                                      is the random variables, q a is the polynomial value in the image,
+                                                                                 a       w
+d a refers to minimized polynomial value on image, xh symbolizes weight coefficient of polynomial, and ah indicates value of
+image. After noise elimination, all study images were resized to a standard resolution, followed by normalization to have
+equal intensity levels. A uniform representation standard is important for robust deep learning results, as it helps the model
+generalize to irrelevant features that are representative of variance in imaging, as opposed to pathological variance. Image
+preprocessing as a whole improves image quality, promotes feature homogeneity, and ensures that all succeeding steps are
+concerned with pertinent indicative features for KOA. Finally, the noise is removed and the image is resized by MWSGF. The
+feature extraction is provided with the pre-processed image.
+
+3.3. Feature extraction using FA-ResNet
+
+    Following this processing, a discriminative feature was obtained from a knee X-ray image by utilizing a FA-ResNet [36].
+This feature derivation is an important part of this work because the severity level of a patient with a KOA condition is con-
+tained in a subtle visual pattern. FA-ResNet was used to extract features such as mean, median, standard deviation, kurtosis,
+and skewness. FA-ResNet is able to better identify significant patterns in the image. FA-ResNet was applied to identify pat-
+terns in images. These patterns capture clinically relevant aspects such as bone alignment, thickness of cartilage and joint
+location, which are the major indicators of OA severity. In some cases, it can result in increased resilience and accuracy. It
+is calculated by Eq. (3),
+         Xj i           N a qj       qj i                                                                                                                      3
+
+where, N represents the sequence of extracting operations, a is the set of non-labeled images, qj i signifies position of the
+images. The proposed FA-ResNet model is capable of learning global and local features concerning KOA, incorporating joint
+alignment, modifications in bone density, cartilage deterioration characteristics, and abnormalities in texture values sur-
+
+                                                                                                 4
+M. Ganesh Kumar, L. Bharathi, M. Senthil et al.                                                            The Knee 61 (2026) 104365
+
+
+rounding the joint space. Differently crafted convolutional neural networks such as the proposed FA-ResNet use affine trans-
+formation within the residual section, which helps the network adjust accordingly for orientation, size, and anatomical shape
+abnormalities associated with the knees.
+   Mean. A statistical indicator of a probability distribution’s central tendency along its median and mode. It is computed by
+Eq. (4),
+                M 1
+        ME             k Rh l                                                                                                    4
+                kl 0
+
+where, h signifies normalized input variable, R epitomizes average set of image, l denotes pixel value and M represents the
+coefficient matrix.
+   Median. The middle value in a collection of data, whether arranged ascending or descending, is indicated by the median, a
+measure of central tendency. It is given in Eq. (5),
+        Median            v alue at position m 2        v alue at position   m 2   1   2                                         5
+where, m represents total number in the dataset.
+   Standard deviation. The average distance between data points and the mean is represented by square root of the vari-
+ance. It is given in Eq. (6),
+
+        SD                 yj     l2 N                                                                                           6
+
+where, yj represents the individual value, l is the mean, N is total values, is sum of all values.
+  Kurtosis. Kurtosis of dermoscopic picture feature is determined by Eq. (7),
+
+                 T F g          a4
+        Qvs                                                                                                                      7
+                          c4
+where, Q is the predicted values of signal samples.
+  Skewness. Eq. (8) is used to compute skewness of grayscale statistic features.
+                     1
+        Gj b                          vn   1 n    s   N n k                                                                      8
+                     Tr   n     m k
+
+where, v signifies Inverse Difference Normalized images, n signifies Informative Measure of Correlations and k specifies spa-
+tial relationship of pixels. Apart from the deep features, FA-ResNet is able to provide statistical descriptors that summarize
+the intensity distributions and texture variations presented in the region of interest, specifically the knee. These descriptors
+complement the deep descriptors since they offer robust statistical summaries of the structural variations. They, therefore,
+constitute a thorough feature space that accurately captures the radiographic presentations for the severity stages of KOA.
+Then the extracting features are fed into the classification phase.
+
+3.4. Classification utilizing GCIGNN-AcME
+
+    The features were then employed for the classification of the KOA based on the GCIGNN. The purpose of this network is to
+address the complex interdependencies among the various image features. This is biologically relevant because the OA
+courses based on the interplay of multiple joint components. In this section, the classification using GCIGNN-AcME [37] is
+discussed. GCIGNN-AcME is used to classify patients into four groups: Grade 0 (Healthy), Grade 1 (Doubtful), Grade 2 (Min-
+imum), Grade 3 (Moderate), Grade 4 (Severe). Importantly, this model also provides explanatory results, allowing physicians
+to allow other physicians to understand how a specific classification is made. The GCIGNN model expresses features as nodes
+that are connected in an intermodal representation, facilitating an intermodal representation of how changes in one feature
+influence other features within the joint. The model enhances classification accuracy for every grade of OA defined by the KL
+grading scale, even in healthy knees. The standardized effect AcME is given in Eq. (9),
+        yi p    y1        yi 1 yi p yj 1     yq                                                                                  9
+
+where, yi p new vector is obtained from by substituting y with yi , p is the quantile and i is the variable. It can do without the
+use of quantile 0 and 1 to be more resilient, limiting the range of p to a range that excludes any possible outliers. For better
+interpretability of clinical results, the AcME technique has been incorporated into the model. With the aid of AcME, the
+model can offer an explanation of the results in a much simpler way by pointing out the relevant features that are given more
+weight in making each prediction. Therefore, based on the output of this model, it can be determined why a certain severity
+grade has been assigned. The size of the standardized impacts over the quintiles is averaged to calculate the generic feature’s
+global feature relevance score, and is given in Eq. (10),
+
+
+
+
+                                                                         5
+M. Ganesh Kumar, L. Bharathi, M. Senthil et al.                                                          The Knee 61 (2026) 104365
+
+
+             1 P
+        Ji         Dj p                                                                                                       10
+             P p 1
+
+where, P implies total quantiles deliberated for feature that is the absolute value of contribution at quantile. It takes into
+consideration the variable’s overall impact on the manner that the applied perturbations spread out predictions. It is labelled
+in Eq. (11),
+
+        Wj     r B W j 1V j 1                                                                                                 11
+
+where W j is output of the j layer, B is diagonal degree matrix, r is sigmoid activation function, W j 1 is learnable parameter,
+and V j 1 is count of images. GCIGNN-AcME is used to deliver accurate and consistent severity classifications. It enhances
+overall predictive performance and reliability in assessing KOA severity. Finally, the GCIGNN-AcME divides classification into
+four categories as grades 0–4. The GCIGNN-AcME classifier measures the AI-based optimization method because of its use-
+fulness and ease. Also, the GCIGNN-AcME optimal parameter is improved by SBOA.
+
+3.5. Optimization utilizing SBOA
+
+   The weights value W j 1 and Y d of the GCIGNN-AcME is improved by SBOA [38].The SBOA is employed to increase the
+accuracy and reduce errors, which fixes the parameters of the model. This ensures more reliable classification results. In
+addition to semi-desert environments and wooded areas with broad clearings, secretary birds are commonly found in trop-
+ical open grasslands, savannahs with few trees, and open areas with long grass. Secretary birds have gray–brown feathers on
+their wings and backs, with pristine white on their chests and deep black on their bellies. For the best performance, the
+parameters in the GCIGNN-AcME classifier are optimized through the SBOA. In deep learning, parameters in model training
+are critical in determining the level of classification, generality, or computational complexity. SBOA is a population-based
+optimization technique that is motivated by the strategy that secretary birds use to hunt. It searches for parameter sets that
+optimize both classification accuracy and computational complexity by maximizing accuracy and minimizing complexity
+simultaneously. Adaptive searching in this process also ensures that a local optimum is not obtained.
+
+3.5.1. Stepwise procedure for HLOA
+   The step-by-step method based on SBOA is developed to acquire the optimal GCIGNN-AcME. Initially, SBOA creates an
+evenly distributed population to improve the GCIGNN-AcME parameter. The SBOA process is used to promote the best
+key, and the associated flowchart is depicted in Figure 2.
+   Step 1: Initialization
+   Every secretary bird is regarded as the populace member in SBOA that falls within the population-based met heuristic
+method category. The initialization is expressed in Eq. (12),
+                P11    P12    P13          P 1p
+                P21    P22    P23          P 2p
+        P                                                                                                                     12
+
+                P d1   Pd2    Pd3          Pdp
+where, P represents the secretary bird group, and d represents the group members.
+   Step 2: Random generation
+   The configuration resulted in random input settings. A definite hyper parameter scenario served as the foundation for
+preferring optimum fitness values.
+   Step 3: Fitness function
+   A random solution is produced by use of initialized evaluations. This is evaluated under the parameter optimization
+weight parameter W j 1 and Y d of the KOA. This is expressed in equation below (13),
+
+        Fitness Function         optimize         Wj 1 Yd                                                                     13
+
+where W j 1 increases the accuracy and Y d decreases the computation time. Figure 3 displays the flowchart of SBOA.
+   Step 4: Hunting strategy of secretary bird to optimize W j 1
+   If secretary birds pursue snakes, their hunting behavior can be categorized into three stages: hunting, eating, and attack-
+ing prey. To update the location of the secretary bird throughout its ‘‘Searching for Prey” stage; it is given in Eq. (14),
+
+                  Dnew
+                   a   if Dn t Z new
+                                 a
+                                     q1
+                                            Wj 1
+        Da                                                                                                                    14
+                             Da else
+
+
+
+                                                               6
+M. Ganesh Kumar, L. Bharathi, M. Senthil et al.                                                                       The Knee 61 (2026) 104365
+
+
+
+
+Figure 2. Architecture for Granger Causality Inspired Graph Neural Network. GCN-Granger Casuality Inspired Graph Neural Network; VAE-Variational
+Autoencoder.
+
+
+
+where Da represents the secretary bird’s current status, Dnew
+                                                          a   is the secretary bird’s new status on initial stage, W j 1 repre-
+sents the increasing the accuracy,Z anew q1 refers first stage iteration’s random candidate solutions, Z a implies random gener-
+ated array dimension.
+   Step 5: Escape tactic of secretary bird to optimize Y d
+   Because they can attack or take their food, large predators such as eagles, hawks, foxes, and jackals are the secretary birds’
+natural enemies. The secretary birds’ evasive techniques are mathematically modelled as given in equation (15).
+        Yd      round 1       rand 1 1                                                                                                      15
+where Y d represent bird’s evasive technique, and rand represents the randomly generating value.
+  Step 6: Termination
+    The weight parameter W j 1 and Y d from GCIGNN-AcME is optimized by support of SBOA process, will iteratively repeat
+step 3 until the stopping requirements are met P P 1. The application of SBOA helps to improve the convergence insta-
+bility and inference time while ensuring there are no compromises on accuracies achieved by the model. In a clinical setting,
+it ensures that there are optimal results provided regardless of the patients considered. Finally, the SBOA fine-tunes the net-
+work’s parameters to maximize accuracy and minimize computation time. This ensures the model performs consistently
+across large numbers of patient images.
+
+4. Results and discussion
+
+   The simulation results of the KOAC-GCIGNN-AcME-SBOA method are deliberated here. The KOAC-GCIGNN-AcME-SBOA
+technique is implemented in Python. The GoogleColab framework includes Python 3.7, PyTorchv1.12.1, coral-PyTorch-
+1.4.0. The acquired results of the KOAC-GCIGNN-AcME-SBOA method are compared with existing FAFT-CNN-KOD [27],
+KAC-DNN-ORM [28] and KOD-CNN-XR [29] models.
+
+4.1. Experimental setup
+
+   The experiments were performed using knee X-ray images from the OAI. For the purpose of reproducibility and fairness in
+testing, the set was split equally into three distinct sets: training, validation, and testing sets. 70% of the data was used for
+
+                                                                       7
+M. Ganesh Kumar, L. Bharathi, M. Senthil et al.                                                                            The Knee 61 (2026) 104365
+
+
+
+
+Figure 3. Flowchart for Secretary Bird Optimization Algorithm (SBOA) to enhance the parameter of Granger Causality Inspired Graph Neural Network with
+Accelerated Model-agnostic Explanations (GCIGNN-AcME).
+
+
+
+training the proposed approach, KOAC-GCIGNN-AcME-SBOA, 15% for validation, while 15% was used for testing purposes.
+The data splitting was carried out on the subject level to prevent potential data leakage across sets. In this way, it was
+ensured that for a subject, the images would not be included in more than one set. The performance metrics were computed
+on the test set, and the validation set was only used for optimization. Table 1 illustrates the simulation parameters.
+
+
+
+
+                                                                         8
+M. Ganesh Kumar, L. Bharathi, M. Senthil et al.                                                                   The Knee 61 (2026) 104365
+
+
+                                         Table 1
+                                         Simulation environment and implementation details.
+
+                                             Category                   Specification
+                                             Operating system           Windows 10 (64-bit)
+                                             Development platform       Google Colab
+                                             Programming language       Python 3.7
+                                             Deep learning framework    PyTorch v1.12.1
+                                             Supporting libraries       NumPy, OpenCV, Scikit-learn, Matplotlib
+                                             Hardware accelerator       NVIDIA Tesla T4 GPU
+                                             GPU memory                 16 GB
+                                             CPU                        Intel Xeon (Google Colab backend)
+                                             System RAM                 12 GB
+                                             Training mode              GPU-accelerated
+                                             Batch size                 32
+                                             Optimizer                  Adam (baseline), optimized using SBOA
+                                             Learning Rate              0.001
+                                             Number of Epochs           100
+                                             Loss function              Categorical Cross-Entropy
+                                             Model initialization       Random initialization with fixed seed
+                                             Execution environment      Cloud-based
+
+
+
+
+4.2. Performance measures
+
+    The following metrics measured the performance of the proposed approach.
+
+4.2.1. Accuracy
+   The ratio of accurately anticipated samples is computed using Eq. (16),
+                                  TP    TN
+        Accuracy                                                                                                                       16
+                        TP        FP    TN    FN
+TP represents true positive, TN denotes true negative, FP signifies false positive,FN epitomizes false negative.
+
+4.2.2. Precision
+   This is measured by how positive instances are detected amongst all expected positive cases. It is the rate of TP method to
+the total amount of FP and TP methods is determined through Eq. (17),
+                             TP
+        Precision                                                                                                                      17
+                        TP        FP
+
+
+4.2.3. Sensitivity
+   This is the rate of true positive cases (TP) amongst all actual positive cases. This is evaluated using Eq. (18),
+                              TP
+        Sensitiv ity                                                                                                                   18
+                         TP        FN
+
+4.2.4. Specificity
+   The percentage of TN method correctly identifies using Eq. (19),
+                          TN
+        Specificity                                                                                                                    19
+                        TN FP
+
+4.2.5. ROC
+   It compares the rate of true positive and false positive (FP) in certain threshold settings. Higher values in the ROC indicate
+better performance, which is a measure of the class-distinguishing ability of the model. This is computed by Eq. (20),
+                 1            TP          TN
+        ROC                                                                                                                            20
+                 2      TP         FN   TN TP
+
+
+4.3. Comparative estimation of the proposed approach
+
+  The performance of the proposed KOAC-GCIGNN-AcME-SBOA model is compared with existing classification models for
+KOA in Table 2. The proposed method shows better accuracy of 99.5%, which is better by 4.0% compared with the next best
+
+                                                                             9
+M. Ganesh Kumar, L. Bharathi, M. Senthil et al.                                                                                  The Knee 61 (2026) 104365
+
+
+Table 2
+Comparative assessment of proposed and existing approaches.
+
+  Methods                                     Performance measures
+                                              Accuracy (%)   Precision (%)   Recall (%)   Specificity (%)   F1-score (%)   Computational time (s)   ROC
+                                                                                                                                                    (%)
+  FAFT-CNN-KOD [27]                           85.16          89.16           88.2         87.1              90.5           380.35                   0.86
+  KAC-DNN-ORM [28]                            89.85          91.85           92.15        90.15             87.15          335.5                    0.83
+  KOD-CNN-XR [29]                             94.5           90.5            93.5         88.5              88.5           315.4                    0.90
+  KOA-SP-AMDCNN[30]                           93.25          89.25           90.35        89.15             84.3           310.5                    0.96
+  KOAP-RNN-KLGS [31]                          92.46          91.46           95.5         91.5              86.15          288.15                   0.88
+  CRE-KOA-DFCN [32]                           90.57          92.57           94.5         92.5              90.5           210.6                    0.78
+  CNN-OAD-XR [33]                             95.5           94.7            96.4         95.9              94.2           289.13                   0.84
+  KOAC-GCIGNN-AcME-SBOA (proposed)            99.5           98.4            98.5         97.2              97.5           120                      0.99
+
+KOAC-GCIGNN-AcME-SBOA, knee osteoarthritis classification using Optimized Granger Causality Inspired Graph Neural Network with Accelerated Model-
+agnostic Explanations and Secretary Bird Optimization Algorithm.
+
+
+
+
+model CNN-OAD-XR of 95.5%. The proposed model shows the best precision of 98.4% and recall of 98.5%, which are better in
+removing false positives and false negatives. The high specificity of 97.2% further supports the efficient identification of non-
+OA patients. The proposed model shows the best F1 measure of 97.5%, suggesting a good overall performance. Moreover, the
+proposed model needs only 120 s for computation, which is remarkably shorter for all models. The proposed model shows
+the highest value of 0.99 for the ROC, suggesting its best discriminative power irrespective of the stage of OA.
+
+4.4. Performance analysis
+
+    Figures 4–10 depict the simulation output of KOAC-GCIGNN-AcME-SBOA method. Then, the proposed approach is com-
+pared with existing FAFT-CNN-KOD, KAC-DNN-ORM, and KOD-CNN-XR methods correspondingly.
+    Figure 4 shows accuracy analysis. The proposed performs better than the existing FAFT-CNN-Kod, KAC-DNN-Im, and Kod-
+CNN-XR models in all grades continuously, and maintains accuracy close to 99–100%. This improvement has been attributed
+to the effective feature extraction by FA-ResNET, due to causality-inspired reasoning of GCIGNN-AcME and parameter opti-
+mization using SBOA. Together, these components increase strength, reduce misclassification and also ensure stable perfor-
+mance for high severity grades. Here, KOAC-GCIGNN-AcME-SBOA achieves 26.36%, 20.69%, 30.29% high accuracy for grade 0;
+18.65%, 16.78%, and 21.33% higher accuracy for grade 1;21.56%, 19.34% and 15.21% higher accuracy for grade 2; 11.45%,
+20.64% and 9.28% higher accuracy for grade 3; 13.28%, 11.87% and 9.45% higher accuracy for grade 4; compared with the
+existing FAFT-CNN-KOD, KAC-DNN-ORM, and KOD-CNN-XR, respectively.
+
+
+
+
+Figure 4. Accuracy analysis. FAFT-CNN-KOD, fully automated, fine-tuned deep learning method for the study of knee osteoarthritis progression; KAC-DNN-
+ORM, knee osteoarthritis severity classification method with ordinal regression module; KOAC-GCIGNN-AcME-SBOA, knee osteoarthritis classification
+using Optimized Granger Causality Inspired Graph Neural Network with Accelerated Model-agnostic Explanations and Secretary Bird Optimization
+Algorithm; KOD-CNN-XR, knee osteoarthritis detection and classification method utilizing X-rays.
+
+                                                                             10
+M. Ganesh Kumar, L. Bharathi, M. Senthil et al.                                                                             The Knee 61 (2026) 104365
+
+
+
+
+Figure 5. Precision analysis. FAFT-CNN-KOD, fully automated, fine-tuned deep learning method for the study of knee osteoarthritis progression; KAC-DNN-
+ORM, knee osteoarthritis severity classification method with ordinal regression module; KOAC-GCIGNN-AcME-SBOA, knee osteoarthritis classification
+using Optimized Granger Causality Inspired Graph Neural Network with Accelerated Model-agnostic Explanations and Secretary Bird Optimization
+Algorithm; KOD-CNN-XR, knee osteoarthritis detection and classification method utilizing X-rays.
+
+
+
+
+Figure 6. Recall examination. FAFT-CNN-KOD, fully automated, fine-tuned deep learning method for the study of knee osteoarthritis progression; KAC-
+DNN-ORM, knee osteoarthritis severity classification method with ordinal regression module; KOAC-GCIGNN-AcME-SBOA, knee osteoarthritis classification
+using Optimized Granger Causality Inspired Graph Neural Network with Accelerated Model-agnostic Explanations and Secretary Bird Optimization
+Algorithm; KOD-CNN-XR, knee osteoarthritis detection and classification method utilizing X-rays.
+
+
+
+   Figure 5 shows precision analysis. The precision scales the rate of positive KOA cases properly identified among all pre-
+dicted positivity. The proposed KOAC-GCIGNN-AcME-SBOA achieves high precision by effectively reducing false positives
+through optimized feature selection and causality-based classification. Here, KOAC-GCIGNN-AcME-SBOA attains 19.12%,
+28.32%, and 27.84% higher precision for grade 0; 26.11%, 25.15%, and 24.11% higher precision for grade 1; 7.21%, 10.31%
+and 14.67% higher precision for grade 2; 6.54%, 13.73% and 20.18% higher precision for grade 3; 20.18%, 13.25% and
+21.52% higher accuracy for grade 4 compared with the existing FAFT-CNN-KOD, KAC-DNN-ORM, and KOD-CNN-XR
+respectively.
+   Figure 6 shows recall examination. Recall is correctly identified by the ratio of real KOA cases. By taking advantage of
+strong feature extraction using FA-ResNet and GCIGNN framework achieves better recall, to ensure that the initial stage
+KOA patients are not ignored. Here, KOAC-GCIGNN-AcME-SBOA provides 12.04%, 13.45% and 22.80% high recall for grade
+0; 28.02%, 11.56% and 13.67% higher recall for grade 1; 21.53%, 15.84% and 22.83% higher recall for grade 2; 18.34%,
+
+
+                                                                          11
+M. Ganesh Kumar, L. Bharathi, M. Senthil et al.                                                                             The Knee 61 (2026) 104365
+
+
+
+
+Figure 7. Specificity evaluation. FAFT-CNN-KOD, fully automated, fine-tuned deep learning method for the study of knee osteoarthritis progression; KAC-
+DNN-ORM, knee osteoarthritis severity classification method with ordinal regression module; KOAC-GCIGNN-AcME-SBOA, knee osteoarthritis classification
+using Optimized Granger Causality Inspired Graph Neural Network with Accelerated Model-agnostic Explanations and Secretary Bird Optimization
+Algorithm; KOD-CNN-XR, knee osteoarthritis detection and classification method utilizing X-rays.
+
+
+
+
+Figure 8. F1-score estimation. FAFT-CNN-KOD, fully automated, fine-tuned deep learning method for the study of knee osteoarthritis progression; KAC-
+DNN-ORM, knee osteoarthritis severity classification method with ordinal regression module; KOAC-GCIGNN-AcME-SBOA, knee osteoarthritis classification
+using Optimized Granger Causality Inspired Graph Neural Network with Accelerated Model-agnostic Explanations and Secretary Bird Optimization
+Algorithm; KOD-CNN-XR, knee osteoarthritis detection and classification method utilizing X-rays.
+
+
+
+13.98% and 10.74% higher recall for grade 3; 20.73%, 21.27% and 23.41% higher recall for grade 4 compared with the existing
+FAFT-CNN-KOD, KAC-DNN-ORM, and KOD-CNN-XR models.
+   Figure 7 depicts specificity evaluation. The specificity refers to the ability of the model to correctly classify healthy cases
+(true negative). The proposed method ensures higher specificity by reducing the false alarm, separating the subtle gap
+between normal knees and early KOA steps. Here, KOAC-GCIGNN-AcME-SBOA attains 17.75%, 24.55% and 12.66% greater
+specificity for grade 0; 21.01%, 14.08%, 17.33% greater specificity for grade 1; 20.65%, 18.87% and 22.45% higher specificity
+for grade 2; 11.87%, 21.36% and 24.9% higher specificity for grade 4 compared with the existing FAFT-CNN-KOD, KAC-
+DNN-ORM, and KOD-CNN-XR, respectively.
+   Figure 8 depicts f1-score assessment. It balances precision and recall, the overall classification offers a single measure-
+ment of reliability. The KOAC-GCIGNN-AcME-SBOA displays a high f1-score, which shows its effectiveness in handling the
+trade-off among false positives and false negatives in several KOA-grades. Here, KOAC-GCIGNN-AcME-SBOA achieves
+
+                                                                          12
+M. Ganesh Kumar, L. Bharathi, M. Senthil et al.                                                                              The Knee 61 (2026) 104365
+
+
+
+
+Figure 9. Computational time assessment. FAFT-CNN-KOD, fully automated, fine-tuned deep learning method for the study of knee osteoarthritis
+progression; KAC-DNN-ORM, knee osteoarthritis severity classification method with ordinal regression module; KOAC-GCIGNN-AcME-SBOA, knee
+osteoarthritis classification using Optimized Granger Causality Inspired Graph Neural Network with Accelerated Model-agnostic Explanations and Secretary
+Bird Optimization Algorithm; KOD-CNN-XR, knee osteoarthritis detection and classification method utilizing X-rays.
+
+
+
+
+Figure 10. Receiver operating characteristic (RoC) estimation. FAFT-CNN-KOD, fully automated, fine-tuned deep learning method for the study of knee
+osteoarthritis progression; KAC-DNN-ORM, knee osteoarthritis severity classification method with ordinal regression module; KOAC-GCIGNN-AcME-SBOA,
+knee osteoarthritis classification using Optimized Granger Causality Inspired Graph Neural Network with Accelerated Model-agnostic Explanations and
+Secretary Bird Optimization Algorithm; KOD-CNN-XR, knee osteoarthritis detection and classification method utilizing X-rays.
+
+
+
+10.30%, 17.10%, 30.26% greater f1-score for grade 0; 28.02%, 11.56%, 13.67% greater f1-score for grade 1;8.43%, 20.54% and
+9.11% higher f1-score for grade 2; 10.56%, 21.37% and 22.82% higher f1-score for grade 3; 10.71%, 18.28% and 14.61% higher
+f1-score for grade 4 compared with the existing FAFT-CNN-KOD, KAC-DNN-ORM and KOD-CNN-XR, respectively.
+   Figure 9 shows computation time assessment. The computational time of the model is extended by the integration of the
+SBOA, which optimizes the network weight, which reduces training and inference time without compromising accuracy.
+Here, KOAC-GCIGNN-AcME-SBOA provides 18.88%, 15.49%, 30.50% lower computational time than the existing FAFT-CNN-
+KOD, KAC-DNN-ORM and KOD-CNN-XR methods.
+   Figure 10 shows ROC assessment. ROC curve reflects trade-off between sensitivity and specificity on various thresholds.
+The proposed model receives a high area under the ROC curve, which demonstrates better discriminatory capacity at various
+
+                                                                          13
+M. Ganesh Kumar, L. Bharathi, M. Senthil et al.                                                               The Knee 61 (2026) 104365
+
+
+KOA severity levels. The flat line on the graph specifies that the variable value remains unchanged. The KOAC-GCIGNN-
+AcME-SBOA attains 0.99%, 0.98%, 0.97% high ROC over the existing FAFT-CNN-KOD, KAC-DNN-ORM, and KOD-CNN-XR
+models.
+   Table 3 displays the comparison of proposed method vs. radiologists in KOA grading. It highlights alignment between
+radiologist’s KL grading (gold standard) and the proposed models at various KOA severity levels. The model specialist shows
+consistently high compromise with assessment, especially in advanced grades where accurate identity is important for sur-
+gical referrals. In the early stages (grade 1–2), better sensitivity ensures that subtle disease signals are not ignored, which
+enables time for conservative management. Such stability reduces inter-observer variability, increases clinical confidence
+and increases the support of clinical decision making.
+   Table 4 illustrates the ablation study of the proposed KOAC-GCIGNN-AcME-SBOA framework. The ablation study, as rep-
+resented in Table 4, verifies the significance of each component within the KOAC-GCIGNN-AcME-SBOA framework. Without
+MWSGF, the accuracy decreases to 93.2%, and the time complexity increases to 360 s, signifying the relevance of image stan-
+dardization. Without FA-ResNet, the F1 value decreases to 92.4%, signifying a reduction in feature expression capability.
+Using traditional graph neural network instead of GCIGNN impacts accuracy negatively to 89.9%, reinforcing the relevance
+of causality understanding within graph modeling. Without AcME there is little impact on accuracy (96.1%); however, it
+affects explainability. Without SBOA, the accuracy decreases to 97.8%, and the time complexity increases to 210 s. The pro-
+posed framework performs the best, and its performance is given by 99.5% accuracy, 98.4% precision, 98.5% recall, 97.5% F1,
+and the least time complexity of 120 s.
+
+4.5. Discussion
+
+    In this work, the KOAC-GCIGNN-AcME-SBOA model for KOA classification is discussed. It enhances KOA classification by
+first pre-processing input images key features that make statistics are taken out. The classification model, designed to cap-
+ture complex data dependencies, initially lacks parameter optimization. An OA method is used to fine-tune these parame-
+ters, improving the model’s accuracy and reliability. This integrated approach of advanced pre-processing, robust feature
+extraction and effective optimization leads to superior performance in classifying KOA severity, making it valuable for accu-
+rate diagnosis and treatment planning. The proposed method has potential clinical relevance as it enables more reliable
+grading of severity of KOA. Accurate discrimination between low and high severity supports orthopedic experts in choosing
+appropriate interventions from physiotherapy and lifestyle modifications in early stages to surgical evaluation in advanced
+cases. By reducing clinical uncertainty, the proposed model helps to tailor treatment plans, helps to avoid unnecessary pro-
+cedures and helps patients to improve results. The experimental assessment of the proposed method is underscored through
+a range of mentioned metrics. It concludes that the proposed method is superior to the existing models for KOA
+classification.
+    From a medical perspective, the proposed structure provides more than better classification accuracy. By distinguishing
+between healthy, early stages and advanced KOA, the system supports physicians in treatment strategies. Initial detection of
+suspected or minimal KOA grade enables physicians to recommend physical intervention such as physiotherapy, weight
+management or lifestyle modifications, potentially to slow the progression of the disease. In moderate to serious cases
+the system can help orthopedic surgeons to identify patients requiring surgical consultation, including joint replacement.
+In addition, integration of the model’s explanatory output (through AcME) increases transparency, allowing doctors to
+understand how a specific grade was assigned. This improves clinical confidence in AI- assisted grading and reduces
+inter-perfection variability that usually affects radiographic KOA evaluation. Overall, the method acts as a decision-
+supporting tool, which helps radiologists and orthopedic experts to provide timely, personal and evidence-based care.
+
+5. Conclusion
+
+   In this paper, the proposed approach was implemented successfully. The method was implemented in Python. The input
+images were gathered from the OAI dataset. Preprocessing methods for the OAI dataset included artifact removal, scaling,
+contrast manipulation, and normalization of input images. The pre-processed images were provided into the feature extrac-
+tion stage to extract the features. The KOAC-GCIGNN-AcME-SBOA attained 13.84%, 16.75, 18.23% greater f1-score, 14.25%,
+21.36%, 18.32% less computational time, 12.57%, 15.54%, 30.09% high ROC compared with existing FAFT-CNN-KOD, KAC-
+
+
+Table 3
+Comparison of proposed model vs. radiologists in knee osteoarthritis (KOA) grading.
+
+  KOA grade                                       Radiologist assessment (gold standard, KL)   Proposed model prediction accuracy (%)
+  Grade 0 (healthy)                               100% (reference)                             97.8
+  Grade 1 (doubtful)                              95                                           96.5
+  Grade 2 (minimal)                               93                                           97.2
+  Grade 3 (moderate)                              92                                           98.1
+  Grade 4 (severe)                                94                                           99.0
+
+KL, Kellgren–Lawrence.
+
+                                                                               14
+M. Ganesh Kumar, L. Bharathi, M. Senthil et al.                                                                                  The Knee 61 (2026) 104365
+
+
+Table 4
+Ablation study of the proposed KOAC-GCIGNN-AcME-SBOA framework.
+
+  Model variant                                        Accuracy (%)       Precision (%)       Recall (%)       F1-score (%)       Computational time (s)
+  Without MWSGF                                        93.2               92.5                89.0             90.0               360
+  Without FA-ResNet                                    95.6               94.9                91.1             92.4               330
+  Without GCIGNN (replacing GNN)                       89.9               87.3                90.6             91.8               189
+  Without AcME                                         96.1               95.4                93.0             94.7               220
+  Without SBOA                                         97.8               96.2                95.1             96.8               210
+  Proposed KOAC-GCIGNN-AcME-SBOA model                 99.5               98.4                98.5             97.5               120
+
+FA-ResNet, Feature Affine Residual Network; KOAC-GCIGNN-AcME-SBOA, knee osteoarthritis classification using Optimized Granger Causality Inspired
+Graph Neural Network with Accelerated Model-agnostic Explanations and Secretary Bird Optimization Algorithm; MWSGF, Multi-Window Savitzky–Golay
+Filter.
+
+
+
+DNN-ORM and KOD-CNN-XR models, respectively. Future studies of the proposed KOAC-GCIGNN-AcME-SBOA will focus the
+goal to increase its accuracy of diagnoses, and it could evaluate methods for integrating and analyzing data from many imag-
+ing modalities.
+
+Ethics statement
+
+   This study used the publicly available Osteoarthritis Initiative (OAI) dataset, which contains de-identified knee X-ray
+images. All original data collection sites obtained institutional review board (IRB) approval, and informed consent was
+obtained from participants. Because only de-identified data were analyzed, no additional ethical approval was required
+for this study. Access to the dataset was provided through the official OAI repository.
+
+CRediT authorship contribution statement
+
+   M. Ganesh Kumar: Writing – original draft. L. Bharathi: Supervision. M. Senthil: Supervision. P. Koteswara Rao: Super-
+vision. G. Rajya Lakshmi: Supervision.
+
+Funding
+
+    This research did not receive any specific grant from funding agencies in the public, commercial, or not-for-profit sectors.
+
+Declaration of competing interest
+
+   The authors declare that they have no known competing financial interests or personal relationships that could have
+appeared to influence the work reported in this paper.
+
+References
+
+ [1] Yildirim M, Mutlu HB. Automatic detection of knee osteoarthritis grading using artificial intelligence-based methods. Int J Imaging Syst Technol
+     2024;34:e23057.
+ [2] Nasser Y, El Hassouni M, Hans D, Jennane R. A discriminative shape-texture convolutional neural network for early diagnosis of knee osteoarthritis
+     from X-ray images. Phys Eng Sci Med 2023;46:827–37.
+ [3] Sohail M, Azad MM, Kim HS. Knee osteoarthritis severity detection using deep inception transfer learning. Comput Biol Med 2025;186:109641.
+ [4] Upadhyay A, Sawant O, Choudhary P. Detection of knee osteoarthritis stages using convolutional neural network. SN Comput Sci 2023;4:257.
+ [5] Rockel JS, Sharma D, Espin-Garcia O, Hueniken K, Sandhu A, Pastrello C, et al. Deep learning–based clustering for endotyping and post-arthroplasty
+     response classification using knee osteoarthritis multiomic data. Ann Rheum Dis 2025;84:844–55.
+ [6] Steele JR, Jang SJ, Brilliant ZR, Mayman DJ, Sculco PK, Jerabek SA, et al. Deep learning phenotype automation and cohort analyses of 1946 knees using
+     the coronal plane alignment of the knee classification. J Arthroplasty 2023;38:S215–21.
+ [7] Song J, Zhang R. A novel computer-assisted diagnosis method of knee osteoarthritis based on multivariate information and deep learning model. Digit
+     Signal Process 2023;133:103863.
+ [8] Yoon JS, Yon CJ, Lee D, Lee JJ, Kang CH, Kang SB, et al. Assessment of a novel deep learning-based software developed for automatic feature extraction
+     and grading of radiographic knee osteoarthritis. BMC Musculoskelet Disord 2023;24:869.
+ [9] Moustakidis S, Papandrianos NI, Christodolou E, Papageorgiou E, Tsaopoulos D. Dense neural networks in knee osteoarthritis classification: a study on
+     accuracy and fairness. Neural Comput Applic 2023;35:21–33.
+[10] Teoh YX, Othmani A, Lai KW, Goh SL, Usman J. Stratifying knee osteoarthritis features through multitask deep hybrid learning: data from the
+     osteoarthritis initiative. Comp Methods Programs Biomed 2023;242:107807.
+[11] Salis Z, Driban JB, McAlindon TE. Predicting the onset of end-stage knee osteoarthritis over two-and five-years using machine learning. Seminars in
+     Arthritis and Rheumatism. WB Saunders; 2024.
+[12] Aladhadh S, Mahum R. Knee osteoarthritis detection using an improved CenterNet with pixel-wise voting scheme. IEEE Access 2023 Feb;22
+     (11):22283–96.
+[13] Malik I, Yasmin M, Iqbal A, Raza M, Chun CJ, Al-antari MA. A novel framework integrating ensemble transfer learning and Ant colony optimization for
+     knee osteoarthritis severity classification. Multimed Tools Appl 2024;83:86923–54.
+[14] Cui T, Liu R, Jing Y, Fu J, Chen J. Development of machine learning models aiming at knee osteoarthritis diagnosing: an MRI radiomics analysis. J Orthop
+     Surg Res 2023;18:375.
+
+
+                                                                             15
+M. Ganesh Kumar, L. Bharathi, M. Senthil et al.                                                                                     The Knee 61 (2026) 104365
+
+
+[15] Farajzadeh N, Sadeghzadeh N, Hashemzadeh M. IJES-OA net: a residual neural network to classify knee osteoarthritis from radiographic images based
+     on the edges of the intra-joint spaces. Med Eng Phys 2023;113:103957.
+[16] Kunze KN, Jang SJ, Li T, Mayman DA, Vigdorchik JM, Jerabek SA, et al. Radiographic findings involved in knee osteoarthritis progression are associated
+     with pain symptom frequency and baseline disease severity: a population-level analysis using deep learning. Knee Surg Sports Traumatol Arthrosc
+     2023;31:586–95.
+[17] Kijowski R, Fritz J, Deniz CM. Deep learning applications in osteoarthritis imaging. Skelet Radiol 2023;52:2225–38.
+[18] Li G, Li S, Xie J, Zhang Z, Zou J, Yang C, et al. Identifying changes in dynamic plantar pressure associated with radiological knee osteoarthritis based on
+     machine learning and wearable devices. J Neuroeng Rehabil 2024;21:45.
+[19] Guida C, Zhang M, Shan J. Improving knee osteoarthritis classification using multimodal intermediate fusion of X-ray, MRI, and clinical information.
+     Neural Comput Applic 2023;35:9763–72.
+[20] Paz A, Lavikainen J, Turunen MJ, García JJ, Korhonen RK, Mononen ME. Knee-loading predictions with neural networks improve finite element
+     modeling classifications of knee osteoarthritis: data from the osteoarthritis initiative. Ann Biomed Eng 2024;52:2569–83.
+[21] Kumar MG, Kocharla S, Yaswanth N, Swamy TV, Prasad U, Vamsee T. EHA-LNN: Optimized light gradient-boosting machine enabled neural network for
+     cancer detection using mammography. Biomed Signal Process Control 2025;105:107540.
+[22] Balu S, Bachute MR, Venkatraman K, Parvathinathan JA. Optimized dynamic global structure enhanced multi-channel graph neural network based
+     automatic cataract disease classification. Biomed Signal Process Control 2025;110:108125.
+[23] Taluja HK, Taluja A, Kala I, Mallala B. Smart office automation using multi-dimensional attention spiking neural network for face recognition in
+     internet of things. Appl Soft Comput 2025:112967.
+[24] Vijayakumaran C. Citrus plant classification using Gated Fusion Adaptive Graph Neural Network with Harbor Seal Whiskers Optimization Algorithm.
+     Knowl Based Syst 2025;329:114093.
+[25] Surulivelu M, Hemanand D, Babu RG, Subash TD. AI-based tuberculosis detection and localization in chest X-rays using a Binarized Simplicial
+     Convolutional Neural Network for efficient and accurate diagnosis. Biomed Signal Process Control 2026;113:108928. https://doi.org/10.1016/j.
+     bspc.2025.108928.
+[26] KalaiSelvi B, Babu RG, Cho J, Yoo S. Gene expression profiling and predictive modeling of cancer biomarkers using machine learning and IoT-Enabled
+     biosensors. Sci Rep 2025. https://doi.org/10.1038/s41598-025-30366-x.
+[27] Abd El-Ghany S, Elmogy M, Abd El-Aziz AA. A fully automatic fine tuned deep learning model for knee osteoarthritis detection and progression
+     analysis. Egyptian Informatics Journal 2023;24:229–40.
+[28] Yong CW, Teo K, Murphy BP, Hum YC, Tee YK, Xia K, et al. Knee osteoarthritis severity classification with ordinal regression module. Multimed Tools
+     Appl 2022;81:41497–509.
+[29] Tariq T, Suhail Z, Nawaz Z. Knee osteoarthritis detection and classification using X-rays. IEEE Access 2023;16(11):48292–303.
+[30] Jain RK, Sharma PK, Gaj S, Sur A, Ghosh P. Knee osteoarthritis severity prediction using an attentive multi-scale deep convolutional neural network.
+     Multimed Tools Appl 2024;83:6925–42.
+[31] Kalpana V, Kumar GH. Evaluating the efficacy of deep learning models for knee osteoarthritis prediction based on Kellgren–Lawrence grading system.
+     e-Prime-Advances in Electrical Engineering, Electronics and Energy 2023;5:100266.
+[32] Patil AR, Salunkhe SS. Classification and risk estimation of osteoarthritis using deep learning methods. Measur Sens 2024;35:101279.
+[33] Rehman A, Raza A, Alamri FS, Alghofaily B, Saba T. Transfer learning-based smart features engineering for osteoarthritis diagnosis from knee X-ray
+     images. IEEE Access 2023;11:71326–38.
+[34] Knee Osteoarthritis Dataset with Severity Grading. Available at: https://www.kaggle.com/datasets/shashwatwork/knee-osteoarthritis-dataset-with-
+     severity.
+[35] Liu W, Wang H, Xi Z, Zhang R. Smooth deep learning magnetotelluric inversion based on physics-informed Swin transformer and multiwindow
+     Savitzky–Golay filter. IEEE Trans Geosci Rem Sens 2023;61:1–4.
+[36] Zhan L, Li W, Min W. FA-ResNet: Feature affine residual network for large-scale point cloud segmentation. Int J Appl Earth Obs Geoinf
+     2023;118:103259.
+[37] Zheng K, Yu S, Chen B. Ci-GNN: a granger causality-inspired graph neural network for interpretable brain network-based psychiatric diagnosis. Neural
+     Netw 2024;172:106147.
+[38] Fu Y, Liu D, Chen J, He L. Secretary bird optimization algorithm: a new metaheuristic for solving global optimization problems. Artif Intell Rev
+     2024;57:123.
+
+
+
+
+                                                                              16
+

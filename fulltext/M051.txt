@@ -1,0 +1,424 @@
+                                                                                                                                               2025 Global Conference in Emerging Technology (GINOTECH)
+                                                                                                                                               Pune, India. May 09 - 11, 2025
+
+
+
+
+                                                                                                                                                    Fine-Tuning Pretrained CNN Models for Knee
+                                                                                                                                                   Osteoarthritis Diagnosis: Impact of Layer Freezing
+                                                                                                                                                           and Activation Function Selection
+                                                                                                                                                            V. Vijaya Kishore                                         B. Poornima                                            K.V. Naga Sahithi
+
+
+
+
+2025 Global Conference in Emerging Technology (GINOTECH) | 979-8-3315-0775-6/25/$31.00 ©2025 IEEE | DOI: 10.1109/GINOTECH63460.2025.11076877
+                                                                                                                                                         Professor, Dept. of ECE                                UG Student, Dept. of ECE                                  UG Student, Dept. of ECE
+                                                                                                                                                     K.S.R.M College of Engineering                          K.S.R.M College of Engineering                            K.S.R.M College of Engineering
+                                                                                                                                                              Kadapa, India                                          Kadapa, India                                              Kadapa, India
+                                                                                                                                                          drvvkishore@ieee.org                               poornimareddy759@gmail.com                                 sahithikalluru25@gmail.com
+
+                                                                                                                                                              C. Renuka                                                 D. Farida                                                B. Charan
+                                                                                                                                                        UG Student, Dept. of ECE                                UG Student, Dept. of ECE                                  UG Student, Dept. of ECE
+                                                                                                                                                     K.S.R.M College of Engineering                          K.S.R.M College of Engineering                            K.S.R.M College of Engineering
+                                                                                                                                                             Kadapa, India                                            Kadapa, India                                            Kadapa, India
+                                                                                                                                                     renukachintakunta@gmail.com                               faridadudekulu@gmail.com                                  badugucharan6@gmail.com
+
+                                                                                                                                                     Abstract—Knee osteoarthritis, often known as KOA, is a                        Networks (CNNs) with transfer learning and layer tuning in
+                                                                                                                                                 degenerative joint condition that lasts for a long time and affects               order to address the drawbacks of conventional diagnostic
+                                                                                                                                                 millions of people around the world and has a big effect on their                 strategies [7]-[11]. In recent years, Deep Learning (DL) and
+                                                                                                                                                 mental and physical health. A correct and early diagnosis is very                 artificial intelligence (AI) [12][13] have shown promising
+                                                                                                                                                 important for better patient care and slowing the progression of                  results in a variety of medical imaging applications, including
+                                                                                                                                                 illness. People can be biased and make mistakes when using the                    the detection and diagnosis of musculoskeletal illnesses such
+                                                                                                                                                 Kellgren-Lawrence (KL) classification system to assess the                        as KOA. It makes it easier to deploy pre-trained models,
+                                                                                                                                                 severity of KOA using X-ray images. It looks like deep learning,                  reducing training time and increasing accuracy, particularly
+                                                                                                                                                 especially transfer learning, could be a good way to automate
+                                                                                                                                                                                                                                   for compressed medical datasets.
+                                                                                                                                                 KOA diagnosis and KL grades, which would lead to more
+                                                                                                                                                 accurate results. This study looks at four Convolutional Neural
+                                                                                                                                                 Network (CNN) models that have already been trained:
+                                                                                                                                                 NASNetLarge,       ResNet101V2,       InceptionResNetV2, and
+                                                                                                                                                 InceptionV3. The models are used to classify KOAs. The base
+                                                                                                                                                 layers of each model are frozen, and then personalized layers
+                                                                                                                                                 are added that use the Swish, ReLu, and ELU activation
+                                                                                                                                                 functions in different ways. A last softmax activation layer is
+                                                                                                                                                 used for KL grading with more than one class (Grade 0–4). The
+                                                                                                                                                 results show that selecting the proper activation function greatly
+                                                                                                                                                 impacts model performance and training time. This shows how
+                                                                                                                                                 important it is to make activation functions and model building
+                                                                                                                                                 better before deep learning can be used in medical imaging.
+                                                                                                                                                 Using more datasets and complex hybrid models, future
+                                                                                                                                                 research will improve diagnosis accuracy and clinical usage.
+                                                                                                                                                 This helps create automatic KOA diagnosis tools.
+                                                                                                                                                                                                                                   Fig. 1. Grading system of KL [13]
+                                                                                                                                                    Keywords—Convolution Neural Networks, Deep Learning,
+                                                                                                                                                 Transfer Learning, Kellgren-Lawrence Grading, Activation                              The accuracy of KOA's severity classification has been
+                                                                                                                                                 Functions, Partial Fine-Tuning, and Knee Osteoarthritis.                          significantly enhanced by recent advancements in deep
+                                                                                                                                                                                                                                   learning. The technique of utilizing Convolutional Neural
+                                                                                                                                                                          I. INTRODUCTION                                          Networks (CNNs) with transfer learning has been
+                                                                                                                                                     Many people worldwide have experienced the severe                             demonstrated to be a reliable method for diagnosing KOA.
+                                                                                                                                                 signs of osteoarthritis in their knees (KOA). The subjectivity                    During transfer learning, traits that the models already knew
+                                                                                                                                                 and interobserver variability of traditional diagnostic                           how to do are used to make them better at doing certain tasks,
+                                                                                                                                                 techniques, such as the Kellgren-Lawrence (KL) grading                            like KL grading. In spite of the fact that this function plays a
+                                                                                                                                                 system, lead to issues with diagnosis and treatment planning.                     substantial role in enhancing classification accuracy, there
+                                                                                                                                                 According to the degree of joint space constriction and the                       has been a lack of research of various activation functions
+                                                                                                                                                 presence of osteophytes, the KL grading system categorizes                        impact on performance, despite the fact that numerous CNN
+                                                                                                                                                 KOA into five phases, as shown in Fig. 1. [1]- [3]. Phase                         architectures have been examined.
+                                                                                                                                                 numbers range from 0 to 4. Early identification and detection
+                                                                                                                                                 are crucial for prompt and efficient treatment choices to                             Activation functions are fundamental components of
+                                                                                                                                                 reduce the negative effects of KOA on patients' quality of life                   neural networks since they control the way the neurons of
+                                                                                                                                                                                                                                   every layer process data. Non-linearity added by activation
+                                                                                                                                                 [4] [5].
+                                                                                                                                                                                                                                   helps the network to recognize intricate patterns. ReLu is one
+                                                                                                                                                    This study proposes an enhanced method for KOA                                 of the conventional activation functions used often since they
+                                                                                                                                                 detection that as in integrates the use of Convolutional Neural                   are computationally efficient and ease of use. ReLu is
+
+
+
+
+                                                                                                                                               979-8-3315-0775-6/25/$31.00 ©2025 IEEE                                          1
+                                                                                                                                                     Authorized licensed use limited to: University of Education Winneba. Downloaded on July 28,2026 at 15:29:36 UTC from IEEE Xplore. Restrictions apply.
+similarly impacted by the "dying neuron" issue, whereby                          diagnosis model that could be optimised using the
+neurons emit zero for negative values, thereby stopping                          DenseNet169 deep learning technique. The program uses
+learning during training. We investigate activation functions                    deep learning algorithms to automatically analyse knee joint
+such Swish, ReLu, and ELU to solve this. Training process,                       pictures and give accurate diagnosis and progress analysis
+convergence of the model, and general performance can all                        [33]. The proposed technique hastened the diagnosis process
+be much influenced by choice of activation function. The                         while decreasing expenditures, hence boosting the
+performance of pre-trained models in KOA severity                                effectiveness of KOA diagnosis. Transfer learning, when
+categorization is investigated in this work under various                        combined with fine-tuning approaches such as freezing
+combinations of activation functions.                                            layers, can significantly improve feature extraction, avoid
+                                                                                 overfitting, increase computing efficiency, and improve
+                       II. RELATED WORK                                          training stability.
+    In recent years, there has been a noticeable increase in the                     In summary, using pre-trained CNNs with transfer
+medical community's interest in employing deep learning                          learning is a potential way to change the way musculoskeletal
+methodologies to automate the severity assessment of Knee                        diagnoses are done, especially when it comes to automating
+Osteoarthritis (KOA) [14]. Transfer learning allows for the                      the evaluation of KOA severity [15], 16]. Researchers have
+adaptation of pre-trained Convolutional Neural Network                           made a lot of progress in creating standardized and objective
+(CNN) models to musculoskeletal imaging datasets relevant                        KOA diagnostic methods through empirical studies and
+to KOA. These CNN models were initially trained using large                      methodological advances. This is to improve patient care and
+image datasets. To improve diagnostic accuracy and                               treatment outcomes. More study in this area is needed to
+consistency, CNN models [15] [16] can acquire unique                             solve current problems and make deep learning-based
+aspects to KOA severity classification by applying                               diagnostic systems better. This will eventually give doctors
+information obtained from solving related problems. This                         accurate and useful tools for evaluating musculoskeletal
+transition is primarily motivated by the need for more precise                   conditions.
+and standardised diagnostic methodologies, as traditional
+grading systems like the Kellgren-Lawrence (KL) [17]-[20]                                         III. THE PROPOSED APPROACH
+approach frequently exhibit significant observer variability,
+resulting in inconsistencies in diagnosis and treatment                              In the proposed system, four Convolutional Neural
+strategies. Transfer learning has emerged as a prominent                         Network (CNN) models that have already been trained are
+method among the several approaches explored to address                          implemented: NASNetLarge, InceptionV3, DenseNet169,
+this issue.                                                                      and ResNet152V2. These models are customized to
+                                                                                 accommodate the KL classification system, which is
+    Transfer learning demonstrates that pre-trained                              implemented to categorize the severity grading of Knee
+convolutional neural networks (CNNs) trained on the                              Osteoarthritis (KOA). The modification method involves the
+ImageNet LSVRC dataset [21], such as the VGG-M-128                               adding of additional fully connected layers to enhance
+network [22], the BVLC reference CaffeNet [23], and the                          classification performance and fine-tuning by pausing the
+VGG 16 network [24], have been enhanced for knee                                 base model layers. Although the majority of deep learning
+osteoarthritis categorization [25]. In recent years,                             research focusses on selecting a single activation function for
+convolutional neural networks (CNNs) have outperformed                           the entire network, this study proposes that the optimal
+several previous techniques for image processing. A                              combination set be determined by rotating three activation
+suggestion was given for an automated, finely-tuned deep                         functions across the layers. The main objective of this
+learning algorithm capable of detecting and analysing KOA                        methodology is to determine the impact of activation function
+progression [26]. CNNs have been demonstrated to be                              rotations on the learning capacity as well as overall
+effective for fine-grained categorization because of their                       performance of four CNN models: NASNetLarge,
+efficiency [27]. The use of deep learning in the healthcare                      ResNet101V2, InceptionResNetV2, and InceptionV3. The
+sector has yielded outstanding outcomes, raising the bar for                     architectural configuration of the system is illustrated in the
+medical care quality. This study used knee osteoarthritis as a                   block diagram in Fig. 2.
+clinical scenario to analyse twelve transfer learning deep
+learning models for grading knee osteoarthritis on                               A. Organizing and Distributing data:
+radiographs, comparing their accuracy and determining the                            This research uses anonymized Kaggle photos to protect
+best model for detection [28]. Furthermore, by optimizing the                    patient privacy. The 8,250 photos were separated into testing,
+pretrained CNN models, researchers can balance accuracy                          training, and validation cohorts using a 7:2:1 ratio. Validation
+and computational economy while also improving the                               received 1,650 photos, training 5,775, and testing 10%. This
+model's performance for KOA severity categorization [32].                        distribution allows rapid model training and unbiased
+This is backed by the transformative power of transfer                           performance evaluation with a distinct dataset.
+learning and pretrained convolutional neural networks
+                                                                                 B. ImageAugmentation and Pre-processing:
+(CNNs) in musculoskeletal diagnosis [30][31], particularly
+for categorizing the severity of Knee Osteoarthritis (KOA).                          To get the images ready for training, different adjustments
+Earlier research [32] shown that using a template match could                    are made to their pixel intensities and dimensions during the
+help locate and extract knee joints from photos fast. This was                   pre-processing phase. In order to accommodate GPU
+done by matching the image to an existing template. When it                      memory limitations and guarantee compatibility with pre-
+comes to recognizing knee joints in large datasets like OAI,                     trained models, the images are resized to 224 × 224 pixels.
+this method is unreliable and slow. A model for improving                        The next step in the process is augmentation of data, which is
+KOA diagnosis was optimised using DenseNet169 deep                               used to enhance quality of the data, reduce overfitting, and
+learning (DL) [26]. To address the limits of human diagnosis                     increase the model's generalizability during training. The
+and eliminate diagnostic errors, the goal was to create a KOA                    images are pre-processed to provide the dataset for the
+
+
+
+
+                                                                             2
+   Authorized licensed use limited to: University of Education Winneba. Downloaded on July 28,2026 at 15:29:36 UTC from IEEE Xplore. Restrictions apply.
+pretrained models with the standardized input format, to                            The added layers in each pre-trained model are configured
+avoid overfitting and underfitting.                                              with the following combinations:
+C. Necessity of fully connected layers and deep learning:                            Set - 1: - 6ZLVKĺ5H/Xĺ(OXĺ6RIWPD[
+   Convolutional layers and pooling layers can be used to                            Set - 2: - 5H/Xĺ(OXĺ6ZLVKĺ6RIWPD[
+                                                                                     Set - 3: - (OXĺ6ZLVKĺ5H/Xĺ6RIWPD[
+extract high level information from raw images. Nonetheless,
+Fully Connected (FC) layers can provide significant                                  The softmax function is fixed for multi-class
+advantages by learning nonlinear combinations of these                           classification in the final output layer, but other three
+features more efficiently. The FC layer makes it easier to                       activation functions are rotated in the dense layers that come
+identify incoming photos by merging data from the pooling                        before it. This approach seeks to determine how these
+and convolution layers to produce a potential categorization                     rotations influence the learning capacity and overall
+score. The output layer generates predictions using a softmax                    performance of four CNN models: NASNetLarge,
+activation function after receiving the two-dimensional result                   ResNet101V2, InceptionResNetV2, and InceptionV3. Deep
+from the fully connected dense layers.                                           learning models for the classification of KOA were
+                                                                                 constructed using Google Colab, a tool with GPU
+   The softmax activation                function      is   represented          configuration and Python programming. Python's broad
+mathematically as:                                                               library and readability made model construction easier, and
+                                                                                 Google Colab's cloud-based platform accelerated training. To
+                                  ௘ ೣೕ                                           prepare the radiographs for analysis and improve the data, we
+                      ı[        ೖ ௘ ೣೖ                               (1)
+                                ఀೖసభ                                             used NumPy, Pandas, and Keras. Adaptable previously
+                                                                                 trained Convolutional Neural Networks (CNNs) paired with
+    In the context of multiclass classification, 'k' represents the              transfer learning enhanced model performance. This
+number of output classes. 'x' signifies the anticipated chance                   methodical technique provides efficient training,
+that input to be tested belongs to class 'j'.                                    performance evaluation, and correct KOA classification.
+    Freezing a large number of layers can be quite useful when                                    IV. RESULTS AND DISCUSSION
+working with a small collection of data or limited resources
+since it preserves the main features that the pre-trained model                      The enhanced computer-aided diagnostic system
+has learnt. Overfitting can happen when there are too many                       framework, which employed adaptive pre-trained
+completely linked layers added, especially if the dataset is                     convolutional neural networks (CNNs) to rapidly and
+tiny. As a result, this study only examined three fully                          precisely classify the severity grading of KOA using KL
+connected levels.                                                                grading technique, produced encouraging results. In order to
+                                                                                 evaluate the impact of various activation function
+    For the four pre-trained models, the parameters, including                   combinations on prediction performance, the four pre-trained
+accuracy and loss, were computed to compare three sets of                        CNN            models—NASNetLarge,              ResNet101V2,
+activation functions obtained by freezing the layers during                      InceptionResNetV2, and InceptionV3—were trained and
+fine tuning. The objective of Fully Connected Layers (FCLs)                      validated using three different sets (Set-1, Set-2, and Set-3).
+is to build a more concise and informative representation by                     The models were then fine-tuned by freezing the built-in
+gradually reducing the dimensionality of the features                            layers. To identify the best model, evaluation metrics such as
+extracted by the pre-trained model's layers. In these layers,                    accuracy and loss were compared between sets. In Set-3,
+we use three different activation functions (Swish, ReLu, and                    InceptionV3 had the highest validation accuracy (98.12%).
+Elu). We rotate the three activation functions to obtain three                   The findings emphasize how crucial model selection and
+combinations (Set - 1, Set - 2, and Set - 3) to identify the best                parametric optimization are to improving KOA forecast
+combination set.                                                                 accuracy. By utilizing the KL grading technique, the
+    Dense (1024, activation=’swish’)                                             computer-aided diagnosis system was able to attain an
+                                                                                 improved level of success in its updated structure. Through
+    Dense (512, activation=relu')
+                                                                                 the utilization of convolutional neural networks (CNNs) that
+    Dense (256, activation='elu')
+                                                                                 were both adaptive and pre-trained, this system was able to
+    Dense (5, activation=’softmax’)
+                                                                                 categorize the severity of KOA in a manner that was both
+                                                                                 speedy and accurate. For the most part, it was satisfying to
+                                                                                 observe the results. The use of NASNetLarge, ResNet101V2,
+                                                                                 InceptionResNetV2, and InceptionV3 were the four CNN
+                                                                                 models that were employed in this study collectively. In order
+                                                                                 to train and validate these models, we utilized the help of
+                                                                                 three sets, which are referred to as Set-1, Set-2, and Set-3.
+                                                                                 Table. 1 above represents a detail comparison of
+                                                                                 Validation_Accuracy, Train_Accuracy, Validation_Loss,
+                                                                                 and Train_Loss, among four pre-trained models for three sets
+                                                                                 of Activation Functions. This was done in order to investigate
+                                                                                 the effect that different combinations of activation functions
+                                                                                 have on the accuracy. By leveraging adaptive and pre-
+                                                                                 trained CNNs, the system ensures rapid and reliable
+                                                                                 classification, reinforcing its potential for accuracy and
+Fig. 2. Proposed method for freezing of layers while Fine-tuning with
+                                                                                 suitability to automated KOA diagnosis.
+Activation Function Rotation
+
+
+
+
+                                                                             3
+   Authorized licensed use limited to: University of Education Winneba. Downloaded on July 28,2026 at 15:29:36 UTC from IEEE Xplore. Restrictions apply.
+TABLE. I COMPARISON OF VALD _ACCURACY, TRAIN _ACCURACY, VALD_LOSS AND TRAIN_LOSS OF FOUR PRE-TRAINED MODELS
+                      FOR FREEZING WITH THREE SETS OF ACTIVATION FUNCTION COMBINATIONS
+
+ Name of the                         Vald_                            Train_                            Vald_                            Train_
+ model                             Accuracy                          Accuracy                            Loss                             Loss
+                        Set - 1     Set - 2 Set - 3        Set -1     Set -2  Set -3        Set -1     Set -2 Set -3         Set -1     Set -2 Set - 3
+ NASNetLarge            0.9436      0.9739     0.9673      0.9714     0.9677      0.9690    0.0910     0.0582     0.0484     0.0372     0.0424     0.0387
+ ResNet101V2            0.9703      0.9697     0.9685      0.9754     0.9722      0.9596    0.0288     0.0332     0.0542     0.0288     0.0332     0.0542
+ InceptionResNetV2      0.9291      0.9067     0.9424      0.9183     0.9615      0.9231    0.0789     0.0940     0.0770     0.0890     0.0549     0.0750
+ InceptionV3            0.9648      0.8915     0.9812      0.9631     0.9584      0.9264    0.0508     0.1208     0.0266     0.0508     0.0508     0.0889
+
+
+    The model’s performance metrices varies when evaluated                       reliable performance, highlighting its effectiveness in
+among Sets 1, 2, and 3, the significance of dataset splits and                   training deep learning models for KOA classification.
+model architectures in transfer learning for KL grade
+prediction. The comparative evaluation of NASNetLarge,                           B. LOSS COMAPRISON:
+ResNet101V2, InceptionResNetV2, and InceptionV3 across                               The loss measure provides insight into the model's ability
+multiple sets provided crucial insights into their respective                    to minimise prediction errors throughout training and
+strengths and limitations.                                                       validation. A lower validation loss indicates a more accurate
+                                                                                 and reliable model.
+    When compared to Sets 1, 2, and 3, the models'
+performance differs, highlighting the importance of dataset                         The loss comparison of four models across three sets is as
+splits and model architectures in transfer learning for KL                       shown:
+grade prediction. The best-performing combination for
+                                                                                      D Set – 1:
+predicting Kellgren-Lawrence (KL) grading in Knee
+Osteoarthritis (KOA) was identified by analyzing the models'                         The four models have validation losses of 0.0910
+accuracy and loss individually.                                                  (NASNetLarge),        0.0288     (ResNet101V2),         0.0789
+                                                                                 (InceptionResNetV2), and 0.0508 (InceptionV3), with an
+A. ACCURACY COMAPRISON:                                                          average validation loss of 0.0623. The training loss values are
+   The accuracy measure is essential for assessing a model's                     0.0372, 0.0332, 0.0549, and 0.0508, for a mean of 0.0440.
+performance in classifying pictures into appropriate KL                          The low losses in this collection demonstrate effective
+grading categories. This research emphasizes the validation                      training and generalization.
+correctness of the models across all three sets of Activation                         E Set – 2:
+Function combinations:
+                                                                                     The largest validation loss of any set, with values of
+     D Set -1:                                                                   0.0582 (NASNetLarge), 0.0332 (ResNet101V2), 0.0940
+    The four models' validation accuracy results are 0.9436                      (InceptionResNetV2), and 0.1208 (InceptionV3), for an
+(NASNetLarge),        0.9703      (ResNet101V2),       0.9291                    average of 0.0765. The training loss values are 0.0424,
+(InceptionResNetV2), and 0.9648 (InceptionV3), with an                           0.0288, 0.0750, and 0.0508, with an average of 0.0493. The
+average validation accuracy of 0.9519. The training accuracy                     much larger validation loss in Set-2 indicates that the models
+values are 0.9714, 0.9754, 0.9615, and 0.9631, for an average                    have difficulty generalizing to new data.
+of 0.9679. These high values imply that Set-1 offers excellent                        F Set – 3:
+generalization and effective training.
+                                                                                     Validation loss figures are 0.0484 (NASNetLarge),
+    E Set – 2:                                                                   0.0542 (ResNet101V2), 0.0770 (InceptionResNetV2), and
+   Validation accuracy values are 0.9739 (NASNetLarge),                          0.0266 (InceptionV3), resulting in the lowest average
+0.9697 (ResNet101V2), 0.9067 (InceptionResNetV2), and                            validation loss of any set at 0.0515. However, the training
+0.8915 (InceptionV3), with an average of 0.9354, somewhat                        loss values are 0.0387, 0.0542, 0.0770, and 0.0889, for an
+lower than Set-1. The training accuracy values are 0.9677,                       average training loss of 0.0647, the highest among the three
+0.9722, 0.9231, and 0.9264, with an average of 0.9474. The                       sets. This implies that models trained with Set-3 struggle
+decrease in validation accuracy, especially for                                  during optimization, perhaps resulting in underfitting.
+InceptionResNetV2 and InceptionV3, indicates some                                    The accuracy and loss findings were confirmed by the fact
+overfitting.                                                                     that Set-3 consistently generated lower loss values for the
+    F Set – 3:                                                                   highest-performing model, InceptionV3, making it the most
+    The validation accuracy scores are 0.9673                                    dependable combination in terms of loss. This suggests that
+(NASNetLarge),       0.9685      (ResNet101V2),        0.9424                    Set-3 provides a well-optimized learning process, ensuring
+                                                                                 that the models.
+(InceptionResNetV2), and 0.9812 (InceptionV3), for an                                Set-3 is the overall best activation function combination,
+average validation accuracy of 0.9649, the highest of any set.                   as it performed the best in both accuracy and loss across most
+The training accuracy numbers are 0.9690, 0.9596, 0.9780,                        models (NASNetLarge, InceptionResNetV2, InceptionV3).
+and 0.9584, with an average of 0.9662. These high accuracy                       Set-1 performed well for ResNet101V2, making it the best
+values indicate good generalization                                              choice for that specific model
+   Based on the accuracy data, Set-3 emerges as the optimal
+dataset for achieving superior and consistent accuracy across                                              V. CONCLUSION
+multiple CNN models. This set demonstrated the most                                This study compared four deep learning models,
+                                                                                 NASNetLarge, ResNet101V2, InceptionResNetV3, and
+
+
+
+
+                                                                             4
+   Authorized licensed use limited to: University of Education Winneba. Downloaded on July 28,2026 at 15:29:36 UTC from IEEE Xplore. Restrictions apply.
+InceptionV3, which used three combinations of activation                             [10] W. Liu et al., “A Novel Focal Ordinal Loss for Assessment of Knee
+functions (Set-1, Set-2, and Set-3) to predict Kellgren-                                  Osteoarthritis Severity,” Neural Processing Letters, vol. 54, no. 6, pp.
+                                                                                          5199–5224, May 2022, doi: 10.1007/s11063-022-10857-y.
+Lawrence (KL) grade in knee osteoarthritis (KOA) of four
+                                                                                     [11] S. Mehta, A. Gaur, and M. P. Sarathi, “A Simplified Method of
+deep learning models, Analyzing NASNetLarge,                                              Detection and Predicting the Severity of Knee Osteoarthritis,” 2022
+ResNet101V2, InceptionResNetV2, and InceptionV3 over                                      13th International Conference on Computing Communication and
+the three activation function sets provides performance                                   1HWZRUNLQJ7HFKQRORJLHV ,&&&17 , vol. 26, pp. 1–7, Jul. 2023, doi:
+insights. Set-3 using InceptionV3 has the highest validation                              10.1109/icccnt56998.2023.10306649.
+accuracy (0.9812) and training accuracy (0.9780), making it                          [12] Md. Z. Hossain, F. U. Zaman, and Md. R. Islam, “Advancing AI-
+the best classification model.                                                            Generated Image Detection: Enhanced Accuracy through CNN and
+                                                                                          Vision Transformer Models with Explainable AI Insights,” Dec. 2023,
+    The greatest validation loss (0.1208) and training loss                               doi: 10.1109/iccit60459.2023.10440990.
+(0.0889) of InceptionV3 in Sets 2 and 3 indicate optimization                        [13] K. R, S. B, and K. V, “Integrating Explainable AI with Infrared
+difficulties and maybe underfitting. Set-3 has the highest                                Imaging and Deep Learning for Breast Cancer Detection,” Dec. 2023,
+                                                                                          doi: 10.1109/ocit59427.2023.10431160.
+accuracy, making it ideal for performance-driven
+                                                                                     [14] V. V. Kishore, S. S. Batthala, J. V. Chamarthi, C. Achyutasai, and B.
+applications; nevertheless, its higher training loss may have                             Subrahmanyam, “Knee Osteoarthritis Prediction Driven by Deep
+an impact on model stability. Set-1 is the most stable setup,                             Learning and The Kellgren-Lawrence Grading,” Proceedings on
+with lower loss values and consistent accuracy across all                                 Engineering Sciences, vol. 5, no. 3, pp. 111–118, Sep. 2023, doi:
+models, which improves generalization and training                                        10.24874/pes05.03.011.
+efficiency. NASNetLarge and ResNet101V2 outperform                                   [15] T. Sivakumari and R. Vani, “Comparative Evaluation of Transfer
+throughout sets, but InceptionResNetV2 shows validation                                   Learning Models for Knee Osteoarthritis Severity Classification Using
+                                                                                          KL          Grading          Scale,”       Oct.        2023,        doi:
+loss in Set-2, indicating overfitting. Despite having the best                            10.1109/icssas57918.2023.10331895.
+accuracy in Set-3, InceptionV3 has the highest loss values,                          [16] P. J. A. Antonio, J. A. B. Delmo, R. V. Sevilla, M. A. D. Ligayo, and
+implying a compromise between accuracy and optimization                                   D. L. Montesines, “Deep Transfer Network of Knee Osteoarthritis
+stability. Set-3 is appropriate for high-accuracy applications,                           Progression Rate Classification in MR Imaging for Medical Imaging
+whereas Set-1 provides balanced. If selecting a single best                               Support System,” 2022 International Conference on Decision Aid
+activation function combination across all models, Set-3 is                               6FLHQFHV DQG $SSOLFDWLRQV '$6$ , pp. 285–289, Mar. 2022, doi:
+                                                                                          10.1109/dasa54658.2022.9765065.
+the best choice since it provides a balance between high
+                                                                                     [17] B. Zhang, J. Tan, K. Cho, G. Chang, and C. M. Deniz, “Attention-based
+accuracy and low loss in most cases.                                                      CNN for KL Grade Classification: Data from the Osteoarthritis
+                                                                                          Initiative,” 2022 IEEE 19th International Symposium on Biomedical
+                               REFERENCES                                                 ,PDJLQJ ,6%, , Apr. 2020, doi: 10.1109/isbi45749.2020.9098456.
+[1]    J. Antony, K. McGuinness, N. E. O’Connor, and K. Moran,                       [18] H. Masood, E. Hassan, A. A. Salam, and M. Liaquat, “Osteo-Doc: KL-
+       “Quantifying Radiographic Knee Osteoarthritis Severity Using Deep                  Grading of Osteoarthritis Using Deep-Learning,” May 2022, doi:
+       Convolutional       Neural     Networks,”     Dec.      2016,      doi:            10.1109/icodt255437.2022.9787470.
+       10.1109/icpr.2016.7899799
+                                                                                     [19] Y. Dalia, A. Bharath, V. Mayya, and S. S. Kamath, “DeepOA: Clinical
+[2]    K. A. Thomas et al., “Automated Classification of Radiographic Knee                Decision Support System for Early Detection and Severity Grading of
+       Osteoarthritis Severity Using Deep Neural Networks,” Radiology                     Knee            Osteoarthritis,”        May           2021,         doi:
+       Artificial Intelligence, vol. 2, no. 2, p. e190065, Mar. 2020, doi:                10.1109/icccsp52374.2021.9465522.
+       10.1148/ryai.2020190065.                                                      [20] N. Supatman, E. M. Yuniarno, and M. H. Purnomo, “Classification
+[3]    D. Saini, T. Chand, D. K. Chouhan, and M. Prakash, “A Comparative                  Anterior and Posterior of Knee Osteoarthritis X-Ray Images Grade KL-
+       Analysis of Automatic Classification and Grading Methods for Knee                  2 Using Deep Learning with Random Brightness Augmentation,” Nov.
+       Osteoarthritis Focussing on X-Ray Images,” Journal of Applied                      2022, doi: 10.1109/cenim56801.2022.10037483.
+       Biomedicine, vol. 41, no. 2, pp. 419–444, Apr. 2021, doi:
+                                                                                     [21] E. Panfilov, S. Saarakkala, M. T. Nieminen, and A. Tiulpin, “Predicting
+       10.1016/j.bbe.2021.03.002.
+                                                                                          Knee Osteoarthritis Progression from Structural MRI Using Deep
+[4]    J. Chang, Y. Yuan, M. Fu, and D. Wang, “Health-Related Quality of                  Learning,” 2022 IEEE 19th International Symposium on Biomedical
+       Life Among Patients with Knee Osteoarthritis in Guangzhou, China: A                ,PDJLQJ ,6%, , vol. 9, pp. 1–5, Mar. 2022, doi:
+       Multicenter Cross-Sectional Study,” Health and Quality of Life                     10.1109/isbi52829.2022.9761458.
+       Outcomes, vol. 21, no. 1, May 2023, doi: 10.1186/s12955-023-02133-
+                                                                                     [22] K. He, X. Zhang, S. Ren, and J. Sun, “Deep Residual Learning for
+       x.
+                                                                                          Image Recognition,” Jun. 2016, doi: 10.1109/cvpr.2016.90.
+[5]    A. Xuan et al., “The Application of Machine Learning in Early
+                                                                                     [23] T. Neogi, “The Epidemiology and Impact of Pain in Osteoarthritis,”
+       Diagnosis of Osteoarthritis: A Narrative Review,” Therapeutic
+                                                                                          Osteoarthritis and Cartilage, vol. 21, no. 9, pp. 1145–1153, Aug. 2013,
+       Advances in Musculoskeletal Disease, vol. 15, Jan. 2023, doi:
+                                                                                          doi: 10.1016/j.joca.2013.03.018.
+       10.1177/1759720x231158198.
+                                                                                     [24] P. G. Conaghan et al., “Impact and Therapy of Osteoarthritis: The
+[6]    J. H. Kellgren and J. S. Lawrence, “Radiological Assessment of Osteo-
+                                                                                          Arthritis Care OA Nation 2012 survey,” Clinical Rheumatology, vol.
+       Arthrosis,” Annals of the Rheumatic Diseases, vol. 16, no. 4, pp. 494–
+                                                                                          34, no. 9, pp. 1581–1588, Jun. 2014, doi: 10.1007/s10067-014-2692-1.
+       502, Dec. 1957, doi: 10.1136/ard.16.4.494.
+                                                                                     [25] P. Chen, L. Gao, X. Shi, K. Allen, and L. Yang, “Fully Automatic Knee
+[7]    Y. Pei, Y. Huang, Q. Zou, X. Zhang, and S. Wang, “Effects of Image
+                                                                                          Osteoarthritis Severity Grading Using Deep Neural Networks with A
+       Degradation and Degradation Removal to CNN-Based Image
+                                                                                          Novel Ordinal Loss,” Computerized Medical Imaging and Graphics,
+       Classification,” IEEE Transactions on Pattern Analysis and Machine
+                                                                                          vol.        75,      pp.         84–92,       Jun.      2019,       doi:
+       Intelligence, vol. 43, no. 4, pp. 1239–1253, Nov. 2019, doi:
+                                                                                          10.1016/j.compmedimag.2019.06.002.
+       10.1109/tpami.2019.2950923.
+                                                                                     [26] S. A. El-Ghany, M. Elmogy, and A. a. A. El-Aziz, “A Fully Automatic
+[8]    G. Sun and F. Zhang, “Convolutional Neural Network (CNN)-Based                     Fine-Tuned Deep Learning Model for Knee Osteoarthritis Detection
+       Fast Back Projection Imaging with Noise-Resistant Capability,” IEEE                and Progression Analysis,” Egyptian Informatics Journal, vol. 24, no.
+       Access, vol. 8, pp. 117080–117085, Jan. 2020, doi:                                 2, pp. 229–240, Mar. 2023, doi: 10.1016/j.eij.2023.03.005.
+       10.1109/access.2020.3004860.
+                                                                                     [27] H. H. Nguyen, S. Saarakkala, and A. Tiulpin, “Deep Semi-Supervised
+[9]    Z. Yuan, G. Chen, Q. Chen, W. Li, and S. Long, “Breast Cancer Image
+                                                                                          Learning for Knee Osteoarthritis Severity Assessment from Plain
+       Classification Based on CNN Classifier,” Nov. 2020, doi:
+                                                                                          Radiographs,” Osteoarthritis and Cartilage, vol. 28, pp. S311–S312,
+       10.1109/ithings-greencom-cpscom-smartdata-
+                                                                                          Apr. 2020, doi: 10.1016/j.joca.2020.02.484.
+       cybermatics50389.2020.00143.
+                                                                                     [28] V. Kishore V., V. Kalpana, and G. H. Kumar, “Evaluating the Efficacy
+                                                                                          of Deep Learning Models for Knee Osteoarthritis Prediction Based on
+                                                                                          Kellgren-Lawrence Grading System,” e-Prime - Advances in Electrical
+
+
+
+
+                                                                                 5
+      Authorized licensed use limited to: University of Education Winneba. Downloaded on July 28,2026 at 15:29:36 UTC from IEEE Xplore. Restrictions apply.
+     Engineering Electronics and Energy, vol. 5, p. 100266, Aug. 2023, doi:            Learning           Models,”            Apr.           2022,          doi:
+     10.1016/j.prime.2023.100266.                                                      10.1109/icesic53714.2022.9783501.
+[29] A. W. Salehi et al., “A Study of CNN and Transfer Learning in Medical        [32] S. Ebrahimkhani, M. H. Jaward, F. M. Cicuttini, A. Dharmaratne, Y.
+     imaging: Advantages, Challenges, Future Scope,” Sustainability, vol.              Wang, and A. G. S. De Herrera, “A Review on Segmentation of Knee
+     15, no. 7, p. 5930, Mar. 2023, doi: 10.3390/su15075930.                           Articular Cartilage: From Conventional Methods Towards Deep
+[30] A. A. Tatarnikova, A. M. Turlikov, and D. A. Pupynin, “The Spectral               Learning,” Artificial Intelligence in Medicine, vol. 106, p. 101851, May
+     Analysis of Data Obtained from Accelerometers for Musculoskeletal                 2020, doi: 10.1016/j.artmed.2020.101851.
+     Diseases Diagnosis,” 2021 Wave Electronics and Its Application in            [33] R. Joshi, P. Negi, and T. Poongodi, “Multilabel Classifier Using
+     ,QIRUPDWLRQ DQG 7HOHFRPPXQLFDWLRQ 6\VWHPV :(&21) , pp. 1–4,                   DenseNet-169 for Alzheimer’s disease,” May 2023, doi:
+     Nov. 2018, doi: 10.1109/weconf.2018.8604404.                                      10.1109/iciem59379.2023.1016584
+[31] A. Kavitha, T. Kujani, S. G. Kannan, and V. Akila, “Diagnosing
+     Musculoskeletal Disorders from Shoulder Radiographs Using Deep
+
+
+
+
+                                                                              6
+    Authorized licensed use limited to: University of Education Winneba. Downloaded on July 28,2026 at 15:29:36 UTC from IEEE Xplore. Restrictions apply.
+

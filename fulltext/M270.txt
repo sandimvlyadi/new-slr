@@ -1,0 +1,334 @@
+    QUANTIFYING UNCERTAINTY IN KNEE OSTEOARTHRITIS
+                      DIAGNOSIS
+                                               Mame Diarra FALL
+
+
+
+      To cite this version:
+     Mame Diarra FALL. QUANTIFYING UNCERTAINTY IN KNEE OSTEOARTHRITIS DIAGNOSIS. 2024 IEEE
+     20th International Symposium on Biomedical Imaging (ISBI), IEEE, May 2024, Athens (Greece), Greece. ⟨hal-
+     04453938⟩
+
+
+
+
+                                        HAL Id: hal-04453938
+                              https://hal.science/hal-04453938v1
+                                           Submitted on 12 Feb 2024
+
+
+
+
+    HAL is a multi-disciplinary open access archive             L’archive ouverte pluridisciplinaire HAL, est des-
+for the deposit and dissemination of scientific re-        tinée au dépôt et à la diffusion de documents scien-
+search documents, whether they are published or not.       tifiques de niveau recherche, publiés ou non, émanant
+The documents may come from teaching and research          des établissements d’enseignement et de recherche
+institutions in France or abroad, or from public or pri-   français ou étrangers, des laboratoires publics ou
+vate research centers.                                     privés.
+
+
+                                              HAL Authorization
+            QUANTIFYING UNCERTAINTY IN KNEE OSTEOARTHRITIS DIAGNOSIS
+
+                                                      Mame Diarra Fall †
+
+              †
+                  Institut Denis Poisson, Université d’Orléans, Université de Tours, CNRS, 45100 Orléans, France.
+
+
+                          ABSTRACT
+Knee OsteoArthritis (OA) is one of the most common causes
+of physical disability in the world, causing a large personal
+and socio-economic burden. Visual assessment of OA still
+suffers from subjectivity. Deep learning (DL), and in partic-
+ular convolutional neural networks (CNN), has recently led
+to remarkable improvements in knee OA detection. How-              Fig. 1. Radiological grades of OA according to the KL scale
+ever, traditional deep learning-based knee OA classification      very challenging.
+algorithms lack the ability to quantify decision uncertainty.          It is therefore necessary to develop automated methods
+This is a key point in the medical field where, due to the        to facilitate the knee OA diagnosis. Several deep learning
+high cost of labelling, we are faced with a lack of sufficient    (DL) have been proposed to this aim. Most of them are based
+data to train a learning model. We propose here an alterna-       on convolutional neural networks (CNN). The latter have
+tive approach based on the the concept of Evidential Deep         become state-of-the-art technology for image classification
+Learning (EDL). Unlike Bayesian neural networks which in-         tasks due to their ability to capture spatial information in
+directly infer prediction uncertainty through uncertainties in    images. One can refer to [5] for a brief review of current
+the network weights, EDL approaches explicitly model this         CNN-based methods for knee OA. Nevertheless, one ma-
+uncertainty using the theory of subjective logic. Experimen-      jor drawback of CNN models is their dependency on large
+tal results on the Osteoarthritis (OAI) database demonstrate      amounts of labelled data. In the field of medical imaging
+the potential of the proposed approach.                           the small quantity of valid medical datasets, due to the high
+                                                                  cost of labelling, still poses a major challenge for training the
+    Index Terms— Knee OsteoArthritis, Deep-learning, Un-          learning model. In this context it is crucial to quantify the
+certainty, X-ray images, classification.                          uncertainty associated with the model prediction.
+                                                                       In classical CNN for classification, the softmax function
+                     1. INTRODUCTION                              is used to predict class assignment probabilities. A softmax
+                                                                  output is however often misinterpreted as an indication of
+Knee OsteoArthritis is a degenerative disease characterized       model confidence. Nevertheless a model can be uncertain in
+by deterioration and damage of the articular cartilage, joint     its predictions even with a high softmax output for a particular
+edges, and reactive hyperplasia of the subchondral bone [1].      class [6]. Bayesian neural networks can address this issue by
+Multiple factors, including age, weight, stress, trauma, etc.     putting a prior distribution on the neural network parameters
+may contribute to its occurrence [2]. The disease is associated   and inferring their posterior distribution using approximations
+with stiffness, swelling, and pain. Knee OA is recognized as      such as Variational Bayes [6]. The posterior predictive dis-
+the main cause of reduced mobility in the elderly, and is now     tribution is approximated using Monte-Carlo sampling meth-
+recognized as an independent risk factor for increased mortal-    ods. These models are however computationally demanding
+ity. Since no treatment can prevent the degenerative structural   since each data point has to pass through the network at sev-
+changes responsible for the progression of knee osteoarthritis,   eral times, and also require in addition considerable modifi-
+early detection is essential so that timely behavioural thera-    cations to existing baselines.
+pies, such as weight loss, can be implemented to delay the             Recently, a new class of models based on the concept of
+onset and progression of knee OA [3].                             evidential deep-learning (EDL) has been proposed [7], [8].
+     The Kellgren and Lawrence (KL) grading system [4] de-        They allow to compute uncertainty in a single forward pass
+fines knee OA severity in five grades, from 0 (normal) to 4       by parameterizing distributions on distributions, and involve
+(severe), according to the existence and severity of symptoms     minimal modifications to the architecture of standard neural
+such as osteophytes and joint space narrowing (see Fig. 1).       networks.
+This criterion is however semi-quantitative, and suffers from          Is this paper, we develop an EDL-based method for knee
+subjectivity and ambiguity, which makes early OA diagnosis        OA diagnosis. The potential of the proposed approach is eval-
+uated for binary and multi-class classification tasks. To the                2.2. Dirichlet Modeling
+best of our knowledge, this is the first work based on deep
+                                                                             The Dirichlet distribution is a distribution over probability
+neural networks that allows to quantify uncertainty in the di-
+                                                                             mass functions. A random vector P = (P1 , . . . , PK ) is dis-
+agnosis of knee OA.
+                                                                             tributed according to the Dirichlet distribution with parameter
+    The rest of the paper is organized as follows. In Section
+                                                                             α = (α1 , . . . , αK ) if its probability density function is
+2 the EDL theory is briefly reviewed before presenting our
+model. Experimental setups are described in Section 3. Re-                                      K                                  QK
+sults are presented in Section 4. We conclude in Section 5 and
+                                                                                           1 Y αk −1                                k=1 Γ(αk )
+                                                                             f (p|α) =        pk     ,        where β(α) =
+point some future research directions.                                                   β(α)                                        Γ(Sα )
+                                                                                               k=1
+
+
+                           2. METHODS                                        PKthe K-dimensional multinomial beta function, Sα =
+                                                                             is
+                                                                                k=1 αk is the Dirichlet strength, with αk > 0 ∀k.
+                                                                                  Since classical CNN using sotfmax only provide a point
+2.1. Theory of Evidence and uncertainty
+                                                                             estimate of the class probabilities for a given sample x, one
+Let x ∈ Rd be an input image (in vectorized form) and                        solution is to use a Dirichlet distribution to model the proba-
+f (·|θ) : Rd → RK a NN with parameters θ, where K ≥ 2                        bility distribution of these class probabilities. To this end, one
+stands for the number of classes. We denote a = f (x|θ) ∈                    should define a relationship between the NN output a and the
+RK the raw output vector of the NN corresponding to the                      Dirichlet parameters in the form α = Φ(a), where Φ must
+input x. The output is ŷ = Φ(a). A schematic representation                 comply with the strictly positive constraint of α. We consider
+of such a network is depicted in Fig. 2. In classical NN for                 Φ(a) = ReLU(a) + 1 which satisfies both conditions. To any
+classification, Φ is given by the softmax function.                          input data xi we associate the random variable
+
+                                                                                          Pi = (Pi1 , ..., PiK ) ∼ Dir(pi |αi ),           (1)
+
+                                                                             where αi = Φ(ai ) = ReLU(f (xi |θ)) + 1. The class pre-
+                                                                             diction ŷi is given by the mean of the Dirichlet distribution
+                        Neural Network: f   f(x|θ)
+                                                         φ(a)
+                                                                             Dir(pi |αi ), that is,
+                          Parameters θ                                                                                         
+                                            a: output of the ŷ: prediction                    ŷi = Sααi = Sααi1 , . . . , αSiK
+                                                                                                                             α
+                                                                                                                                  .
+                                            Neural Network                                            i         i         i
+
+                                                                             We used a similar idea in [10] to estimate proportions in a
+                                                                             mixture for X-Ray diffraction and hyperspectral imaging.
+       x: input data
+                                                                             The problem considered in this paper is different, since it is
+                                                                             a classification problem for which we want to estimate the
+          Fig. 2. Schematic representation of the NN.                        uncertainty at the same time.
+     The training dataset consists of D = {(xi , yi ), i =
+1, . . . , ND } where yi is the ground-truth class associated to             2.3. Loss function
+xi , in the form of a one-hot encoded vector. The idea behind                To train the neural network, we must define a loss function
+EDL is to train the network to give an opinion on a classifica-              using the Dirichlet model (1). As in [10], we consider mini-
+tion problem [7]. This originates from the Dempster-Shafer                   mizing the mean square error. That is for any input xi , min-
+Theory of Evidence (DST), a generalization of the Bayesian                   imize the expectation of the squares of the errors between yi
+theory to subjective probabilities. Using the DST theory, we                 and Pi ,
+assign a belief mass bk ≥ 0 to each class k and consider
+u ≥ 0 an overall uncertainty mass such that                                    LSE                        2                2
+                                                                                 i (θ) = E(k yi − Pi k ) =k yi − ŷi k + Var(Pi ), (2)
+                             PK
+                       u + k=1 bk = 1.                                                           PK
+                                                                             where Var(Pi ) = j=1 Var(Pij ). This loss aims to achieve
+A belief mass can be computed using the evidence. If we let                  the joint goal of minimizing the prediction error and the vari-
+ek ≥ 0 be the evidence derived for the k-th class, then                      ance of the Dirichlet distribution output by the NN.
+                       bk = eSk       and u = K
+                                              S,
+                                                                                  In addition, we also need to ensure that the NN has the
+             PK                                                              expected behaviour under foreign data inputs, by reinforcing
+where S = k=1 (ek + 1). The uncertainty is inversely pro-                    for example the flatness of the Dirichlet distribution. We con-
+portional to the total evidence; and if there is no evidence, the            sider a regularization term in the loss function, consisting of
+belief for each class is zero and the uncertainty u is one.                  the KL divergence with respect to the uniform Dirichlet dis-
+    Using subjective logic, we can formalize the DST as a                    tribution [7]. The overall loss considered is then,
+Dirichlet distribution, quantifying belief masses and uncer-
+tainty [9].                                                                     Li (θ) = LSE
+                                                                                          i (θ) + λt KL [Dir(pi |α̃i )||Dir(pi |1)] ,      (3)
+where Dir(pi |1) refers to the uniform Dirichlet distribution,         We randomly assigned images to the training, validation,
+α̃i = yi + (1 − yi ) αi (with referring to the element-            and test sets with respectively the following percentages 64%,
+wise product) are the Dirichlet parameters after removing the      16% and 20%. All data were normalized, and we also used a
+non-misleading evidence from predicted parameters αi for           data augmentation scheme in the training phase using a hori-
+sample i, λt = min(1, t/k) is an annealing coefficient, t is       zontal random flip with a probability of 0.5.
+the index of the current training epoch and k is a fixed num-
+ber (often set to k = 10).                                         3.2. Training phase
+The KL divergence in the loss (3) exhibits a closed-form,
+                                            K                  We conduct the experiments with the ResNet-101 architec-
+                                               P
+                                                   α̃ik            ture [12]. The standard softmax layer is replaced by a ReLU
+                                        Γ                   
+  KL [Dir(pi |α̃i )||Dir(pi |1)] = log 
+                                              k=1                whose output is used as an evidence vector for the Dirich-
+                                                K
+                                                             
+                                               Q                 let distribution. The network is trained from scratch for 200
+                                         Γ (K)     Γ (α̃ik )
+                                                     k=1
+                                                                   epochs in experiments 1 (described below), and 500 in exper-
+      K
+                      "                K
+                                                    !#             iments 2 and 3. We choose Adam as the optimizer, with an
+                                                                   initial learning rate of 10−3 and a weight decay of 10−4 to
+      X                                X
+  +         (α̃ik − 1) ψ (α̃ik ) − ψ         α̃ik        ,
+      k=1                              k=1
+                                                                   avoid overfitting. We also choose a learning rate schedule,
+                                                                   decreasing the learning rate by 10% every 20 epochs.
+   where ψ(·) is the digamma function.
+                                                                   3.3. Performance metrics
+                 3. EXPERIMENTAL SETUP
+                                                                   In our experiments, quantitative evaluation was performed us-
+We evaluate our method on the publicly available Osteoarthri-      ing four different metrics:
+tis Initiative (OAI) data set. This cohort recruited 4796 par-         1. Accuracy: percentage of predictions that match exactly
+ticipants with age ranging from 45 to 79. As the OAI is a          the ground-truth.
+multi-center study, the physical resolution and dimension of           2. Precision: fraction of true positives among predicted
+the knee X-ray images collected from the baseline cohort are       positives.
+not homogeneous. Pre-processing is required to ensure that             3. Recall: fraction of the total number of true positives
+all images have the same size. We use the 4130 X-ray im-           retrieved.
+ages with 8260 knee joints from [11]. The data distribution is         4. F1-score: harmonic mean of precision and recall.
+represented in Fig. 3 below.                                           We now present the results on different test sets derived
+                                                                   from the original data.
+
+                                                                                  4. NUMERICAL RESULTS
+
+                                                                   In this section, the performance of the proposed method is
+                                                                   assessed on binary and multi-class classification tasks.
+
+                                                                   Binary classification
+                    Fig. 3. Dataset distribution                   First, the model has been trained to detect two classes. We
+                                                                   consider two classification scenarios .
+3.1. Dataset preparation
+                                                                      • Experiment 1. The aim of this experiment is to detect
+The dataset of X-ray images of knee joints is not suitable in           knee OA at an early stage. We therefore classify normal
+terms of clarity and localization as input for the DL models. It        patients (KL0) versus those with mild OA (KL2). The
+is therefore necessary to perform a data pre-processing step,           test database includes 1086 images.
+during which the images are transformed to clearly capture
+the joint area where OA information is likely to exist. This          • Experiment 2. This aims at detecting the pres-
+involves first cropping the image to the desired region of the          ence/absence of knee OA. We create a binary dataset
+knee, so that all undesirable regions are excluded. To achieve          by combining classes KL0 and KL1 to represent neg-
+this, we cropped the images by 60 pixels top and bottom, re-            ative diagnosis of KOA (denoted as "Normal"); KL2,
+sulting in images of size 224 × 104 × 3. The second step was            KL3, and KL4 are combined to represent positive diag-
+to perform histogram equalization to improve contrast and en-           nosis ("Abnormal"). There are 1656 images in the test
+sure good visibility of the desired areas.                              database.
+Multi-class classification
+   • Experiment 3. The aim of this third experiment is to
+     determine the severity of KOA. We therefore remove
+     classes KL0 and KL1 and consider classes KL2, KL3,
+     and KL4. The number of images in the test database is
+     721.
+
+Table 1 summarizes the results of the three classification ex-
+periments on the test set. Note that the table can be mislead-
+ing for our approach, since totally uncertain predictions (i.e.
+u = 1) are also considered failures when computing over-                   Fig. 4. Results with correctly classified data.
+all accuracy. Despite this, the performance results are good,
+and quite similar for Experiments 1 and 2. This is promis-             Finally, we examine the results obtained in the case of
+ing, as experiment 1 is challenging due to the similarity be-      misclassification. Fig. 5 displays some of these results. In the
+tween KL0 and KL2 images. This also shows the model’s              case of a severe misclassification in Experiment 3, for exam-
+ability for early detection. The results of experiment 3 are       ple with a KL4 (severe) grade predicted as KL2 (minimal),
+slightly less good. Confusion matrices (not shown here) indi-      the model produces a high uncertainty (u = 0.57).
+cate large misclassifications of knee joints categorized as KL3
+(moderate) and predicted as KL2 (minimal). These images
+show minimal variations in terms of joint space width and os-
+teophytes formation, making them challenging to distinguish.
+Moreover, due to the very unbalanced data distribution (see
+Fig. 3), we have much less data for these classes, making the
+classification task even more difficult.
+
+  Experiment     Accuracy     F1score     Precision    Recall
+      1            0.72        0.71         0.72        0.70
+      2            0.73        0.73         0.73        0.73
+      3            0.66        0.64         0.62        0.66
+                                                                               Fig. 5. Results with misclassified data
+   Table 1. Model performance on the three experiments.
+
+
+Uncertainty quantification                                                 5. CONCLUSION AND PERSPECTIVES
+The strength of our approach lies in its ability to quantify un-   In this paper, we have proposed a new classification method
+certainty. We first examine the average uncertainty for right      for knee OA diagnosis. These preliminary results are promis-
+and wrong predictions. The results are presented in Table 2        ing since classification task can be challenging particularly
+for the three experiments. Our model associates higher un-         when dealing with complex data such as X-ray images used
+certainty to erroneous predictions, in all the three data sets.    for the knee OA diagnosis. Being able to quantify uncertainty
+Uncertainty is also higher for experiment 3, for which the         is a key point of the proposed method
+classification results are less good.
+                                                                        There are, however, some limitations. The dataset was
+                                                                   relatively small and highly unbalanced. Another limitation
+    Experiment      Right prediction    Wrong prediction
+                                                                   was the lack of clean classes due to the high similarity of X-
+        1                 0.14               0.23
+                                                                   ray images particularly in early stages of knee OA. Future
+        2                 0.18               0.34
+                                                                   work will be devoted to explore other kind of data augmenta-
+        3                 0.43               0.59
+                                                                   tion [13], and combining texture and shape information [14].
+Table 2. Average uncertainty for right and wrong predictions.
+                                                                   Acknowledgement
+    It may be useful to look at the images and the results ob-
+tained when the classification results matches the groundtruth.    This work was supported by the French National Agency
+Fig. 4 shows that the proposed method in this case produces        of Research (ANR) through the MIMOSA project (ANR-20-
+high probability and low uncertainty, indicating a confident       CE45-0013) and the BACKUP project (ANR-23-CE40-0018-
+classification.                                                    01).
+                     6. REFERENCES                                  [12] K. He, X. Zhang, S. Ren, and J. Sun, “Deep residual
+                                                                         learning for image recognition,” in Proceedings of the
+ [1] R. Loeser, S. Goldring, S. C.R., and G. M.B., “Os-                  IEEE conference on computer vision and pattern recog-
+     teoarthritis: a disease of the joint as an organ,” Arthritis        nition, 2016, pp. 770–778.
+     and Rheumatism, vol. 64, no. 6, pp. 1697–1707, 2012.
+                                                                    [13] Z. Wang, A. Chetouani, and R. Jennane, “Key-exchange
+ [2] A. Litwic, M. H. Edwards, E. M. Dennison, and                       convolutional auto-encoder for data augmentation in
+     C. Cooper, “Epidemiology and burden of osteoarthri-                 early knee osteoarthritis classification,” arXiv preprint
+     tis,” British medical bulletin, vol. 105, no. 1, p. 185–199,        arXiv:2302.13336, 2023.
+     2013.
+                                                                    [14] Y. Nasser, M. El Hassouni, D. Hans, and R. Jennane, “A
+ [3] A. E. Wluka, C. B. Lombard, and F. M. Cicuttini,                    discriminative shape-texture convolutional neural net-
+     “Tackling obesity in knee osteoarthritis,” Nature Re-               work for early diagnosis of knee osteoarthritis from
+     views Rheumatology, vol. 9, no. 4, p. 225–235., 2013.               x-ray images,” Physical and Engineering Sciences in
+ [4] J. Kellgren and J. Lawrence, “Radiological assessment               Medicine, pp. 1–11, 2023.
+     of osteo-arthrosis.” Annals of the rheumatic diseases,
+     vol. 16, no. 4, pp. 494–502, 1957.
+ [5] Y. Nasser, R. Jennane, A. Chetouani, E. Lespessailles,
+     and M. E. Hassouni, “Discriminative regularized auto-
+     encoder for early detection of knee osteoarthritis: Data
+     from the osteoarthritis initiative,” IEEE Transactions on
+     Medical Imaging, vol. 39, no. 9, pp. 2976–2984, 2020.
+ [6] Y. Gal and Z. Ghahramani, “Dropout as a bayesian ap-
+     proximation: Representing model uncertainty in deep
+     learning,” in Proceedings of The 33rd International
+     Conference on Machine Learning, ser. Proceedings of
+     Machine Learning Research, M. F. Balcan and K. Q.
+     Weinberger, Eds., vol. 48. New York, New York, USA:
+     PMLR, 20–22 Jun 2016, pp. 1050–1059.
+ [7] M. Sensoy, L. Kaplan, and M. Kandemir, “Eviden-
+     tial deep learning to quantify classification uncertainty,”
+     in Proceedings of the 32nd International Conference
+     on Neural Information Processing Systems, 2018, pp.
+     3183–3193.
+ [8] A. Malinin and M. Gales, “Predictive uncertainty esti-
+     mation via prior networks,” in Proceedings of the 32nd
+     International Conference on Neural Information Pro-
+     cessing Systems, 2018, pp. 7047–7058.
+ [9] A. Jsang, Subjective Logic: A formalism for reasoning
+     under uncertainty. Springer Publishing Company, In-
+     corporated, 2018.
+[10] T. Simonnet, M. D. Fall, B. Galerne, F. Claret, and
+     S. Grangeon, “Proportion inference using deep neural
+     networks. applications to x-ray diffraction and hyper-
+     spectral imaging,” in 2023 31st European Signal Pro-
+     cessing Conference (EUSIPCO), 2023, pp. 1310–1314.
+[11] P. Chen, L. Gao, X. Shi, K. Allen, and L. Yang,
+     “Fully automatic knee osteoarthritis severity grading us-
+     ing deep neural networks with a novel ordinal loss,”
+     Computerized Medical Imaging and Graphics, vol. 75,
+     pp. 84–92, 2019.
+

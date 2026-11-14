@@ -1,0 +1,2216 @@
+                                                          ARTICLE IN PRESS
+
+
+
+
+npj Digital Medicine                                                                                    https://doi.org/10.1038/s41746-026-02826-9
+
+
+Article in Press
+
+A large-scale vision foundation model for
+musculoskeletal radiographs
+
+Received: 16 January 2026                            Shinn Kim, Soobin Lee, Kyoungseob Shin, Han-Soo Kim, Yongsung Kim, Minsu Kim,
+Accepted: 21 May 2026                                Juhong Nam, Somang Ko, Daeheon Kwon, Wook Huh, Ilkyu Han & Sunghoon Kwon
+
+
+Cite this article as: Kim, S., Lee, S.,
+                                                                                                      S
+                                                     We are providing an unedited version of this manuscript to give early access to its
+Shin, K. et al. A large-scale vision                                                         ES
+                                                     findings. Before final publication, the manuscript will undergo further editing. Please
+                                                     note there may be errors present which affect the content, and all legal disclaimers
+foundation model for
+                                                     apply.
+musculoskeletal radiographs. npj
+Digit. Med. (2026). https://doi.org/
+                                                                                   PR
+                                                       If this paper is publishing under a Transparent Peer Review model then Peer
+10.1038/s41746-026-02826-9                           Review reports will publish with the final article.
+                                                                       IN
+                                                            LE
+                                                       C
+                                               TI
+                                          R
+                                     A
+
+
+
+
+© The Author(s) 2026. Open Access This article is licensed under a Creative Commons Attribution-NonCommercial-NoDerivatives 4.0 International
+License, which permits any non-commercial use, sharing, distribution and reproduction in any medium or format, as long as you give appropriate credit
+to the original author(s) and the source, provide a link to the Creative Commons licence, and indicate if you modified the licensed material. You do not
+have permission under this licence to share adapted material derived from this article or parts of it. The images or other third party material in this
+article are included in the article's Creative Commons licence, unless indicated otherwise in a credit line to the material. If material is not included in the
+article's Creative Commons licence and your intended use is not permitted by statutory regulation or exceeds the permitted use, you will need to obtain
+permission directly from the copyright holder. To view a copy of this licence, visit http://creativecommons.org/licenses/by-nc-nd/4.0/.
+                                       ARTICLE IN PRESS
+
+
+
+
+A large-scale vision foundation model for musculoskeletal radiographs
+Shinn Kim1,2†, Soobin Lee3†, Kyoungseob Shin3, Han-Soo Kim1,4, Yongsung Kim4,5, Minsu Kim3,
+Juhong Nam3, Somang Ko6, Daeheon Kwon3, Wook Huh3, Ilkyu Han1,4*, Sunghoon Kwon2,3,7,8*
+
+
+1 Department of Orthopaedic Surgery, Seoul National University Hospital, Seoul 03080, Republic of
+Korea
+2 Interdisciplinary Program in Bioengineering, Seoul National University, Seoul 08826, Republic of
+Korea
+3 Department of Electrical and Computer Engineering, Seoul National University, Seoul 08826,
+Republic of Korea                                                 S
+                                                           ES
+4 Department of Orthopaedic Surgery, Seoul National University College of Medicine, Seoul 03080,
+Republic of Korea
+                                                     PR
+5 Department of Orthopaedic Surgery, Seoul National University Bundang Hospital, Seongnam 13620,
+Republic of Korea
+                                              IN
+6 Department of Biomedical Science, Seoul National University College of Medicine, Seoul 03080,
+Republic of Korea
+                                       LE
+7 Bio-MAX Institute, Seoul National University, Seoul 08826, Republic of Korea
+                                       C
+8 Inter-University Semiconductor Research Center, Seoul National University, Seoul 08826, Republic of
+Korea
+                              TI
+                           R
+† These authors contributed equally.
+                        A
+* Correspondence should be addressed to I.H. (hik19@snu.ac.kr) and S.K. (skwon@snu.ac.kr)
+                                        ARTICLE IN PRESS
+
+
+
+
+Abstract
+
+Artificial intelligence (AI) has shown promise in detecting and characterizing musculoskeletal diseases
+
+from radiographs. However, most existing models remain task-specific, annotation-dependent, and
+
+limited in their adaptability across diseases and anatomical regions. Although a comprehensive
+
+foundation model trained on large-scale musculoskeletal radiographs is clinically needed, publicly
+
+available datasets remain limited in size and lack sufficient diversity to enable training across a wide
+
+range of musculoskeletal conditions and anatomical sites. Here, we present SKELEX, a large-scale
+                                                                      S
+                                                                ES
+foundation model for musculoskeletal radiographs, trained using self-supervised learning on 1.2 million
+
+                                                         PR
+diverse, condition-rich images. The model was evaluated on 12 downstream diagnostic tasks and
+
+generally outperformed baselines in fracture detection, osteoarthritis grading, and bone tumor
+                                                 IN
+classification. Furthermore, SKELEX demonstrated unsupervised reconstruction-based anomaly
+                                         LE
+localization, producing error maps that identified pathologic regions without task-specific training.
+                                      C
+Building on this capability, we developed an interpretable, region-guided bone tumor classifier. This
+                                TI
+model maintained robust performance on independent external datasets and was deployed as a publicly
+                             R
+                         A
+accessible web application, serving as a proof of concept for its potential clinical translation. Overall,
+
+SKELEX provides a scalable, label-efficient, and broadly applicable AI framework for musculoskeletal
+
+radiographs, with its robust external validity specifically demonstrated in bone tumor applications.
+                                       ARTICLE IN PRESS
+
+
+
+
+Introduction
+
+Musculoskeletal (MSK) disorders affect more than 1.7 billion people worldwide, representing a major
+
+global health challenge1,2. Unlike other organ systems that are dominated by a few disease categories,
+
+the MSK system encompasses a remarkably diverse spectrum of disorders, ranging from acute fractures
+
+and degenerative arthritis to inflammatory, metabolic, infectious, developmental, and malignant
+
+conditions3. This diversity introduces a dual layer of diagnostic complexity, as each condition may
+
+present variable manifestations across numerous anatomical regions within the musculoskeletal system.
+                                                                     S
+                                                              ES
+Accurate interpretation of radiographs, the first-line imaging modality for most MSK disorders, is
+
+                                                        PR
+therefore highly dependent on expert experience4,5. However, the global shortage of trained
+
+radiologists6,7, combined with the increasing demand for imaging2, is increasing diagnostic
+                                                IN
+inconsistency and contributing to delays in patient care.
+                                        LE
+These diagnostic challenges underscore the need for scalable computational tools capable of assisting
+                                     C
+                               TI
+image interpretation across diverse diseases and anatomical regions8. Indeed, artificial intelligence (AI)
+
+                            R
+has shown significant promise in augmenting radiographic interpretation, particularly in well-defined
+                         A
+tasks such as traumatic fracture detection9–12 and osteoarthritis grading13. Nonetheless, existing MSK AI
+
+systems remain narrowly specialized, typically trained on small, single-task datasets that rely on expert
+
+annotations14–19. Models designed for fracture detection often fail when encountering tumors or
+
+infections in the same image, and tools optimized for one body region rarely transfer to another. This
+
+fragmentation has hindered clinical adoption despite increasing enthusiasm for AI-assisted
+
+musculoskeletal care.
+
+Foundation models (FMs) offer a transformative path forward. FMs are AI models trained on large,
+                                        ARTICLE IN PRESS
+
+
+
+
+diverse datasets to learn transferable patterns rather than being confined to a single task. By learning
+
+comprehensive representations from extensive and heterogeneous data, FMs address the brittleness of
+
+task-specific approaches. In other medical imaging domains, such as pathology20,21, chest radiography22–
+28
+     , and retinal imaging29, FMs trained on millions of images have demonstrated robust performance
+
+across numerous clinical tasks with minimal annotation. This paradigm is particularly well suited for
+
+MSK radiographs, where effective models must generalize across a wide range of conditions and
+
+anatomical regions.
+                                                                      S
+                                                               ES
+Despite their potential, MSK radiographs have yet to benefit from the foundation model approach.
+
+                                                        PR
+Current publicly available datasets remain too limited in size for effective pretraining because, no single
+
+collection captures the full diversity of MSK disorders and anatomical regions. For example, the
+                                                 IN
+GRAZPEDWRI-DX dataset contains approximately 20,000 radiographs but focuses solely on fractures
+                                         LE
+and is confined to the wrist30. In practice, MSK radiographs encompass more than 100 conditions,
+                                      C
+including trauma-related fractures, degenerative joint diseases, endocrine disorders, malignancies, and
+                                 TI
+rare genetic syndromes, across 15 anatomical regions. Expanding beyond such narrow datasets toward
+                              R
+                           A
+large, comprehensive collections is essential for developing comprehensive foundation models that can
+
+advance MSK AI toward clinical translation.
+
+Here, we present SKELEX (musculoSKELEtal X-ray foundation model), the first large-scale
+
+foundation model for musculoskeletal radiographs, trained on the largest MSK X-ray dataset to date31
+
+(Fig. 1a, b). Our dataset is uniquely comprehensive, comprising more than 1.2 million radiographs that
+
+cover 15 body parts and over 89 musculoskeletal conditions. SKELEX was pretrained using a masked
+
+autoencoding strategy and subsequently adapted to multiple diagnostic applications 32 (Fig. 1c).
+
+SKELEX demonstrated strong performance across 12 musculoskeletal diagnostic tasks (Fig. 1d), even
+                                      ARTICLE IN PRESS
+
+
+
+
+in data-sparse settings, and also achieved unsupervised reconstruction-based anomaly localization by
+
+generating abnormality maps without task-specific training (Fig. 1e). Building on this foundation, we
+
+developed an interpretable model capable of predicting bone tumors (Fig. 1f), which we integrated into
+
+a publicly accessible web application, demonstrating the translational potential of SKELEX in clinical
+
+practice.
+
+
+
+
+Result                                                             S
+                                                             ES
+Construction of musculoskeletal radiograph foundation model (SKELEX)
+                                                       PR
+To learn rich visual representations of MSK radiographs, we developed SKELEX using a two-stage
+                                               IN
+self-supervised learning (SSL) pipeline. The model was initialized with a masked autoencoder (MAE)
+
+                                       LE
+pretrained on natural images (ImageNet-1K)32, which provided robust low-level representations. In the
+                                    C
+second stage, the pretrained backbone was further adapted to a large-scale collection of unlabeled MSK
+                               TI
+radiographs (1,296,540 images) from Seoul National University Hospital (SNUH-1M dataset), thereby
+                           R
+                        A
+enabling domain-specific representation learning across diverse anatomical regions and disease states
+
+(Supplementary Tables 1 and 2). The demographic diversity of SNUH-1M dataset is visualized in
+
+Supplementary Figure 1.
+
+During pretraining, SKELEX learned to reconstruct a wide range of musculoskeletal radiographs from
+
+randomly masked inputs. This reconstruction ability generalized effectively to seven publicly available
+
+MSK radiograph datasets (Supplementary Figure 2 and Supplementary Table 3). The model successfully
+
+reconstructed images from various body parts, preserving key anatomical landmarks (Supplementary
+
+Figures 3 and 4). It captured both normal anatomical features and pathologic findings. For instance,
+                                       ARTICLE IN PRESS
+
+
+
+
+when subtle radiographic clues of a bone tumor were visible, SKELEX successfully reconstructed the
+
+lesion. However, when the tumor region was completely masked and no residual cues remained, the
+
+model produced a normal-appearing reconstruction (Supplementary Figure 5). Similar behavior was
+
+observed for other abnormalities, including fractures and osteoarthritis. These findings indicate that
+
+SKELEX acquired detailed and clinically meaningful visual representations of MSK radiographs.
+
+
+
+
+Evaluation across diverse musculoskeletal diagnostic tasks           S
+                                                              ES
+To assess the utility of the learned representations, we evaluated SKELEX on 12 downstream diagnostic
+                                                        PR
+tasks using seven publicly available datasets, including fracture detection (FracAtlas33), bone tumor
+
+                                                IN
+classification (BTXRD34), osteoarthritis grading (OAI35), pes planus identification (PesPlanus dataset36),
+
+and other musculoskeletal conditions30,31,37 (Fig. 1d and Supplementary Tables 4-15). Performance was
+                                        LE
+compared with five baseline models: ResNet-10138, a convolutional neural network pretrained on
+                                     C
+                               TI
+ImageNet-1K using supervised learning; and ViT-L/I21K, a Vision Transformer-Large39 model
+                            R
+pretrained on the labeled ImageNet-21K dataset; ViT-MAE/I1K32, a Vision Transformer-Large model
+                         A
+pretrained on Imagenet-1K using a masked autoencoder objective; and two self-supervised models
+
+pretrained in the medical domain, BiomedCLIP40 and Radio-DINO41. Except for minor hyperparameter
+
+adjustments for ResNet-101, all models were trained and evaluated under identical conditions with strict
+
+partitioning to prevent data leakage (details provided in the Methods).
+
+Across the 12 tasks, SKELEX consistently demonstrated competitive or superior performance. To
+
+isolate the impact of MSK domain-specific pretraining from architectural factors, we compared
+
+SKELEX with its initialization model (ViT-MAE/I1K) under identical training protocols, achieving an
+                                       ARTICLE IN PRESS
+
+
+
+
+average relative performance improvement of 6.21%. SKELEX also consistently outperformed both
+
+ImageNet- and medical-domain pretrained models. For example, in bone tumor detection, it achieved an
+
+AUROC of 0.953, surpassing ImageNet-pretrained models (ViT-MAE/I1K: 0.884; ViT-L/I21K: 0.902;
+
+ResNet-101: 0.903) and medical-domain models (BiomedCLIP: 0.914; Radio-DINO: 0.867).
+
+Performance gains were most pronounced in fine-grained, anatomically specific tasks, where capturing
+
+subtle structural nuances is critical. Specifically, SKELEX demonstrated relative performance increases
+
+of 5.39% to 12.30% in bone tumor subtyping, 2.78% to 13.47% in pes planus identification, and 2.20%
+                                                                     S
+                                                              ES
+to 7.66% in pediatric wrist fracture subtyping, compared to the best- and worst-performing baseline
+
+                                                        PR
+models. These results highlight the benefits of additional pretraining on large-scale musculoskeletal
+
+radiographs beyond both general-purpose and broadly medical pretraining.
+                                                IN
+                                        LE
+Robustness across anatomical regions and disease subtypes
+                                     C
+                                TI
+To evaluate robustness across clinical diversity, we analyzed performance across anatomical regions and
+                            R
+rare disease subtypes (Fig. 2a–c and Supplementary Tables 16–19). Statistical significance was assessed
+                         A
+using a paired bootstrap test with 5,000 resamples (Methods). SKELEX demonstrated broad anatomical
+
+generalization in bone tumor detection. It outperformed all five comparison models in the lower limb
+
+(all p < 0.001) and maintained superiority in the pelvis (all p < 0.05), with the largest margin observed
+
+against ViT-L/I21K (p = 0.002). In the upper limb, performance was comparable to most baselines but
+
+remained significantly higher than Radio-DINO (p = 0.026).
+
+Further stratification by histological subtype confirmed robust performance. For osteosarcoma, a
+
+primary malignant bone tumor, SKELEX outperformed all baseline models (all p < 0.01). Among
+                                      ARTICLE IN PRESS
+
+
+
+
+benign but morphologically heterogeneous lesions, it exceeded all comparison models in simple bone
+
+cyst (all p < 0.01) and osteochondroma (all p < 0.01).
+
+In fracture detection, SKELEX maintained competitive performance across anatomical regions, with
+
+narrower margins reflecting strong baseline proficiency. In the MURA abnormality detection task,
+
+SKELEX achieved significant improvements in the shoulder (all p < 0.001) and elbow (all p < 0.05),
+
+with additional gains in the humerus and hand compared to most baselines.
+
+                                                                    S
+                                                             ES
+Calibration analysis
+                                                         PR
+We further evaluated probabilistic reliability across major diagnostic tasks. Confusion matrices
+                                               IN
+exhibited a dominant diagonal structure across datasets, indicating strong agreement between predicted
+
+                                        LE
+and true labels (Supplementary Figure 6).
+                                    C
+SKELEX also demonstrated favorable calibration performance. On BTXRD, it achieved the lowest
+                               TI
+                            R
+mean Expected Calibration Error (ECE, 0.096), representing an approximately 27.8% relative reduction
+                        A
+compared with the best-performing baseline (BiomedCLIP: 0.133). On MURA, SKELEX also showed
+
+the lowest ECE (0.166 vs. ≥0.172 for other models), and on FracAtlas, calibration error remained
+
+
+consistently low (≈0.08), comparable to the strongest baselines (Supplementary Table 20).
+
+
+
+
+Label efficiency under limited supervision
+
+To assess the data efficiency of the learned representations, we conducted label-efficiency analyses
+
+using reduced training subsets (Fig. 2d–f). This is particularly important in musculoskeletal imaging,
+                                       ARTICLE IN PRESS
+
+
+
+
+where fine-grained annotations are scarce and many labels are limited to broad binary categories. For
+
+example, in MURA31, the ‘abnormal’ label covers a highly heterogeneous spectrum of fractures, tumors,
+
+and implants, requiring a model to learn robustly despite such information-sparse supervision.
+
+Notably, SKELEX frequently outperformed baselines trained on full datasets using only half of the
+
+training samples. In bone tumor detection, SKELEX achieved an AUROC of 0.941 using 50% of the
+
+labeled training data, exceeding the best-performing baseline trained on the full dataset (BioMedCLIP:
+
+0.914). In abnormality detection, SKELEX reached an AUROC of 0.855 with 50% of the data,
+                                                                    S
+                                                              ES
+surpassing the strongest full-data baseline (BioMedCLIP: 0.846). These results support SKELEX as a
+
+                                                       PR
+data-efficient foundation model for musculoskeletal tasks.
+
+
+                                                IN
+Robustness to potential data leakage    LE
+                                    C
+To evaluate cross-partition redundancy, we conducted duplicate-detection and sensitivity analyses
+                               TI
+(Supplementary Figure 7). For datasets without patient identifiers, cross-partition near-duplicate images
+                              R
+                          A
+were quantified at SSIM thresholds of 0.90, 0.95, and 0.98 (Supplementary Table 21). The proportion of
+
+test images exhibiting near-duplicates in the training set was low, supporting minimal structural
+
+redundancy between partitions.
+
+Exact duplicates were identified using MD5 hashing, and near-duplicates were detected using SSIM-
+
+based filtering. After excluding duplicated images from the evaluation sets, model performance
+
+remained stable across SSIM thresholds and AUROC estimates derived from 5,000-iteration
+
+bootstrapping showed no meaningful degradation, indicating that performance gains were not driven by
+
+cross-partition similarity.
+                                       ARTICLE IN PRESS
+
+
+
+
+For tasks demonstrating near-perfect discrimination (AUROC ≥ 0.99), the numbers of positive and
+
+negative samples in the held-out test sets are reported for transparency (Supplementary Table 22).
+
+
+
+
+Unsupervised reconstruction-based anomaly detection
+
+A key advantage of SKELEX lies in its ability to localize abnormalities through the generation of
+
+reconstruction-based error maps. Because the model is trained to reconstruct masked regions of
+                                                                     S
+radiographs, discrepancies between reconstructed and original images reveal areas that deviate from the
+                                                               ES
+model’s learned in-distribution anatomical patterns. This provides an unsupervised mechanism for
+                                                        PR
+abnormality localization without requiring explicit pixel-level annotations. To generate error maps, we
+
+                                                IN
+applied random masking to the input radiographs, reconstructed the masked regions using SKELEX,
+
+and subtracted the reconstructed outputs from the original images. Ten random masks were used per
+                                        LE
+image to enhance stability, and the resulting pixel-wise squared errors were averaged to produce a final
+                                     C
+                                TI
+mean squared error (MSE) map. This entirely unsupervised procedure required no additional training or
+
+fine-tuning.
+                            R
+                         A
+Evaluation across the BTXRD (bone tumor), FracAtlas (fracture), and OAI (knee osteoarthritis) datasets
+
+demonstrated that the error maps localized a diverse range of pathologies (Fig. 3a–c). The MSE increase
+
+was not limited to the primary lesion, but also captured secondary clinical signs, such as soft tissue
+
+swelling, joint space narrowing, or the presence of orthopedic implants (Supplementary Figure 8a-c).
+
+The mean reconstruction error was markedly elevated in abnormal cases relative to normal radiographs
+
+(Supplementary Figure 8d-f). When the error map was compared to ground truth primary segmentation
+
+mask, abnormal radiographs exhibited significantly higher Dice score compared to matched random
+                                      ARTICLE IN PRESS
+
+
+
+
+baseline masks (P < 0.0001, Fig. 3d–f), confirming the diagnostic relevance of the reconstruction error
+
+signal. Without any additional supervision, SKELEX effectively achieved localization of skeletal
+
+pathologies by leveraging reconstruction discrepancies.
+
+
+
+
+Region-guided interpretable framework for multi-head bone tumor classification
+
+Accurate interpretation of musculoskeletal radiographs requires identifying not only the disease type but
+                                                                   S
+also its anatomical context. Early and precise detection of primary bone tumors remains a major clinical
+                                                             ES
+challenge, as these lesions can mimic benign or post-traumatic findings on radiographs42. To enhance
+                                                       PR
+both diagnostic accuracy and interpretability, we extended SKELEX into a region-guided multi-head
+
+                                               IN
+bone tumor classification framework capable of simultaneously identifying anatomical regions and
+
+multiple abnormality types, including bone tumors, fractures, and implants (Fig. 4a).
+                                       LE
+                                    C
+The framework consisted of two sequential stages: (1) anatomical region identification, which localized
+                               TI
+key skeletal structures, and (2) region-specific inference, where each localized region was independently
+                           R
+                        A
+analyzed for multiple abnormalities. The model was fine-tuned using three independent datasets,
+
+SNUH-BoneTumor, BTXRD34-Center 1 (three hospitals in China), and FracAtlas33, to ensure broad
+
+anatomical and pathological diversity (Supplementary Table 23). To effectively capture diverse
+
+information across heterogeneous datasets, we implemented a label-masking strategy that computed loss
+
+only for available labels, as public datasets frequently lacked complementary annotations (for example,
+
+fracture labels in BTXRD dataset were masked).
+
+The multi-head local classifier demonstrated strong performance in 5-fold cross-validation across all
+
+prediction tasks (Fig. 4b, c). It accurately identified anatomical regions (average AUROC = 0.999) and
+                                       ARTICLE IN PRESS
+
+
+
+
+achieved AUROC values exceeding 0.9 for all abnormality classifications, including bone tumor,
+
+fracture, and implant detection. Given the near-perfect discrimination observed in certain tasks
+
+(AUROC ≥ 0.99), the numbers of positive and negative samples for all tasks in this analysis are
+
+provided for transparency (Supplementary Table 24). On the internal test set, the model exhibited strong
+
+performance across all bone tumor and fracture categories, accurately distinguishing between benign
+
+and malignant tumors as well as pathological and non-pathological fractures (Fig. 4d, e). The complete
+
+region-guided framework also maintained robust performance on independent external datasets,
+                                                                     S
+BTXRD-Center 2 and BTXRD-Center 3, sourced from Radiopaedia and MedPix, respectively (Fig. 4f).
+                                                              ES
+                                                        PR
+To evaluate the sensitivity of the multi-head bone tumor classifier to the precision of the region-proposal
+
+accuracy, we conducted controlled perturbation experiments systematically modifying the ground-truth
+                                                IN
+bounding boxes by size and center shifts (Supplementary Figure 9). The model achieved optimal
+                                        LE
+performance with the unshifted boxes and was highly tolerant to small-to-moderate localization errors.
+                                     C
+In contrast, larger perturbations led to marked AUROC declines. Severe box shrinking or large center
+                               TI
+shifts sharply degraded performance because the lesion was partially or entirely excluded from the crop.
+                             R
+                         A
+Large box expansions introduced more non-informative background. However, because the lesion
+
+typically remained within the field of view, performance was comparatively less affected. These results
+
+suggest that the classifier benefits from accurate region proposals, yet remains robust to modest
+
+localization inaccuracies.
+
+We provide qualitative case-based evidence of the model’s potential to identify clinically meaningful
+
+findings that extended beyond the labels provided in publicly available datasets. In BTXRD, which
+
+lacks explicit fracture annotations despite containing bone tumor cases with fractures, the model
+
+accurately identified both bone tumors and fractures, thereby enriching the information represented by
+                                       ARTICLE IN PRESS
+
+
+
+
+the official dataset labels and aligning with clinical reports (Fig. 5a, Supplementary Figure 10a). In
+
+MURA, which offers only a binary abnormality label without specifying the type of abnormality
+
+(fracture, tumor, or implant type), the model successfully inferred detailed findings, including bone
+
+tumors, fractures, implants, and specific anatomical locations (Fig. 5b, Supplementary Figure 10b).
+
+Region-guided interpretable framework model predictions that were absent from the original dataset
+
+labels showed strong concordance with clinical notes documented by a board-certified orthopedic
+
+surgeon. To demonstrate potential clinical applicability, we deployed the model as a publicly accessible
+                                                                     S
+web-based diagnostic interface that allows users to upload radiographs and automatically estimate the
+                                                               ES
+probabilities of bone tumors and fractures (Fig. 6). This prototype serves as a proof of concept for real-
+                                                        PR
+world musculoskeletal diagnosis, demonstrating the translational potential of SKELEX-derived models.
+                                                IN
+                                        LE
+                                     C
+                                TI
+                            R
+                         A
+                                       ARTICLE IN PRESS
+
+
+
+
+Discussion
+
+This study introduces SKELEX, a large-scale vision foundation model for MSK radiographs, trained on
+
+more than 1.2 million unlabeled images using a masked autoencoding strategy. SKELEX learns
+
+radiograph-specific representations directly from large-scale, uncurated clinical data, enabling the model
+
+to capture broad anatomical variation and diverse disease manifestations while minimizing the need for
+
+extensive expert annotation. The model’s strong adaptability across multiple diagnostic tasks supports
+
+the notion that domain-specific self-supervised pretraining can be more effective than transferring from
+                                                                    S
+models trained on natural images.                             ES
+                                                        PR
+Earlier musculoskeletal AI models were typically developed for a single disease category or a limited
+
+anatomical region, and many relied on small, curated datasets. Consequently, these models often lacked
+                                                  IN
+robustness when applied across different clinical contexts. In contrast, SKELEX was trained on data
+                                        LE
+encompassing diverse anatomical regions and conditions, enabling it to perform consistently across
+                                     C
+                               TI
+twelve downstream diagnostic tasks and to reconstruct masked radiographs from multiple external
+
+                            R
+datasets. This broad representational capacity is significant because musculoskeletal radiographs
+                        A
+frequently exhibit multiple coexisting findings, such as degenerative changes, fractures, implants, and
+
+soft-tissue abnormalities. These features influence one another both visually and clinically, and accurate
+
+interpretation often depends on integrating them rather than evaluating each in isolation. Models that
+
+fail to account for this complexity may misclassify or overlook relevant findings, whereas SKELEX,
+
+through its pretraining on diverse anatomical and pathological patterns, offers a more advantageous
+
+foundation for jointly modeling these features.
+
+A key finding of this study is the label efficiency demonstrated by SKELEX. Expert annotation in
+                                       ARTICLE IN PRESS
+
+
+
+
+musculoskeletal imaging is time-intensive, and rare conditions are often underrepresented in existing
+
+datasets. SKELEX achieved strong performance using substantially fewer labeled examples, suggesting
+
+that large-scale self-supervised pretraining can meaningfully reduce the annotation burden required to
+
+develop clinically useful models, particularly for rare diseases where assembling large, well-annotated
+
+datasets is challenging. Furthermore, SKELEX exhibited unsupervised reconstruction-based pathology
+
+localization by generating reconstruction-based error maps that highlighted potentially pathological
+
+regions without additional supervision. This offers a form of interpretable visual attribution without
+
+task-specific training.
+                                                                     S
+                                                               ES
+                                                        PR
+Using the pretrained model, we further developed an interpretable region-guided bone tumor detection
+
+system. By first localizing anatomically meaningful regions and then performing region-specific multi-
+                                                IN
+task inference, the system demonstrated robustness across independent external datasets and
+                                         LE
+demonstrated the potential to enrich public datasets that contained only binary abnormality labels by
+                                     C
+providing more detailed distinctions among tumors, fractures, and implants. However, it is important to
+                                TI
+explicitly delineate that our external validation was done specifically on the bone tumor application, not
+                            R
+                          A
+for all downstream tasks. Our findings show the translational potential of SKELEX in bone tumor
+
+applications. Additionally, a web-based interface was developed to illustrate how the model could
+
+potentially be used in real-world clinical and research environments.
+
+This work carries implications for the broader goal of democratizing medical AI. By releasing SKELEX
+
+as a pretrained model, institutions with limited computational or annotation resources can adapt it to
+
+their own clinical environments using comparatively small labeled datasets. Its strong label efficiency
+
+also creates new opportunities for applying AI to rare musculoskeletal diseases, where large, well-
+
+annotated cohorts are difficult to obtain. Together, these features may help reduce disparities in access to
+                                        ARTICLE IN PRESS
+
+
+
+
+high-quality musculoskeletal diagnostic tools across regions and healthcare systems.
+
+Our benchmarking against contemporary medical foundation models further clarifies when MSK-
+
+specific pretraining is most beneficial. BiomedCLIP performed competitively for fracture detection,
+
+likely reflecting exposure to common fracture radiographs and descriptions during large-scale image-
+
+text pretraining. In contrast, SKELEX demonstrated its clearest advantages in bone tumor detection, a
+
+long-tail clinical problem in which cases are rare and therefore less consistently represented in general
+
+biomedical corpora. This divergence suggests that MSK-specific pretraining is particularly valuable for
+                                                                      S
+                                                               ES
+rare or specialized MSK conditions where generic medical models may have limited exposure or weaker
+
+                                                         PR
+domain priors. Together, these results emphasize the clinical usefulness of SKELEX's transferability and
+
+label efficiency in settings where expert annotation is scarce. More broadly, these findings motivate
+                                                 IN
+future scalable medical AI efforts to incorporate diverse MSK radiographs during pretraining. This will
+                                         LE
+enable robust, MSK-focused systems and strengthen general medical vision models, which must
+                                     C
+perform reliably across heterogeneous anatomy and disease prevalence.
+                                TI
+                             R
+Several limitations should be acknowledged. SKELEX was trained primarily on data from a single
+                         A
+institution, which may constrain geographic and demographic diversity. We intentionally restricted
+
+training to this dataset and did not incorporate publicly available datasets to avoid any possibility of data
+
+leakage during external evaluation. Nonetheless, the model successfully reconstructed masked
+
+radiographs from seven external datasets and performed robustly across diverse diagnostic tasks,
+
+supporting its broad applicability. While SKELEX demonstrated strong adaptability and label efficiency
+
+across 12 diverse downstream tasks, these broad evaluations were primarily conducted on held-out test
+
+splits from their respective public datasets. Currently, our strongest evidence for external
+
+generalizability is concentrated specifically on the bone tumor application. Future work must extend this
+                                       ARTICLE IN PRESS
+
+
+
+
+rigorous independent external validation framework to the other downstream clinical tasks to fully
+
+confirm their real-world generalizability. Second, the current model is based on the ViT-L architecture,
+
+which necessitates input downsampling to 224 × 224 pixels. This constraint may theoretically reduce
+
+sensitivity to subtle abnormalities, such as tiny non-displaced fracture or small bone tumor with faint
+
+medullary lucency. While our resolution ablation study indicated that classification performance for
+
+bone tumors remained stable from 224 × 224 down to 112 × 112, performance drop occurred below
+
+this threshold (Supplementary Figure 11). We recognize that diagnostic tasks requiring high-resolution
+                                                                     S
+information may benefit from architectures optimized for high resolution feature learning. Third,
+                                                               ES
+although this study shows that large-scale self-supervised pretraining on MSK radiographs improves
+                                                        PR
+downstream performance, our experiments were focused on a MAE architecture and did not include
+                                                IN
+direct comparisons with other self-supervised framework or image-text multimodal pretraining. Our
+
+                                        LE
+primary aim was to demonstrate that scaling self-supervised pretraining on diverse MSK radiographs
+
+                                     C
+yields transferable representation that improve clinically relevant tasks. While MAE provides an
+                                TI
+effective and scalable objective, future works should systemically benchmark alternative self-supervised
+                            R
+                         A
+paradigms and multimodal image-text pretraining under matched condition, particularly when high-
+
+quality paired reports or curated captions are available. Finally, this study focused exclusively on
+
+radiographs. Future research should explore multimodal approaches that integrate imaging data with
+
+clinical metadata, laboratory results, magnetic resonance imaging (MRI) or computed tomography (CT)
+
+findings, and longitudinal outcomes to enable more comprehensive diagnostic and prognostic reasoning.
+
+In conclusion, SKELEX demonstrates that large-scale, self-supervised learning of musculoskeletal
+
+radiographs can yield a powerful and adaptable foundation model. By leveraging abundant unlabeled
+                                       ARTICLE IN PRESS
+
+
+
+
+data, SKELEX provides a scalable framework for musculoskeletal imaging applications and presents a
+
+practical path toward more consistent, accurate, and accessible diagnostic support in clinical practice.
+
+
+
+
+                                                                     S
+                                                              ES
+                                                        PR
+                                                IN
+                                        LE
+                                     C
+                               TI
+                            R
+                         A
+                                        ARTICLE IN PRESS
+
+
+
+
+Methods
+
+Large-scale visual pretraining of SKELEX
+
+This study was approved by the Institutional Review Board of Seoul National University Hospital (IRB
+
+No. H-2203-079-1306). All radiographs and associated metadata were retrospectively collected and de-
+
+identified prior to analysis. Because this study utilized archival imaging data without direct patient
+
+contact, the requirement for informed consent was waived.
+
+                                                                      S
+To pretrain SKELEX, we assembled a large-scale musculoskeletal radiograph dataset (SNUH-1M) for
+                                                               ES
+self-supervised learning. SNUH-1M comprised of 1,296,540 unlabeled musculoskeletal radiographs
+                                                         PR
+retrieved from the hospital’s PACS between 2010 and 2016. These radiographs covered 15 anatomical
+
+                                                 IN
+regions and included a broad range of traumatic, neoplastic, degenerative, inflammatory, and
+
+postoperative conditions, thereby reflecting real-world clinical diversity (Supplementary Tables 1, 2).
+                                         LE
+                                     C
+SKELEX was pretrained using a masked autoencoder strategy32. We selected the MAE approach
+                                TI
+because masked image modeling has been shown to capture fine-grained, patch-level information
+                            R
+                         A
+effectively, which is particularly important for radiographs that often contain small, subtle lesions43.
+
+Each radiograph was resized to 224×224 pixels and divided into patches of size 16×16, a random subset
+
+of which was masked, and the model was trained to reconstruct the missing patches from the visible
+
+context. The reconstruction loss was defined as the mean squared error (MSE) between the predicted
+
+and true pixels only on masked patches, consistent with prior MAE works. This reconstruction objective
+
+encouraged the model to learn contextual and structural priors in musculoskeletal radiographs, including
+
+cortical continuity, trabecular pattern, joint alignment, and soft-tissue contours (Supplementary Figures
+
+1 and 2).
+                                       ARTICLE IN PRESS
+
+
+
+
+Pretraining followed established masked autoencoder frameworks32, with modifications tailored to
+
+radiographic data (Supplementary Table 17). The encoder consisted of 24 blocks with embedding size
+
+1024, and the decoder consisted of 8 blocks with embedding size 512. The hidden activation was
+
+GELU. The encoder was initialized with ViT-MAE ImageNet-1K pretrained weights from the Hugging
+
+Face Transformers library, using a ViT-Large backbone. Because the ImageNet-pretrained architecture
+
+expects three-channel (RGB) input, single-channel grayscale radiographs were replicated across three
+
+channels to match the required input dimensionality.
+                                                                     S
+                                                              ES
+Optimization was performed with the AdamW optimizer (1 = 0.9, 2 = 0.999) with a weight decay of
+
+                                                        PR
+0.05. The learning rate was set to 7.5×10-5 with a cosine decay schedule and a warmup ratio of 0.05. The
+
+batch size was 128, and pretraining was conducted for 50 epochs. Normalized pixel loss was disabled to
+                                                IN
+avoid distortion from the large, uniform black background regions inherent to radiographs
+                                        LE
+(Supplementary Figure 12). A masking ratio of 75% was applied. Data augmentations included random
+                                     C
+resized cropping (20-100% of the image area) and horizontal flipping. No manual labels or anatomical
+                                TI
+supervision were used during pretraining. Pretraining was conducted on single NVIDIA RTX A6000
+                            R
+                         A
+Ada (40 GB) GPU with a compute budget of 1630 GPU hours (wall-clock).
+
+
+
+
+Downstream task evaluation
+
+SKELEX was evaluated across 12 downstream diagnostic tasks using seven publicly available
+
+musculoskeletal imaging datasets encompassing fracture detection, bone tumor classification, pes planus
+
+identification, abnormality classification, osteoarthritis grading, and bone age estimation
+
+(Supplementary Tables 4-15).
+                                         ARTICLE IN PRESS
+
+
+
+
+For each dataset, a held-out test set (10%) with no patient overlap was created, and the remaining data
+
+were used for five-fold cross-validation (stratified for classification tasks). The model checkpoint
+
+achieving the best validation performance, AUROC for classification tasks and MAE for regression
+
+tasks, was selected and subsequently evaluated on the held-out test set.
+
+SKELEX was benchmarked against five baseline models: BiomedCLIP, Radio-DINO, ViT-MAE/I1K,
+
+ViT-L/I21K, and ResNet-101, using identical training, validation, and test splits. SKELEX,
+
+BiomedCLIP, Radio-DINO, ViT-MAE, ViT-L/I21K were fine-tuned using the same training pipeline,
+                                                                       S
+                                                                  ES
+whereas ResNet-101 was fine-tuned using a configuration adapted for convolutional architectures. All
+
+                                                           PR
+models were fine-tuned end-to-end. Full hyperparameter settings are listed in Supplementary Table 26
+
+(SKELEX and ViT-L/I21K) and Supplementary Table 27 (ResNet-101).
+                                                   IN
+                                          LE
+Task-specific downstream evaluations   C
+                                 TI
+Pediatric wrist fracture AO classification task (GRAZPEDWRI-DX)
+                              R
+                          A
+A multi-class classification task was constructed to predict AO pediatric distal forearm fracture
+
+categories directly from wrist radiographs. Each image was paired with the AO classification code from
+
+the metadata column ao_classification. The ten most frequent AO categories were retained
+
+(Supplementary Table 28), and AO strings were mapped to integer indices, which served as ground-truth
+
+labels. The task was treated as single-label multi-class classification with a softmax classification head,
+
+optimized using cross-entropy loss. To avoid patient leakage, the dataset was split into a train/validation
+
+pool and a held-out test set using a stratified patient-level split.
+                                       ARTICLE IN PRESS
+
+
+
+
+Pediatric wrist fracture detection task (GRAZPEDWRI-DX)
+
+A binary classification task was defined to detect the presence of a radiographically visible distal
+
+forearm fracture. Radiographs of initial exams were only included and case with uncertain diagnosis
+
+(diagnosis_uncertain = 1) or cast application (cast = 1) were excluded. Radiographs in which a fracture
+
+was visible on an alternate projection but annotated as no visible fracture were also excluded to prevent
+
+label inconsistency. That made 9,924 cases with 4,472 fractured cases. The task was implemented as
+
+single-label binary classification using a sigmoid classification head and binary cross-entropy loss.
+                                                                      S
+                                                               ES
+Dataset splitting followed the same procedure as AO classification.
+
+                                                        PR
+General fracture detection task (FracAtlas)     IN
+                                         LE
+Fracture detection was evaluated using the FracAtlas dataset, which contains extremity trauma
+                                     C
+radiographs labeled for the presence or absence of fracture. Metadata provided a binary fractured label.
+                                TI
+Of 4,083 images, 717 were fracture-positive. The task was implemented as single-label binary
+                            R
+                         A
+classification using a sigmoid classification head and binary cross-entropy loss. Dataset splitting was
+
+performed at the image level after duplicate detection and exclusion due to the absence of patient
+
+identifiers, as detailed in the Leakage Mitigation and Duplicate Detection section.
+
+
+
+
+Abnormality classification (MURA)
+
+The MURA dataset contains upper-extremity radiographs labeled for radiographic abnormality.
+
+Metadata supplied a binary abnormality label, with 16,403 abnormal cases among 40,005 studies. The
+                                       ARTICLE IN PRESS
+
+
+
+
+task was formulated as single-label binary classification with a sigmoid classification head and binary
+
+cross-entropy loss. Patient-level splitting was performed to prevent leakage.
+
+
+
+
+Bone tumor subtyping (BTXRD)
+
+Fine-grained radiographic tumor subtype classification was performed using BTXRD metadata
+
+containing nine subtype labels: osteochondroma, multiple osteochondromas, simple bone cyst, giant cell
+                                                                     S
+tumor, osteofibroma, synovial osteochondroma, other benign tumor, osteosarcoma, and other malignant
+                                                               ES
+tumor. Among 3,746 radiographs, 1,867 contained a bone tumor with one of the nine subtype
+                                                        PR
+annotations. The task was implemented as nine-class single-label classification with a softmax
+
+                                                IN
+classification head and cross-entropy loss. Dataset splitting occurred at the image level after duplicate
+
+detection and exclusion due to the absence of patient identifiers, as detailed in the Leakage Mitigation
+                                        LE
+and Duplicate Detection section.     C
+                                TI
+                            R
+                         A
+Bone tumor benign/malignant classification (BTXRD)
+
+Accurately distinguishing malignant from benign bone tumors on radiographs is a clinically critical task,
+
+as early identification of malignancy directly influences the urgency of referral, need for advanced
+
+imaging or biopsy, and overall treatment strategy. To assess the ability to differentiate malignant from
+
+benign bone tumors, a binary classification task was constructed using the BTXRD malignant, benign
+
+labels. Among 1,867 tumor cases, 342 were malignant. The task was implemented as single-label binary
+
+classification using a sigmoid classification head and binary cross-entropy loss. Dataset splitting
+
+followed the same procedure as bone tumor subtyping.
+                                       ARTICLE IN PRESS
+
+
+
+
+Bone tumor presence classification (BTXRD)
+
+Accurate identification of bone tumors on radiographs is clinically important, as radiographs are often
+
+the first-line imaging modality for musculoskeletal complaints. Bone tumor detection was evaluated as a
+
+binary classification task using BTXRD metadata indicating tumor presence or absence (1,867 tumor
+
+cases; 1,879 non-tumor cases). The task was implemented as single-label binary classification using a
+
+                                                                     S
+sigmoid classification head and binary cross-entropy loss. Dataset splitting followed the same procedure
+
+as bone tumor subtyping.
+                                                              ES
+                                                        PR
+Knee osteoarthritis grading (OAI)
+                                                IN
+                                        LE
+Radiographic knee osteoarthritis severity was assessed using the OAI dataset, which provides knee AP
+                                     C
+radiographs matched with label of the Kellgren–Lawrence (KL) grading system. A total 8,260 knee AP
+                                TI
+                            R
+radiographs were labeled 0 through 4, each corresponding to a KL grade. While treated as a 5-class
+                         A
+single-label classification problem with a softmax classification head and cross-entropy loss, the ordinal
+
+nature of KL grades is acknowledged. Quadratic weighted kappa is reported as an auxiliary metric to
+
+capture the ordinal relationships. Patient-level splitting was performed.
+
+
+
+
+Bone age regression (RSNA Bone Age)
+
+Bone age estimation was performed using the RSNA dataset of pediatric hand radiographs paired with
+
+ground-truth chronological bone age. The task was formulated as a single-target regression problem
+                                       ARTICLE IN PRESS
+
+
+
+
+optimized with mean squared error loss. Training was performed using AdamW with a base learning
+
+rate of 1×10-4 and weight decay 0.05; a higher learning rate (5×10-4) and lower weight decay (1×10⁻⁴)
+
+were used for ResNet-101. Patient-level splitting was performed.
+
+
+
+
+Pes Planus (flatfoot) classification (PesPlanus dataset)
+
+Pes planus is a condition characterized by decreased or absent medial longitudinal arch height, often
+                                                                     S
+identified on foot radiographs. Pes planus classification was performed using lateral foot radiographs
+                                                              ES
+labeled for the presence of flatfoot. Of 842 radiographs, 402 were positive. The task was implemented
+                                                        PR
+as single-label binary classification using a sigmoid classification head and binary cross-entropy loss.
+
+                                                IN
+Dataset splitting was performed at the image level after duplicate detection and exclusion, as detailed in
+
+the Leakage Mitigation and Duplicate Detection section.
+                                        LE
+                                     C
+                               TI
+                            R
+Detection of orthopedic implant in pediatric wrist radiographs (GRAZPEDWRI-DX)
+                         A
+To evaluate model performance in identifying the presence of orthopedic implant in pediatric wrist
+
+radiographs, we constructed the GRAZPEDWRI-DX dataset as a binary single-label classification task.
+
+Orthopedic implants commonly appear in pediatric wrist imaging following fracture management.
+
+Accurate identification of such hardware is important for downstream diagnostic tasks, as implants can
+
+obscure fracture lines, alter image characteristics, and confound automated feature extraction if not
+
+properly recognized. The task was implemented as single-label binary classification using a sigmoid
+
+classification head and binary cross-entropy loss. Dataset splitting followed the same patient-level
+
+procedure as GRAZPEDWRI-DX pediatric wrist fracture tasks.
+                                       ARTICLE IN PRESS
+
+
+
+
+Detection of orthopedic implant in general fracture dataset (FracAtlas)
+
+Implant detection was also evaluated using the FracAtlas dataset. Among 4,083 radiographs, 99 had
+
+implant-positive labels. The absence of patient-level identifiers required dataset splitting at the image
+
+level. The task was implemented as single-label binary classification using a sigmoid classification head
+
+and binary cross-entropy loss. Dataset splitting followed the same image-level procedure as FracAtlas
+
+fracture detection.                                                   S
+                                                               ES
+                                                        PR
+Calibration analysis
+                                                 IN
+To evaluate probabilistic reliability, confusion matrices and calibration metrics were computed for each
+                                         LE
+major task (bone tumor classification, fracture classification and abnormality classification). For cross-
+                                     C
+validation experiments, these analyses were performed independently for each fold using the
+                                TI
+                            R
+independent test set. The confusion matrices shown in the figures represent the average across folds.
+                         A
+The Expected Calibration Error (ECE) and Brier score were calculated for each fold, and summary
+
+statistics are reported across folds. Confusion matrices are provided in Supplementary Figure 6, and
+
+corresponding ECE values are reported in Supplementary Table 20.
+
+
+
+
+Label efficiency
+
+To evaluate label efficiency, we assessed how model performance varied as the number of labeled
+
+training examples was reduced while maintaining a fixed independent test set. For each task, 10% of the
+                                         ARTICLE IN PRESS
+
+
+
+
+full dataset was first randomly held out to construct an independent test set, which remained unchanged
+
+across all label-fraction experiments. The remaining 90% of the data constituted the training pool.
+
+From this training pool, we randomly sampled 10%, 20%, 50%, 90%, or 100% of the available labeled
+
+data to simulate varying levels of label availability. Sampling was stratified to preserve class balance
+
+within each subset. For each subset size, SKELEX was fine-tuned using the same optimization settings
+
+as in the full-data experiments, and the checkpoint yielding the highest validation AUROC was selected.
+
+Final performance was then evaluated on the same fixed independent test set for all label fractions.
+                                                                        S
+                                                                 ES
+Label efficiency was evaluated across three representative tasks spanning distinct musculoskeletal
+                                                           PR
+clinical contexts: abnormality classification (MURA), fracture detection (FracAtlas), and bone tumor
+
+classification (BTXRD). The same training and evaluation protocol were applied to baseline models to
+                                                   IN
+ensure a fair comparison under equivalent experimental conditions.
+                                          LE
+                                       C
+                                 TI
+Leakage Mitigation and Duplicate Detection
+                             R
+                          A
+To mitigate potential data leakage, data splitting was performed according to the availability of patient
+
+identifiers. For datasets with patient identifiers, strict patient-level splitting was applied, assigning all
+
+images from a given patient exclusively to a single partition (training, validation, or test).
+
+For datasets without patient identifiers, image-level splitting was used. To reduce structural redundancy
+
+between training and evaluation splits, duplicate detection was performed across partitions. Exact
+
+duplicates were identified using file-level MD5 hashing and removed. Structurally similar images were
+
+assessed using the Structural Similarity Index (SSIM). To focus on plausible duplicate candidates and
+
+limit unnecessary comparisons, SSIM was computed only between cross-partition image pairs sharing
+                                      ARTICLE IN PRESS
+
+
+
+
+identical metadata: for BTXRD, matching was based on age and sex; for FracAtlas, only image pairs
+
+from the same anatomical region (e.g., leg, hand) were compared. Image pairs with SSIM ≥ 0.95 were
+
+
+considered near-duplicates, and one image from each cross-partition pair was removed from the
+
+evaluation split.
+
+Sensitivity analyses were performed to evaluate robustness to near-duplicate exclusion. For each SSIM
+
+threshold (0.90, 0.95, 0.98) and without SSIM-based exclusion, cross-partition image pairs exceeding
+                                                                   S
+the threshold were removed from the evaluation set. Model performance was assessed on the held-out
+                                                             ES
+test set using a 5,000-iteration bootstrap, where AUROC was first averaged across the 5 cross-validation
+                                                      PR
+folds for each bootstrap sample. The mean AUROC and 95% confidence intervals were derived from
+
+                                               IN
+the bootstrap distribution and compared across SSIM thresholds.
+
+                                       LE
+                                    C
+Unsupervised reconstruction-based anomaly detection
+                               TI
+                           R
+Because SKELEX was pretrained using a masked autoencoder objective, it learned to reconstruct
+                        A
+missing image regions based on the surrounding context. When an abnormal region was entirely
+
+masked, the model often imputes a more anatomically typical appearance, reflecting a learned healthy
+
+prior derived from the dominant patterns in the pretraining data. This property enables unsupervised
+
+reconstruction-based pathology localization by comparing the original image with its reconstructed
+
+counterpart without any task-specific fine-tuning. The residual map should be interpreted as a measure
+
+of deviation from the learned dominant anatomy prior, rather than an explicit semantic understanding of
+
+pathology.
+                                       ARTICLE IN PRESS
+
+
+
+
+For each radiograph, we applied N = 10 stochastic random masking patterns with a mask ratio of 0.75,
+
+reconstructed the masked image using SKELEX, and computed the per-pixel reconstruction error. Let
+
+𝑥 ∈ RH×W×C denote the original image and 𝑥̂ (𝑝) the reconstructed image under the 𝑝-th masking
+
+pattern. Let 𝑀(𝑝) ∈ {0, 1}𝐻×𝑊 denote the binary mask for pass 𝑝, where 1 indicates a masked pixel.
+
+The per-pixel squared reconstruction error for each pass is defined as:
+                                                                        2
+                                    𝑒 (𝑝) = (𝑥 ⊙ 𝑀𝑖 − 𝑥̂ (𝑝) ⊙ 𝑀(𝑝) )
+
+Accumulating over 𝑁 = 10 random masks, the final error map is computed as the normalized average
+                                                                      S
+over all instances in which a pixel was masked:                ES
+                                 ∑𝑁   𝑒 (𝑝) (𝑖,𝑗)
+                                                        PR
+                       𝐸(𝑖, 𝑗) = ∑𝑁𝑝=1 (𝑝)(𝑖,𝑗) for pixels with ∑𝑁     (p)
+                                                                           (i, j) > 0
+                                                                 p=1 M
+                                  𝑝=1 𝑀
+
+                                                    IN
+The resulting map 𝐸(𝑖, 𝑗) highlights regions where the reconstruction deviates from normal anatomy,
+                                          LE
+thereby indicating potential abnormalities. No fine-tuning or task-specific supervision was used during
+
+this process.
+                                      C
+                               TI
+                            R
+Unsupervised reconstruction-based error maps were generated for three datasets (BTXRD,
+                        A
+FRACATLAS, and OAI) to evaluate this capability across bone tumor, fracture, and osteoarthritis cases.
+
+For each dataset, randomly sampled normal radiographs were compared with abnormal radiographs. For
+
+BTXRD, radiographs frequently contained non-anatomical artifacts such as text or metallic objects from
+
+clothing or accessories. To reduce this confounding effect, we restricted error map computation to the
+
+anatomically defined region containing the lesion. Specifically, we utilized AO Foundation’s
+
+communication system for defining anatomical regions45. The resulting residual map were compared
+
+against randomly sampled normal crops matched by anatomical location.
+                                       ARTICLE IN PRESS
+
+
+
+
+To quantitatively evaluate the spatial accuracy of these residual maps, we performed pixel-level
+
+comparison against expert-annotated ground-truth segmentation masks. For the FracAtlas and BTXRD
+
+datasets, we utilized the publicly provided segmentation masks. For the OAI dataset, where such
+
+annotations were unavailable, a board-certified orthopedic surgeon manually annotated the pathology to
+
+establish a reference. Since the error map 𝐸(𝑖, 𝑗) provides a continuous spectrum of values, we
+
+discretized the output into binary masks by applying fixed threshold at the top 15% of error intensity.
+
+This threshold was selected based on empirical evaluation across a range of thresholds (top 1–50%),
+                                                                     S
+where our method consistently outperformed a random-mask baseline, and the performance difference
+                                                              ES
+between the two methods was maximized around the 15% level (Supplementary Figure 13). For each
+                                                        PR
+resulting thresholded mask (Mpred ), the Dice Similarity Coefficient (DSC) was calculated relative to the
+                                                 IN
+expert ground-truth mask (MGT ) using the following formula:
+
+                                        LE       2|Mpred ∩ MGT |
+                                     C   DSC =
+                                                 |Mpred | + |MGT |
+                               TI
+                            R
+To establish a statistical baseline and demonstrate that the model’s localization significantly exceeds
+                           A
+random chance, we generated stochastic baseline masks. For each radiograph, a random baseline mask
+
+was created by sampling pixels such that its total area was identical to the corresponding model-
+
+generated mask. This controlled for the effect of lesion size on the overlap metric. The resulting DSC
+
+were compared using either a paired t-test or Wilcoxon signed-rank test, determined by the Shapiro-
+
+Wilk test for normality.
+
+
+
+
+Interpretable, region guided multi-headed bone tumor classification
+                                        ARTICLE IN PRESS
+
+
+
+
+We developed a two-stage framework to enable interpretable detection of bone tumors, fractures, and
+
+orthopedic implants. The first stage localized anatomically meaningful regions, and the second stage
+
+performed multi-headed classification within each region. Anatomical regions were identified using a
+
+modern real-time object detector (YOLO11x)44. The detector was trained on 4,049 radiographs from our
+
+institutional dataset, annotated with bounding boxes for 29 anatomical regions and auxiliary abnormal
+
+bone regions. The bounding box annotations adhered to AO Foundation’s communication system for
+
+defining anatomical locations45. For regional classification, SKELEX was fine-tuned using a multi-
+                                                                        S
+headed architecture consisted of five clinically relevant output heads: (1) global abnormality detection
+                                                                ES
+(binary); (2) bone tumor subtype classification (four classes: malignant, intermediate, benign, normal);
+                                                         PR
+(3) anatomical location classification (29 classes); (4) fracture category classification (three classes:
+                                                   IN
+neoplastic pathologic fracture, non-neoplastic fracture, normal); (5) orthopedic implant presence
+
+                                         LE
+detection (binary). We adopt a multi-head classification design, implemented as a single shared output
+
+                                      C
+tensor partitioned into task-specific groups. Supervised fine-tuning was performed using a masked
+                                TI
+multi-task objective to accommodate datasets with incomplete label coverage. For each image and label
+                             R
+𝑐, a binary label (𝑦𝑐 ) and a mask (𝑚𝑐 ) were defined, where (𝑚𝑐 = 1) indicated that the label was
+                         A
+unknown or not applicable. Loss and evaluation terms were computed only for labels where (𝑚𝑐 = 0).
+
+Binary tasks were optimized using masked binary cross-entropy (BCE), and multiclass tasks were
+
+optimized using masked categorical cross-entropy (CE). The total loss was calculated as the equally
+
+weighted sum of all active heads. Total loss is therefore:
+
+
+                                        ℒ = ∑(1 − 𝑚𝑐 ) ℒ𝒸 (𝑦̂𝑐 , 𝑦𝑐 )
+                                             𝑐∈𝒞
+
+where ℒ𝒸 is BCE for binary heads and CE for multiclass heads.
+                                       ARTICLE IN PRESS
+
+
+
+
+Evaluation metrics (AUROC, balanced accuracy, precision, recall, and F1-score) were calculated only
+
+over unmasked labels, and grouped confusion matrices were reported for multiclass heads.
+
+Training data for the multi-headed classification model were derived from the SNUH-BoneTumor
+
+dataset, which comprised 19,757 anatomically cropped radiographs, combined with the BTXRD-Center
+
+1 and FracAtlas datasets. The SNUH-BoneTumor dataset was curated with detailed image-level
+
+annotations assigned by a board-certified orthopedic oncologist. When available, pathology reports from
+
+surgical specimens were used as the definitive reference standard for tumor labels. In cases without
+                                                                    S
+                                                                ES
+histopathologic confirmation, diagnoses were established based on radiographic findings and clinical
+
+                                                        PR
+history, supplemented by CT or MRI when available. We acknowledge a degree of label heterogeneity
+
+in our ground truth establishment. However, integration of available diagnostic modalities was
+                                                IN
+employed to ensure the highest possible diagnostic fidelity..
+                                        LE
+All datasets were concatenated and evaluated using a 5-fold cross-validation strategy, with an
+                                     C
+                               TI
+independent 10% hold-out test set reserved for final performance assessment. Images were augmented
+
+                            R
+using random intersection-over-region (IoR)-constrained cropping, ±10° rotation, color jitter, and
+                         A
+resizing to 224 × 224 pixels, followed by standard normalization. The model was initialized from
+
+SKELEX and optimized using the AdamW optimizer (learning rate = 5×10-5, weight decay 0.02) under
+
+a cosine decay schedule with 10% warm-up over 30 epochs and a batch size of 64, employing mixed-
+
+precision training.
+
+External evaluation was performed on two independent datasets not used during training: BTXRD-
+
+Center 2 (Radiopaedia) and BTXRD-Center 3 (MedPix). For each radiograph, the region proposal
+
+network first identified candidate anatomical regions, and each extracted region, along with the whole
+                                       ARTICLE IN PRESS
+
+
+
+
+image, was then processed by the multi-headed classifier. Image-level predictions were derived from the
+
+aggregated regional outputs: if any region was classified as bone tumor, the entire radiograph was
+
+labeled as tumor-positive. Among tumor-positive cases, malignant bone tumor was assigned when the
+
+maximum malignant-class probability exceeded 0.5; otherwise, the case was labeled benign. Confusion
+
+matrices summarizing model performance were generated.
+
+A web-based inference interface was implemented using FastAPI to facilitate clinical and research
+
+applications of the region-guided bone tumor classifier (https://www.bonetudx.org).
+                                                                     S
+                                                              ES
+Computing hardware and software
+                                                        PR
+                                                IN
+To pretrain SKELEX using a masked autoencoder framework, we implemented the encoder–decoder
+
+                                        LE
+architecture with the Hugging Face Transformers library and trained the model on a single NVIDIA
+                                     C
+RTX A6000 Ada (40 GB) GPU using CUDA 12.4 and PyTorch v2.2.2. All downstream experiments
+                               TI
+were conducted on either a single NVIDIA V100 (40 GB) GPU or an NVIDIA RTX 4090 (24 GB) GPU
+                            R
+                         A
+running CUDA 11.8 and PyTorch v2.1.2.
+
+Checkpoints for BiomedCLIP, Radio-DINO, ViT-MAE/I1K, ViT-L/I21K, ResNet-101, were obtained
+
+from publicly available Hugging Face repositories. All code was written in Python 3.10.18, employing
+
+torchvision 0.16.2 for image transformations and Transformers 4.50.2 for loading ViT-MAE/I1K,
+
+ResNet-101, ViT-L/I21K, SKELEX checkpoints. Timm 1.0.22 was utilized for loading BiomedCLIP
+
+and Radio-DINO. Classical machine-learning utilities, such as cross-validation, stratified splitting, and
+
+computation of AUROC, balanced accuracy, F1-score, and regression metrics, were implemented using
+
+scikit-learn 1.7.0. Data handling and preprocessing utilized NumPy 1.26.4 and pandas 2.3.0.
+                                       ARTICLE IN PRESS
+
+
+
+
+Visualization and figure generation were performed using Matplotlib 3.10.3 and Seaborn 0.13.2.
+
+Additional Python dependencies used in this study are listed in the Reporting Summary.
+
+
+
+
+Evaluation and statistical analysis
+
+For model comparison, statistical significance was evaluated using a non-parametric paired bootstrap
+
+(5,000 iterations). The unit of resampling was defined according to the data-splitting strategy: for
+                                                                     S
+datasets with patient identifiers, patients in the held-out test set were resampled with replacement and all
+                                                               ES
+corresponding images were included; for datasets without patient identifiers, individual test images were
+                                                        PR
+resampled with replacement. This approach preserved both the original sample size and the paired
+
+                                                IN
+relationship between models evaluated on identical data.
+
+                                         LE
+The primary metric was the mean AUC across 5-fold cross-validation. For each bootstrap replicate,
+                                      C
+fold-level AUC values were averaged to obtain a single performance estimate. The empirical p-value
+                                TI
+was calculated using the Davison–Hinkley correction to ensure numerical stability:
+                            R
+                         A                             𝑟+1
+                                              𝑝 =2×
+                                                       𝑛+1
+
+where r is the number of bootstrap replicates where the performance difference was reversed, and
+
+n=5,000. A two-sided p<0.05 was considered statistically significant.
+
+For analyses involving unsupervised reconstruction-based anomaly maps, either a paired t-test or
+
+Wilcoxon signed-rank test, determined by the Shapiro-Wilk test for normality was used. P-value < 0.05
+
+was considered statistically significant. All statistical analyses were performed using SciPy library
+
+(version 1.5.4).
+                                        ARTICLE IN PRESS
+
+
+
+
+Declaration statements:
+
+(1) Data availability
+
+All publicly available datasets analyzed in this study can be accessed through their respective data
+
+portals: MURA (https://aimi.stanford.edu/datasets/mura-msk-xrays), GRAZPEDWRI-DX
+
+(https://doi.org/10.6084/m9.figshare.14825193), RSNA Bone Age (https://www.rsna.org/rsnai/ai-image-
+
+challenge/rsna-pediatric-bone-age-challenge-2017), FRACATLAS
+                                                                      S
+                                                                ES
+(https://figshare.com/articles/dataset/The_dataset/22363012?file=43283628), Pes Planus Dataset
+                                                         PR
+(https://doi.org/10.3390/diagnostics13091662), OAI (https://data.mendeley.com/datasets/56rmx5bjcr/1),
+
+                                                 IN
+BTXRD (https://doi.org/10.6084/m9.figshare.27865398)
+
+                                         LE
+The SNUH-1M and SNUH-BoneTumor datasets consist of retrospectively collected, de-identified
+                                     C
+radiographs and are subject to institutional data-use and privacy regulations. Access may be granted
+                                TI
+upon reasonable request. All requests will be reviewed on a case-by-case basis to ensure compliance
+                             R
+                         A
+with institutional policies, intellectual property considerations, and patient privacy protections.
+
+
+
+
+(2) Code availability
+
+The source code and pretrained as well as fine-tuned model weights are available for academic research
+
+purposes at (http://github.com/skhoha/SKELEX).
+
+
+
+
+(3) Acknowledgments
+                                        ARTICLE IN PRESS
+
+
+
+
+This work was supported by a grant from the MD-PhD/Medical Scientist Training Program through the
+
+Korea Health Industry Development Institute (KHIDI), funded by the Ministry of Health and Welfare,
+
+Republic of Korea; the Korea-US Collaborative Research Fund(KUCRF), funded by the Ministry of
+
+Science and ICT and Ministry of Health & Welfare, Republic of Korea (grant number: RS-2024-
+
+00468338); the Industrial Strategic Technology Development Program funded By the Ministry of Trade
+
+Industry & Energy (MOTIE) of Republic of Korea (RS-2024-00508416); the BK21 FOUR program of
+
+the Education and Research Program for Future ICT Pioneers, Seoul National University in 2026
+                                                                      S
+                                                               ES
+(4) Author contributions                                 PR
+                                                 IN
+S.K., S.L., I.H., S.Kw. conceptualized the project. S.K. and S.L. performed the experiments and data
+
+analysis and wrote the initial manuscript. K.S., J.N., S.Ko, D.K., W.H. provided critical feedback and
+                                         LE
+contributed to the interpretation of the results. H.-S.K., Y.K., and I.H. provided clinical resources and
+                                     C
+                                TI
+coordinated data acquisition. M.K. developed the web application. All authors contributed to manuscript
+                            R
+review and editing. I.H. and S.Kw. provided overall supervision of the study. All authors have read and
+                         A
+approved the manuscript.
+
+
+
+
+(5) Competing interests
+
+Authors declare that they have no competing interests.
+                                       ARTICLE IN PRESS
+
+
+
+
+References
+
+1. Cieza, A. et al. Global estimates of the need for rehabilitation based on the Global Burden of
+
+    Disease study 2019: a systematic analysis for the Global Burden of Disease Study 2019. The Lancet
+
+    396, 2006–2017 (2020).
+
+2. Liu, M. et al. Global, regional, and national burden of musculoskeletal disorders, 1990–2021: an
+
+    analysis of the global burden of disease study 2021 and forecast to 2035. Front. Public Health 13,
+
+    1562701 (2025).
+                                                                    S
+                                                              ES
+3. Yang, P. et al. Malignant bone tumours of the foot. Ann. R. Coll. Surg. Engl. 99, 568–572 (2017).
+
+                                                       PR
+4. Kung, J. W. et al. On-call musculoskeletal radiographs: discrepancy rates between radiology
+
+    residents and musculoskeletal radiologists. Am. J. Roentgenol. 200, 856–859 (2013).
+                                                IN
+5. Huhtanen, J. et al. Discrepancies between radiology specialists and residents in fracture detection
+                                        LE
+    from musculoskeletal radiographs. Diagnostics 13, 3207 (2023).
+                                    C
+6. Afshari Mirak, S., Tirumani, S. H., Ramaiya, N. & Mohamed, I. The growing nationwide radiologist
+                               TI
+    shortage: current opportunities and ongoing challenges for international medical graduate
+                            R
+                        A
+    radiologists. Radiology 314, e232625 (2025).
+
+7. Jeganathan, S. The growing problem of radiologist shortages: Australia and New Zealand’s
+
+    perspective. Korean J. Radiol. 24, 1043 (2023).
+
+8. York, T., Jenney, H. & Jones, G. Clinician and computer: a study on patient perceptions of artificial
+
+    intelligence in skeletal radiography. BMJ Health Care Inform. 27, e100233 (2020).
+
+9. Anderson, P. G. et al. Deep learning assistance closes the accuracy gap in fracture detection across
+
+    clinician types. Clin. Orthop. Relat. Res. 481, 580 (2023).
+
+10. Cheng, C.-T. et al. Application of a deep learning algorithm for detection and visualization of hip
+                                       ARTICLE IN PRESS
+
+
+
+
+    fractures on plain pelvic radiographs. Eur. Radiol. 29, 5469–5477 (2019).
+
+11. Jones, R. M. et al. Assessment of a deep-learning system for fracture detection in musculoskeletal
+
+    radiographs. npj Digit. Med. 3, 144 (2020).
+
+12. Nowroozi, A. et al. Artificial intelligence diagnostic accuracy in fracture detection from plain
+
+    radiographs and comparing it with clinicians: a systematic review and meta-analysis. Clin. Radiol.
+
+    79, 579–588 (2024).
+
+13. Mohammadi, S. et al. Artificial intelligence in osteoarthritis detection: A systematic review and
+
+    meta-analysis. Osteoarthritis Cartilage 32, 241–253 (2024).
+                                                                     S
+                                                              ES
+14. Chen, M., Cai, R., Zhang, A., Chi, X. & Qian, J. The diagnostic value of artificial intelligence-
+                                                        PR
+    assisted imaging for developmental dysplasia of the hip: a systematic review and meta-analysis. J.
+
+    Orthop. Surg. 19, 522 (2024).
+                                                  IN
+                                        LE
+15. McMaster, C. et al. Artificial intelligence and deep learning for rheumatologists. Arthritis
+
+    Rheumatol. 74, 1893–1905 (2022). C
+                                TI
+16. Wang, H. et al. Deep learning models in classifying primary bone tumors and bone infections based
+                            R
+    on radiographs. npj Precis. Oncol. 9, 72 (2025).
+                          A
+17. von Schacky, C. E. et al. Multitask deep learning for segmentation and classification of primary
+
+    bone tumors on radiographs. Radiology 301, 398–406 (2021).
+
+18. Park, C.-W. et al. Artificial intelligence-based classification of bone tumors in the proximal femur
+
+    on plain radiographs: system development and validation. PLoS One 17, e0264140 (2022).
+
+19. Xie, Z. et al. A radiograph-based deep learning model improves radiologists’ performance for
+
+    classification of histological types of primary bone tumors: A multicenter study. Eur. J. Radiol. 176,
+
+    111496 (2024).
+                                       ARTICLE IN PRESS
+
+
+
+
+20. Chen, R. J. et al. Towards a general-purpose foundation model for computational pathology. Nat.
+
+    Med. 30, 850–862 (2024).
+
+21. Lu, M. Y. et al. A visual-language foundation model for computational pathology. Nat. Med. 30,
+
+    863–874 (2024).
+
+22. Xu, S. et al. ELIXR: towards a general purpose X-ray artificial intelligence system through
+
+    alignment of large language models and radiology vision encoders. Preprint at
+
+    https://doi.org/10.48550/arxiv.2308.01317 (2023).
+                                                                     S
+23. Ma, D., Pang, J., Gotway, M. B. & Liang, J. A fully open AI foundation model applied to chest
+                                                              ES
+    radiography. Nature 643, 488–498 (2025).
+                                                        PR
+24. Bluethgen, C. et al. A vision–language foundation model for the generation of realistic chest X-ray
+
+    images. Nat. Biomed. Eng. 9, 494–506 (2024).
+                                                IN
+                                        LE
+25. Sellergren, A. B. et al. Simplified transfer learning for chest radiography models using less data.
+
+    Radiology 305, 454–465 (2022).   C
+                                TI
+26. Ma, D. et al. Benchmarking and boosting transformers for medical image classification. in Domain
+                            R
+    Adaptation and Representation Transfer (eds Kamnitsas, K. et al.) vol. 13542 12–22 (Springer
+                         A
+    Nature Switzerland, Cham, 2022).
+
+27. Pérez-García, F. et al. Exploring scalable medical image encoders beyond text supervision. Nat.
+
+    Mach. Intell. 7, 119–130 (2025).
+
+28. Tiu, E. et al. Expert-level detection of pathologies from unannotated chest X-ray images via self-
+
+    supervised learning. Nat. Biomed. Eng. 6, 1399–1406 (2022).
+
+29. Zhou, Y. et al. A foundation model for generalizable disease detection from retinal images. Nature
+
+    622, 156–163 (2023).
+                                        ARTICLE IN PRESS
+
+
+
+
+30. Nagy, E., Janisch, M., Hržić, F., Sorantin, E. & Tschauner, S. A pediatric wrist trauma X-ray dataset
+
+    (GRAZPEDWRI-DX) for machine learning. Sci. Data 9, 222 (2022).
+
+31. Rajpurkar, P. et al. MURA: large dataset for abnormality detection in musculoskeletal radiographs.
+
+    Preprint at https://doi.org/10.48550/arxiv.1712.06957 (2017).
+
+32. He, K. et al. Masked autoencoders are scalable vision learners. Preprint at
+
+    https://doi.org/10.48550/arxiv.2111.06377 (2021).
+
+33. Abedeen, I. et al. FracAtlas: a dataset for fracture classification, localization and segmentation of
+
+ musculoskeletal radiographs. Sci. Data 10, 521 (2023).
+                                                                      S
+                                                               ES
+34. Yao, S. et al. A radiograph dataset for the classification, localization, and segmentation of primary
+                                                         PR
+    bone tumors. Sci. Data 12, 88 (2025).
+                                                 IN
+35. Chen, P. Knee osteoarthritis severity grading dataset. Mendeley
+
+                                         LE
+    https://doi.org/10.17632/56RMX5BJCR.1 (2018).
+
+                                     C
+36. Avcı, D. Pesplanus dataset. Mendeley https://doi.org/10.17632/SSS89TJDDY.1 (2023).
+                                TI
+37. Halabi, S. S. et al. The RSNA Pediatric Bone Age Machine Learning Challenge. Radiology 290,
+
+    498–503 (2019).
+                            R
+                         A
+38. He, K., Zhang, X., Ren, S. & Sun, J. Deep residual learning for image recognition. Preprint at
+
+    https://doi.org/10.48550/arxiv.1512.03385 (2015).
+
+39. Dosovitskiy, A. et al. An image is worth 16x16 words: Transformers for image recognition at scale.
+
+ in International Conference on Learning Representations (2021).
+
+40. Zhang, S. et al. A multimodal biomedical foundation model trained from fifteen million image–text
+
+ pairs. NEJM AI 2, 1 (2025)
+
+41. Zedda L, Loddo A, Di Ruberto C. Radio DINO: A foundation model for advanced radiomics and AI-
+                                      ARTICLE IN PRESS
+
+
+
+
+ driven medical imaging analysis. Comput Biol Med. 195, 110583 (2025).
+
+42. Soares Do Brito, J. et al. Proximal femur chondrosarcoma misdiagnosed as hip arthritis: a case
+
+    report. JBJS Case Connect. 10, e0324–e0324 (2020).
+
+43. Park, N., Kim, W., Heo, B., Kim, T. & Yun, S. What Do Self-Supervised Vision Transformers
+
+ Learn? In Proc. 11th International Conference on Learning Representations (ICLR 2023) (2023).
+
+44. Jocher, G. & Qiu, J. Ultralytics YOLO (v11.0.0). GitHub https://github.com/ultralytics/ultralytics
+
+    (2024).                                                         S
+                                                             ES
+45. Meinberg, E., Agel, J., Roberts, C., Karam, M. & Kellam, J. Fracture and dislocation classification
+
+ compendium—2018. J. Orthop. Trauma 32, S1–S10 (2018). PR
+                                               IN
+                                       LE
+                                    C
+                               TI
+                            R
+                        A
+                                       ARTICLE IN PRESS
+
+
+
+
+Figures
+
+Figure 1. Overview of SKELEX.
+
+SKELEX represents a large-scale foundation model for musculoskeletal (MSK) radiographs,
+
+demonstrating strong performance across 12 diagnostic tasks, with capabilities for unsupervised
+
+reconstruction-based anomaly localization and region-level interpretable prediction. a, Distribution of
+
+the SNUH-1M dataset, comprising more than 1.2 million radiographs across 15 body parts. b, SKELEX
+
+                                                                    S
+was pretrained on SNUH-1M, a dataset approximately 30 times larger than the largest publicly available
+                                                              ES
+MSK dataset, and subsequently fine-tuned on multiple open datasets, including MURA,
+                                                       PR
+GRAZPEDWRI-DX, RSNA Bone Age, FracAtlas, OAI, and Pes Planus. c, SKELEX was pretrained
+
+using a masked autoencoding strategy, in which randomly masked image regions were reconstructed to
+                                               IN
+learn contextual visual representations, followed by fine-tuning for diverse diagnostic tasks. d, SKELEX
+                                        LE
+outperformed other pretrained encoders across 12 clinical benchmarks in musculoskeletal radiography.
+                                    C
+                               TI
+e, The model achieved unsupervised reconstruction-based anomaly localization by generating
+
+                            R
+reconstruction error maps without explicit localization supervision. f, Region-guided multi-headed
+                        A
+model fine-tuned from SKELEX to generate region-interpretable predictions for bone tumors, fractures,
+
+and implants.
+
+
+
+
+Figure 2. Performance across musculoskeletal disease diagnostic tasks.
+
+SKELEX demonstrated robust performance across multiple musculoskeletal disease classification tasks
+
+and showed strong label efficiency. a, Bone tumor classification performance of SKELEX and baseline
+
+models across different anatomical regions and bone tumor subtypes. b, c, Fracture (b) and bone
+                                       ARTICLE IN PRESS
+
+
+
+
+abnormality (c) classification performance of SKELEX and baseline models across various anatomical
+
+regions. Dashed lines indicate the mean performance of each model across all categories. Bars represent
+
+the mean AUROC across 5,000 bootstrap resamples, where each bootstrap value is the average AUROC
+
+across 5 folds. Error bars indicate the 95% confidence intervals derived from the bootstrap distribution.
+
+For detailed statistical comparisons and p-values calculated via paired bootstrapping, please refer to
+
+Supplementary Table 16-19. d–f, Label efficiency analyses showing model performance with varying
+
+proportions of labeled training data, demonstrating the amount of data required to achieve target
+                                                                      S
+performance levels. d, Bone tumor classification. e, Fracture classification. f, Bone abnormality
+                                                               ES
+classification. All label-efficiency results were evaluated on a fixed independent held-out test set
+                                                        PR
+established prior to subsampling. The grey dashed line marks the fraction of labeled training data at
+                                                 IN
+which our model attains the maximum performance reached by baseline models using the entire training
+
+set.                                     LE
+                                     C
+                                TI
+                            R
+Figure 3. Unsupervised reconstruction-based error map generation with SKELEX.
+                         A
+SKELEX produces error maps that localize abnormal regions without any task-specific training. a–c,
+
+Error maps generated from the BTXRD, FracAtlas, and OAI datasets, corresponding to bone tumor (a),
+
+fracture (b), and osteoarthritis (c) cases, respectively. The maps highlight regions of abnormality for
+
+each condition. d–f, Quantitative comparisons of Dice score values between SKELEX error maps and
+
+random masks generated from the BTXRD (d), FracAtlas (e), and OAI (f) datasets (*P < 0.05,
+
+**P < 0.01, ***P < 0.001, ****P < 0.0001; a paired t-test for bone tumor and osteoarthritis datasets
+                                       ARTICLE IN PRESS
+
+
+
+
+(normally distributed differences) and a Wilcoxon Signed-Rank Test for the fracture dataset (non-
+
+normally distributed differences)).
+
+
+
+
+Figure 4. Interpretable region-guided multi-headed bone tumor classifier with auxiliary heads
+
+using SKELEX
+
+SKELEX can be fine-tuned into an interpretable, multi-headed bone tumor classifier with auxiliary
+                                                                     S
+                                                              ES
+heads including fracture and implant detection. a, Schematic illustration of the two-stage framework
+
+                                                        PR
+comprising anatomical region localization followed by region-specific inference for multi-headed
+
+musculoskeletal abnormality classification. b, c, 5-fold cross-validation performance of the multi-
+                                                IN
+headed local classifier for anatomical localization (b) and for abnormality, bone tumor, fracture, and
+                                        LE
+implant classification (c). Bars represent the mean AUROC across 5,000 bootstrap resamples, where
+                                      C
+each bootstrap value is the average AUROC across 5 folds. Error bars indicate the 95% confidence
+                               TI
+intervals derived from the bootstrap distribution. d, e, Confusion matrices showing internal test
+                            R
+                         A
+performance for bone tumor (d) and fracture (e) classification. f, Confusion matrix of external validation
+
+on independent datasets (BTXRD-Centers 2 and 3, sourced from Radiopaedia and MedPix).
+
+
+
+
+Figure 5. Qualitative case-based evidence of the model’s potential to identify findings beyond
+
+dataset-provided labels.
+
+The region-guided multi-headed bone tumor classifier demonstrated interpretive capacity that exceeded
+
+the label available in publicly released datasets in these illustrative examples. a, In the BTXRD dataset,
+                                       ARTICLE IN PRESS
+
+
+
+
+which lacks explicit fracture annotations despite containing bone tumors with fracture cases, the model
+
+correctly identified both bone tumors and fractures, thereby extending beyond the official dataset labels
+
+and aligning with clinical reports. b, In the MURA dataset, which provides only binary abnormality
+
+labels without specifying the underlying pathology, the model successfully inferred detailed findings
+
+including bone tumor, fracture, implant, and anatomical location. Predictions by SKELEX not present in
+
+the original dataset labels are highlighted in red, and the accompanying clinical notes were written by a
+
+board-certified orthopedic surgeon.
+                                                                     S
+                                                              ES
+                                                        PR
+Figure 6. Web-based diagnostic interface demonstrating the translational potential of the
+
+SKELEX-derived model                            IN
+A publicly accessible web interface allows users to upload musculoskeletal radiographs and
+                                        LE
+automatically estimate the probabilities of bone tumor and fracture. Anatomical regions identified by the
+                                      C
+                               TI
+region-proposal network are visualized with bounding boxes, and corresponding classification
+                            R
+probabilities are displayed for each region. Users may interactively adjust the decision threshold to
+                         A
+explore how predictions change across operating points.
+     ARTICLE IN PRESS
+
+
+
+
+                        S
+                  ES
+              PR
+          IN
+     LE
+     C
+    TI
+R
+A
+     ARTICLE IN PRESS
+
+
+
+
+                        S
+                  ES
+              PR
+          IN
+     LE
+     C
+    TI
+R
+A
+     ARTICLE IN PRESS
+
+
+
+
+                        S
+                  ES
+              PR
+          IN
+     LE
+     C
+    TI
+R
+A
+     ARTICLE IN PRESS
+
+
+
+
+                        S
+                  ES
+              PR
+          IN
+     LE
+     C
+    TI
+R
+A
+     ARTICLE IN PRESS
+
+
+
+
+                        S
+                  ES
+              PR
+          IN
+     LE
+     C
+    TI
+R
+A
+     ARTICLE IN PRESS
+
+
+
+
+                        S
+                  ES
+              PR
+          IN
+     LE
+     C
+    TI
+R
+A
+

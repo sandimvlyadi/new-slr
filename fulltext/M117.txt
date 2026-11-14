@@ -1,0 +1,534 @@
+Shundi et al. Egypt J Radiol Nucl Med                (2026) 57:171                                                     Egyptian Journal of Radiology
+https://doi.org/10.1186/s43055-026-01837-6
+                                                                                                                              and Nuclear Medicine
+
+
+ RESEARCH                                                                                                                                               Open Access
+
+Noise‑robust attention‑guided deep
+learning for automated five‑class knee
+osteoarthritis grading from radiographs
+Michael Joseph Shundi1*, Rajesh Kumar Pullagura1 and Chiranjeevi Karri1
+
+
+
+  Abstract
+  Background Knee osteoarthritis (KOA) is commonly assessed using radiographic Kellgren–Lawrence (KL) grading;
+  however, manual evaluation is subjective and prone to inter- and intra-observer variability, particularly in early-
+  stage disease. Although deep learning approaches have shown promise, challenges remain in distinguishing adja-
+  cent grades and handling label noise. This study developed and evaluated a noise-robust and attention-guided deep
+  learning framework for automated five-class KOA grading from radiographs.
+  Results The proposed framework was evaluated on 9786 knee radiographs using stratified cross-validation.
+  It achieved an overall accuracy of 88.52%, a macro-average F1-score of 0.8804, and a macro-average area
+  under the curve of 0.94. Class-wise performance was highest for Grade 0 (F1 = 0.9388) and Grade 4 (F1 = 0.9315),
+  intermediate for Grade 2 (F1 = 0.8718) and Grade 3 (F1 = 0.9106), and lowest for Grade 1 (F1 = 0.7493), with errors con-
+  centrated between adjacent early grades. Model interpretability analysis demonstrated that predictions were based
+  on clinically relevant joint regions. However, direct comparison with previous studies is limited due to differences
+  in experimental settings.
+  Conclusions The proposed framework demonstrates the potential of integrating label-noise mitigation and atten-
+  tion-guided feature learning for automated KOA grading. While the results are promising, further validation on inde-
+  pendent multicenter datasets is required to confirm generalizability and support clinical applicability.
+  Keywords Knee osteoarthritis, KOA classification, Kellgren–Lawrence grading, EfficientNetV2-M, Label noise, Medical
+  image analysis
+
+
+Background                                                                              clinical and research practice. Nevertheless, KL grading
+Knee osteoarthritis (KOA) is a progressive degenerative                                 is subjective in nature, and it is prone to inter- and intra-
+disorder that is marked by cartilage degeneration, joint-                               observer variability, especially in the early or borderline
+space narrowing, and osteophyte development, which                                      stages where radiographic differences are not easily dis-
+finally results in pain, stiffness, and loss of mobility.                               cernible. These challenges have inspired the creation of
+Radiographic examination is the most common imaging                                     automated deep learning-based solutions to enhance
+tool that KOA is assessed with, and Kellgren–Lawrence                                   consistency in the diagnostic process and minimize the
+(KL) scale is the most commonly used grading scale in                                   use of manual interpretation [1–3].
+                                                                                           Early computational techniques mainly utilized hand-
+*Correspondence:                                                                        crafted texture or shape features; however, recent devel-
+Michael Joseph Shundi                                                                   opments in convolutional neural networks (CNNs) have
+michaelshundi81@gmail.com                                                               enabled automated musculoskeletal radiograph analysis
+1
+  Department of Electronics and Communications Engineering, AUCE(A),
+Andhra University, Visakhapatnam, India                                                 to improve significantly [4]. In the case of KOA classifica-
+                                                                                        tion, CNN models like the ResNet, VGG, and EfficientNet
+
+                                      © The Author(s) 2026. Open Access This article is licensed under a Creative Commons Attribution 4.0 International License, which
+                                      permits use, sharing, adaptation, distribution and reproduction in any medium or format, as long as you give appropriate credit to the
+                                      original author(s) and the source, provide a link to the Creative Commons licence, and indicate if changes were made. The images or
+                                      other third party material in this article are included in the article’s Creative Commons licence, unless indicated otherwise in a credit line
+                                      to the material. If material is not included in the article’s Creative Commons licence and your intended use is not permitted by statutory
+                                      regulation or exceeds the permitted use, you will need to obtain permission directly from the copyright holder. To view a copy of this
+                                      licence, visit http://creativecommons.org/licenses/by/4.0/.
+Shundi et al. Egypt J Radiol Nucl Med    (2026) 57:171                                                        Page 2 of 10
+
+
+
+
+have demonstrated promising results by extracting hier-       feature localization, and model efficiency to improve
+archical features directly from X-ray images [5, 6]. With     both performance and interpretability in KOA grading.
+these innovations, it is still challenging to distinguish        To address these limitations, this study proposes a uni-
+between neighboring KL grades, particularly Grade 1           fied, data-centric and attention-guided framework KOA-
+and Grade 2, with high reliability. Such grades do not        EfficientNetV2-M⁺ for automated KOA severity grading.
+vary much in contrast, and it has been demonstrated           Unlike prior approaches that primarily focus on network
+that image clarity can be increased by using traditional      architecture, the proposed method integrates label-noise
+methods of enhancing images such as contrast-limited          mitigation, attention-based feature refinement, and opti-
+adaptive histogram equalization (CLAHE) though it still       mized backbone design within a single pipeline. This
+does not completely eliminate grade overlap or inconsist-     combined strategy was designed to enhance classifica-
+ency in annotation [1, 3]. Ensemble and transfer-learning     tion performance, particularly in early-stage KOA, while
+methods such as InceptionResNetV2, Xception, and Effi-        improving model interpretability and robustness.
+cientNet versions have moderate accuracy (63–68%) but            The main contributions of this work are summarized as
+remain poor on heterogeneous data sets because they are       follows:
+sensitive to noise and subtle morphological variation [7,
+8].                                                             • Integrated Noise-Robust Learning Framework We
+   To overcome these shortcomings, attention mecha-               introduce a data-centric approach that incorporates
+nisms have been receiving growing interest in the field           CleanLab-based relabeling to systematically identify
+of medical image analysis. Some of the modules like               and mitigate label noise in KL annotations.
+convolutional block attention module (CBAM) and                 • Attention-Guided Feature Enhancement Dual CBAM
+attention-gated networks allow models to select diagnos-          modules are embedded within the network to
+tically significant structures, and these enhance feature         improve the localization of clinically relevant struc-
+differentiation in sophisticated radiographic and MRI-            tures and enhance the discrimination between subtle
+based tasks [9–14]. Incorporating attention into modern           KOA grades.
+backbones has yielded measurable performance gains,             • Unified Pipeline Design The proposed framework
+as demonstrated by Pacal et al. [15], who enhanced Effi-          combines preprocessing (ROI extraction, CLAHE,
+cientNetV2 using channel and global attention for MRI             and outlier detection) with an optimized Efficient-
+tumor classification. These findings indicate that the            NetV2-M backbone to create a cohesive and robust
+combination of attention and efficient architectures can          classification system.
+be used to overcome the radiographic transition that is         • Improved Early-Stage Sensitivity The model demon-
+subtle and makes KL grading difficult.                            strates improved sensitivity in detecting early-stage
+   Another long-standing problem of radiographic data-            KOA (Grades 1 and 2), which remains a major chal-
+sets is label noise. KL grades are graded manually and            lenge in both clinical and automated settings.
+hence subject to inconsistency, especially in differentiat-     • Clinically Interpretable Outputs Visualization tech-
+ing early signs of OA. Noisy labels could have significant        niques (Grad-CAM++ and Score-CAM) are used to
+adverse impacts on model training and generalization              provide interpretable insights into model predictions,
+and cause unstable optimization and biased learning.              supporting potential clinical adoption.
+The recent literature shows that the robustness of the
+models can be improved by data-centric methods such             In general, the presented KOA-EfficientNetV2-M+
+as automated label correction, without any modification       architecture incorporates data refinement, attention-
+of the network structure [16]. Despite these advance-         based learning, and optimized architecture to offer a
+ments, several critical limitations remain in existing        robust and interpretable solution for objective multi-
+KOA classification approaches. First, many models strug-      class KOA grading.
+gle to reliably distinguish between adjacent KL grades,
+particularly Grades 1 and 2, due to subtle radiographic       Methods
+differences. Second, the impact of label noise arising        Dataset description
+from inter- and intra-observer variability remains insuf-     The knee radiographic images used for model training
+ficiently addressed, despite its known effect on model        and evaluation in this work were obtained from publicly
+performance. Third, existing studies often focus primar-      available Knee Osteoarthritis Severity Grading dataset
+ily on architectural improvements while underutilizing        available on Kaggle [17], originally derived from the Oste-
+data-centric strategies for enhancing label quality and       oarthritis Initiative (OAI) repository. The data include
+robustness. Consequently, there is a need for integrated      9786 X-ray scans with each sample being labeled accord-
+frameworks that simultaneously address label noise,           ing to Kellgren–Lawrence (KL) grading scale, which
+Shundi et al. Egypt J Radiol Nucl Med             (2026) 57:171                                                                          Page 3 of 10
+
+
+
+
+defines the severity of osteoarthritis into five different                  about the tibiofemoral joint to remove non-informative
+stages: KL-0 (normal), KL-1 (doubtful), KL-2 (mild),                        background and normalize the anatomical position-
+KL-3 (moderate), and KL-4 (severe). All the images                          ing; contrast-limited adaptive histogram equalization
+were brought to 224 × 224 pixel so that there would be                      (CLAHE) was applied to the local contrast of the image
+uniformity in the model input. The Kellgren–Lawrence                        to emphasize the joint-space narrowing, osteophytes, and
+(KL) grades provided in the dataset, originally assigned                    the patterns of the trabecular bone.
+by expert radiologists within the Osteoarthritis Initia-                      To ensure data consistency, an ensemble-based outlier
+tive (OAI), were considered as the reference standard in                    detection procedure combining autoencoder reconstruc-
+this study. To further enhance label reliability and reduce                 tion error and Isolation Forest was applied. CleanLab-
+annotation inconsistencies, a CleanLab-based relabeling                     Plus relabeling was then used to label the laboratory
+strategy was employed to identify and correct poten-                        error by confirm-joint estimation. To further address
+tially noisy labels. The dataset used in this study is pub-                 inter- and intra-observer variability inherent in KL grad-
+licly available and fully de-identified, obtained from the                  ing, the CleanLab-based relabeling approach was specifi-
+Osteoarthritis Initiative (OAI) database via Kaggle. As                     cally leveraged to detect annotation inconsistencies and
+no identifiable patient information was used, this study                    refine ambiguous labels. This is particularly important for
+did not require additional institutional ethical approval.                  borderline cases such as Grades 1 and 2, where variability
+All procedures complied with relevant guidelines for the                    among human observers is known to be high. The ROI
+use of publicly available medical imaging data. Figure 1                    images after cleaning were upsampled to 380 × 380 pixels
+depicts a summary of the dataset distribution as well as                    with anti-aliasing and bicubic interpolation. ImageNet
+sample radiographs. For clarity and clinical interpretabil-                 statistics were used to normalize pixel intensities, and
+ity, representative radiographs include visual indications                  ImageNet dynamics such as horizontal flips, mild rota-
+of key diagnostic features such as joint space narrowing                    tions, scaling, CutMix and elastic deformations were
+and osteophyte formation, consistent with standard radi-                    applied during the time of training to enhance generali-
+ological assessment criteria.                                               zation and reduce class imbalance.
+
+Label refinement and preprocessing                                          Model architecture
+A data-based preprocessing pipeline was applied before                      The main component of the offered framework is the Effi-
+processing each radiograph, and it was developed to                         cientNetV2-M backbone, which is launched with Ima-
+enhance the input-related quality and reliability of the                    geNet pretrained weights. It obtained two feature maps:
+labels. A preliminary region-of-interest (ROI) was taken                    a mid-level representation (Fmid), which describes fine
+
+
+
+
+ Fig. 1 Dataset distribution and representative knee radiographs across five Kellgren–Lawrence (KL) grades (KL-0 to KL-4). Two representative images
+ per grade illustrate the progressive radiographic changes associated with osteoarthritis severity. The number of images in each class is provided
+ below, indicating the distribution of samples across KL grades [17]
+Shundi et al. Egypt J Radiol Nucl Med            (2026) 57:171                                                               Page 4 of 10
+
+
+
+
+structure details, and a high-level representation (Fhigh),                 previously reported KOA classification studies. The use
+which is a semantic feature map. Dual CBAM was incor-                       of cross-validation further supports the statistical robust-
+porated to enhance feature discrimination by sequen-                        ness and generalizability of the results.
+tially applying channel and spatial attention to emphasize
+clinically relevant regions.                                                Interpretability and evaluation procedure
+  Attention-weighted features were then passed through                      Final model predictions were obtained using test-time
+a fully connected layer of 512 SiLU-activated units, after                  augmentation (TTA), where outputs from multiple aug-
+which dropout regularization and global average pooling                     mented variants of each test image were averaged to
+were applied. The last layer of classification had five neu-                improve prediction stability. Grad-CAM++ and Score-
+rons with softmax activation according to the grades of                     CAM were used to evaluate model interpretability,
+KL (0–4). A schematic overview of the complete KOA-                         which allowed visualizing discriminative regions that
+EfficientNetV2-M⁺ architecture is presented in Fig. 2.                      affected the decisions of the network. This set of maps
+                                                                            was always used to identify clinically relevant regions,
+                                                                            including the medial compartment, joint margins, and
+Model training
+                                                                            osteophyte-prone regions, which validates that the KOA-
+Model training was performed using AdamW optimizer
+                                                                            EfficientNetV2-M+ framework makes use of anatomically
+with a base learning rate of 1 × 10−4 along with a cosine
+                                                                            meaningful radiographic characteristics.
+annealing schedule. Training was done with mixed-preci-
+sion computation using an NVIDIA T4 (15 GB VRAM)
+                                                                            Statistical analysis
+[18] with a batch size of eight and gradient accumulation.
+                                                                            The standard classification measures, accuracy, precision,
+Early stopping based on macro-average F1-score was
+                                                                            recall, F1-score, and the area under the receiver operat-
+employed to prevent overfitting. To ensure robust and
+                                                                            ing characteristic curve (AUC-ROC), were used to meas-
+unbiased assessment, stratified fivefold cross-validation
+                                                                            ure model performance. To have a multi-class setting,
+was used across all experiments. The dataset was parti-
+                                                                            macro-averaging was used so that the weight of all KL
+tioned using stratified fivefold cross-validation to ensure
+                                                                            grades provided was equal.
+proportional representation of all KL grades in each fold.
+                                                                              Accuracy was computed as:
+Care was taken to avoid data leakage by ensuring that no
+overlapping samples appeared across training and vali-                                                  TP + TN
+dation sets. To ensure reproducibility, all experiments
+                                                                                  Accuracy =                                         (1)
+                                                                                                   TP + TN + FP + FN
+were conducted using fixed random seeds and consistent
+training configurations across folds. Model development                       Precision and recall were defined as:
+and evaluation were implemented using standardized                                                  TP
+deep learning frameworks. Although a formal a priori                              Precision =                                        (2)
+                                                                                                  TP + FP
+power analysis was not conducted, the dataset included
+9786 radiographs, which is substantially larger than many
+
+
+
+
+ Fig. 2 Proposed KOA-EfficientNetV2-M+ architecture for automated five-class knee osteoarthritis Grading Training Strategy
+Shundi et al. Egypt J Radiol Nucl Med           (2026) 57:171                                                                Page 5 of 10
+
+
+
+
+                     TP                                                  Table 2 Comparison of classification accuracy with existing CNN
+        Recall =                                                   (3)   architectures
+                   TP + FN
+                                                                         Reference(s)           Model                       Accuracy (%)
+where TP, TN, FP, and FN represent true-positive, true-
+negative, false-positive, and false-negative predictions,                [19]                   EfficientNetB5              82.07
+respectively.                                                            [20]                   MobileNetV2                 67
+  The F1-scores represent the harmonic mean of the pre-                  [20]                   ResNet101                   69
+cision and the recall, which was computed as:                            [20]                   VGG16                       66
+                                                                         [20]                   VGG19                       64
+                   Precision · Recall
+        F1 = 2 ·                                                   (4)   [20]                   InceptionResNetV2           63
+                   Precision + Recall                                    [20]                   DenseNet121                 64
+  The AUC-ROC was used to analyze the discriminative                     [21]                   Xception                    67.8
+capability at different thresholds. The ROC curve shows                  –                      KOA-EfficientNetV2-M⁺       88.52
+                                                                                                (Proposed)
+the true-positive rate versus false-positive rate, and a
+higher AUC value depicts a better ability to separate the
+classes. It is an important metric especially when the data
+                                                                         achieved higher accuracy than the compared methods.
+are not balanced like in the case of KL grading. All these
+                                                                         However, it should be noted that a direct comparison
+metrics bring a detailed evaluation of the KOA-Efficient-
+                                                                         is limited by potential differences in training protocols,
+NetV2-M+ model in the process of grading KOA severity.
+                                                                         preprocessing strategies, and evaluation settings across
+                                                                         studies. Due to the absence of standardized experimental
+Results
+                                                                         protocols across comparative studies, formal statistical
+The performance of the proposed KOA-EfficientNetV2-
+                                                                         significance testing between models was not performed.
+M+ model was evaluated on the CleanLab-refined data-
+                                                                         Therefore, the reported performance differences should
+set using stratified cross-validation. As summarized in
+                                                                         be interpreted as indicative rather than definitive. Future
+Table 1, the model achieved an overall accuracy of 88.52%
+                                                                         work incorporating controlled benchmarking and sta-
+and a macro-average F1-score of 0.8804, indicating con-
+                                                                         tistical hypothesis testing would provide more rigorous
+sistent classification performance across all KL grades.
+                                                                         comparative validation.
+Recall was lowest for Grade 1 (0.7118), consistent with
+the recognized difficulty of distinguishing doubtful from
+normal and mild disease. While direct statistical compar-                Discussion
+isons with prior studies are limited due to differences in               This study developed and evaluated KOA-Efficient-
+experimental setups, the overall performance compares                    NetV2-M+, a data-centric and attention-guided frame-
+favorably with previously reported five-class results on                 work for automated five-class Kellgren–Lawrence (KL)
+this dataset.                                                            grading of knee osteoarthritis from plain radiographs.
+  To contextualize the model performance, the pro-                       The principal finding was that combining CleanLab-
+posed approach was compared with several established                     based label refinement with dual CBAM attention mod-
+CNN architectures reported in the literature using the                   ules on an EfficientNetV2-M backbone produced an
+same dataset. As shown in Table 2, the proposed model                    overall accuracy of 88.52%, a macro-average F1-score of
+                                                                         0.8804, and a macro-average AUC of 0.94 under strati-
+                                                                         fied fivefold cross-validation. Performance was strong-
+Table 1 Class-wise metrics averaged across five stratified folds         est for the extreme grades, KL-0 (F1 = 0.9388) and KL-4
+                                                                         (F1 = 0.9315), and weakest for KL-1 (F1 = 0.7493), with
+Class                Precision   Recall    F1-score   Number
+                                                      of samples         residual misclassifications concentrated between adja-
+                                                      (Support)          cent early grades. Class activation mapping localized the
+                                                                         model attention to the tibiofemoral joint margins and
+0 (Normal)                0.9234 0.9548    0.9388     697
+                                                                         osteophyte-prone regions. The sections that follow exam-
+1 (Doubtful)              0.7912 0.7118    0.7493     255
+                                                                         ine the model’s convergence behavior and error struc-
+2 (Mild)                  0.8879 0.8563    0.8718     459
+                                                                         ture, interpret these findings in relation to previously
+3 (Moderate)              0.9031 0.9182    0.9106     197
+                                                                         published work, consider the relative contribution of the
+4 (Severe)                0.9156 0.9479    0.9315     48
+                                                                         individual pipeline components, and set out the method-
+Macro Average             0.8842 0.8778    0.8804     1656
+                                                                         ological constraints that qualify the results.
+Weighted Average          0.8879 0.8886    0.8875     1656
+                                                                            The training and validation curves presented in Fig. 3
+                     Overall accuracy: 88.52%
+                                                                         show stable convergence, with both accuracy and
+Shundi et al. Egypt J Radiol Nucl Med              (2026) 57:171                                                                             Page 6 of 10
+
+
+
+
+ Fig. 3 Training and validation accuracy and loss curves of the proposed KOA-EfficientNetV2-M+ model
+
+
+
+
+loss reaching consistent values after approximately                            concentrated at the KL-1/KL-2 boundary. The ROC anal-
+55–60 epochs. The close alignment between training and                         ysis (Fig. 5) indicates good class separability, with class-
+validation performance suggests effective regularization                       wise AUC values ranging from 0.854 for KL-1 to 0.994 for
+and limited overfitting, although these observations are                       KL-4 and a macro-average of 0.94.
+qualitative and should be interpreted alongside the cross-                       The incorporation of dual CBAM attention modules
+validation results rather than as definitive evidence of                       may have contributed to improved feature localization,
+generalization.                                                                particularly for the subtle radiographic patterns associ-
+  The confusion matrix (Fig. 4) shows strong diagonal                          ated with early-stage disease. Grade 2 was nonetheless
+dominance across all five grades, with off-diagonal errors                     classified with substantially greater reliability than Grade
+
+
+
+
+ Fig. 4 Confusion matrix for the held-out CleanLab-Plus test set (n = 1656). The strong diagonal distribution indicates accurate classification,
+ while off-diagonal elements highlight misclassification patterns, particularly between Grades 1 and 2, reflecting known clinical ambiguity
+ in early-stage KOA
+Shundi et al. Egypt J Radiol Nucl Med             (2026) 57:171                                                                          Page 7 of 10
+
+
+
+
+ Fig. 5 Class-wise ROC curves illustrating the discriminative performance of the model across KL grades. Higher AUC values indicate strong class
+ separability, while comparatively lower performance for Grade 1 reflects the inherent difficulty in detecting early-stage osteoarthritis
+
+
+
+1 (F1 = 0.8718 vs. 0.7493), indicating that any such benefit                materially improves CNN performance in KL grad-
+was unevenly distributed across the early grades. Because                   ing, and the higher accuracy obtained here is consistent
+the attention modules were not evaluated in isolation,                      with an incremental contribution from the dual atten-
+their contribution cannot be separated from that of pre-                    tion modules and ROI-based preprocessing added in
+processing and label refinement.                                            the present work. This comparison nonetheless requires
+  The overall accuracy obtained in this study exceeded                      an important qualification. Because both studies evalu-
+that reported for conventional transfer-learning baselines                  ated models against label sets that had themselves been
+evaluated on the same publicly available OAI-derived                        algorithmically revised, the resulting accuracies are not
+dataset, including ResNet101 (69%), MobileNetV2 (67%),                      strictly commensurable with figures obtained on the
+VGG16 (66%), VGG19 (64%), DenseNet121 (64%), and                            original OAI annotations, and a portion of the apparent
+InceptionResNetV2 (63%) [20], as well as Xception                           improvement over the baselines in Table 2 is attribut-
+(67.8%) [21]. Our findings agree with these studies in                      able to a cleaner evaluation target rather than to better
+showing that generic ImageNet-pretrained backbones                          discrimination. In this respect, we concur with Lin et al.
+applied directly to minimally processed knee radiographs                    [16], who examined both the effectiveness and the poten-
+plateau in the 60–70% range, and they support the shared                    tial risks of automated label cleaning and cautioned that
+conclusion of those authors that architectural depth                        such procedures may remove genuinely ambiguous but
+alone is insufficient for reliable five-class KL grading,                   correctly annotated cases along with true errors.
+where the present results extend that literature is in the                    With respect to the attention component, our find-
+source of the improvement, which arose not from sub-                        ings are consistent with those of Pacal et al. [15], who
+stituting one general-purpose backbone for another but                      reported improved classification when EfficientNetV2
+from combining label refinement and attention-based                         was augmented with global and efficient channel atten-
+feature weighting with the backbone.                                        tion for MRI-based brain tumor classification and with
+  The most directly comparable study is that of Momen-                      the wider evidence on attention-gated networks in medi-
+pour and Abu Mallouh [19], who also applied CleanLab                        cal image analysis [9, 10]. The present study extends that
+relabeling to knee radiographs and reported 82.07% accu-                    evidence from soft-tissue MRI to plain radiography, a set-
+racy using an EfficientNetB5 backbone. Our results agree                    ting in which the discriminative signal is confined to nar-
+with their central claim that automated label cleaning                      row structures such as the joint margin and subchondral
+Shundi et al. Egypt J Radiol Nucl Med    (2026) 57:171                                                        Page 8 of 10
+
+
+
+
+bone. Our results likewise align with those of Lee et al.      standardization of imaging protocols, and careful con-
+[2] and Ren et al. [3], who found that modular additions       sideration of workflow integration, interpretability, and
+to a standard backbone—plug-in modules and multi-              clinical accountability. Although a direct comparison
+scale feature fusion, respectively—improved KL grading         between human expert performance and the proposed
+relative to the unmodified network. Taken together, these      model was not conducted in this study, prior literature
+findings support targeted feature refinement as a pro-         indicates that variability among human observers can
+ductive strategy in this task, although the present design     be substantial, particularly for early KL grades. The per-
+does not allow its contribution to be separated from that      formance observed in this study suggests potential as a
+of the other pipeline components.                              supportive tool; nevertheless, future work should include
+   The clearest point of divergence from parts of the exist-   direct comparative evaluation with expert radiologists to
+ing literature concerns early-stage disease. Architectural     quantify this relationship.
+and preprocessing modifications have frequently been
+proposed as a route to improved discrimination of the          Limitations
+doubtful grade [7, 8]. Our findings support this position      Despite the promising results, several limitations of
+only partially. Although overall accuracy reached 88.52%,      this study should be acknowledged. First, the model
+exceeding all comparator models in Table 2 (63–82.07%),        was trained and evaluated on a single publicly available
+this aggregate figure conceals marked variation across         dataset derived from the Osteoarthritis Initiative (OAI),
+grades: KL-1 remained the weakest class by a clear mar-        which may limit generalizability to other populations,
+gin (precision = 0.7912; recall = 0.7118; F1 = 0.7493;         imaging protocols, or clinical settings. Second, although
+AUC = 0.854), with its errors distributed toward both          the dataset size is relatively large, no formal a priori
+adjacent grades. Because the comparator studies report         power analysis was conducted, and the class distribution
+overall accuracy without per-grade results, the extent to      remains imbalanced, particularly for higher KL grades.
+which their improvements were realized specifically at           Third, the reliance on KL grading as the reference
+the doubtful grade cannot be determined; this reliance         standard introduces inherent subjectivity, as these labels
+on aggregate accuracy is itself a limitation of the current    are based on human interpretation and are known to
+literature. The residual confusion observed here is con-       exhibit inter- and intra-observer variability. Although
+sistent with the limited reliability reported for KL grad-     a CleanLab-based relabeling strategy was applied to
+ing itself, for which quadratic-weighted kappa values          mitigate this issue, it may not fully eliminate annotation
+between 0.56 and 0.67 have been documented, and with           uncertainty.
+the concentration of reader disagreement at adjacent             Fourth, the model was not externally validated on
+grades [22, 23], suggesting that the limit encountered is at   independent multicenter datasets, which is necessary to
+least partly intrinsic to the reference standard rather than   confirm robustness across diverse clinical environments.
+to the model. We therefore concur with the assessment          Additionally, while interpretability techniques such as
+in recent review literature [1] that adjacent-grade separa-    Grad-CAM++ and Score-CAM were used, these meth-
+tion, rather than overall accuracy, remains the principal      ods provide qualitative insights and do not fully explain
+outstanding barrier to clinical deployment, and that this      model decision-making.
+barrier is not resolved by architectural or preprocessing        Finally, the proposed framework focuses solely on
+refinement alone.                                              radiographic data and does not incorporate clinical,
+   Because the framework combines several components,          demographic, or multimodal imaging information, which
+the observed performance cannot be attributed to any           could further improve early-stage detection and overall
+single element. Label refinement may have reduced anno-        diagnostic performance.
+tation noise, while ROI extraction and contrast enhance-
+ment may have improved the visibility of diagnostic            Conclusion
+features. Future work should isolate these individual con-     This study proposed KOA-EfficientNetV2-M+, a noise-
+tributions through controlled ablation experiments.            robust and attention-based deep learning model to auto-
+   Overall, the findings suggest that integrating data-cen-    matically grade knee osteoarthritis from radiographs.
+tric refinement with attention-guided feature learning         The proposed approach achieved a macro-average AUC
+may enhance the robustness of automated KOA classifi-          of 0.94 and an overall accuracy of 88.52%, demonstrating
+cation systems. From a clinical perspective, such models       consistent performance across most Kellgren–Lawrence
+have the potential to support radiologists by providing        grades, with reduced accuracy for the doubtful grade
+reproducible second-opinion assessments, particularly          (KL-1). The interpretability of the predictions made by
+in borderline cases. However, practical deployment             the model was supported by visualization methods that
+would require validation across diverse populations,           ensured that the model is always interested in clinically
+Shundi et al. Egypt J Radiol Nucl Med                      (2026) 57:171                                                                                   Page 9 of 10
+
+
+
+
+relevant joint regions. These findings suggest that the                                References
+                                                                                       1. Touahema S, Zaimi I, Zrira N, Ngote MN (2024) How can artificial intel-
+proposed framework may support radiologists in achiev-                                     ligence identify knee osteoarthritis from radiographic images with
+ing more consistent and objective assessment of KOA                                        satisfactory accuracy?: A literature review for 2018–2024. Appl Sci (Basel)
+severity. However, further validation on multicenter data-                                 14(14):6333. https://​doi.​org/​10.​3390/​app14​146333
+                                                                                       2. Lee DW, Song DS, Han HS, Ro DH (2024) Accurate, automated classifica-
+sets and integration into clinical workflows are necessary                                 tion of radiographic knee osteoarthritis severity using a novel method of
+to confirm its applicability in real-world settings.                                       deep learning: plug-in modules. Knee Surg Relat Res 36(1):24. https://​doi.​
+                                                                                           org/​10.​1186/​s43019-​024-​00228-3
+Abbreviations                                                                          3. Ren X, Hou L, Liu S, Wu P, Liang S, Fu H, Li C, Li T, Cheng Y (2025) OA-MEN:
+AdamW	Adam optimizer with decoupled weight decay                                          a fusion deep learning approach for enhanced accuracy in knee osteo-
+AUC​	Area under the curve                                                                 arthritis detection and classification using X-ray imaging. Front Bioeng
+AUC-ROC	Area under the receiver operating characteristic curve                            Biotechnol 12:1437188. https://​doi.​org/​10.​3389/​fbioe.​2024.​14371​88
+CBAM	Convolutional block attention module                                             4. Chen C, Mat Isa NA, Liu X (2025) A review of convolutional neural net-
+CLAHE	Contrast-limited adaptive histogram equalization                                    work based methods for medical image classification. Comput Methods
+CNN	Convolutional neural network                                                          Programs Biomed 185:109507. https://​doi.​org/​10.​1016/j.​compb​iomed.​
+FN	False negative                                                                         2024.​109507
+FP	False positive                                                                     5. Singh R, Sharma N, Upadhyay D, Devliyal S, Singh A (2024) A deep learn-
+Grad-CAM++	Gradient-weighted class activation mapping plus plus                           ing approach for knee osteoarthritis classification using convolutional
+KL	Kellgren–Lawrence                                                                      neural networks. In: Proceedings of the IEEE International Conference
+KOA	Knee osteoarthritis                                                                   on Information Technology, Electronics and Intelligent Communication
+MRI	Magnetic resonance imaging                                                            Systems (ICITEICS), pp 1–5.https://​doi.​org/​10.​1109/​ICITE​ICS61​368.​2024.​
+OA	Osteoarthritis                                                                         10625​157
+OAI	Osteoarthritis Initiative                                                         6. Sharma G, Anand V, Kumar V (2023) Classification of osteoarthritis with
+ROC	Receiver operating characteristic                                                     the help of deep learning and transfer learning. In: Proceedings of the
+ROI	Region of interest                                                                    International Conference on Inventive Research in Computing Applica-
+Score-CAM	Score-weighted class activation mapping                                         tions (ICIRCA), pp 446–452. https://​doi.​org/​10.​1109/​ICIRC​A57980.​2023.​
+SiLU	Sigmoid linear unit                                                                  10220​816
+TN	True negative                                                                      7. Reddy TR, Vijaya Lakshmi KS, Nikhila L, Koneru S (2024) Knee osteoarthritis
+TP	True positive                                                                          detection and classification using ensemble model of Xception and
+TTA​	Test-time augmentation                                                               InceptionResNetV2. In: Proceedings of the International Conference on
+VRAM	Video random access memory                                                           Advancement in Computation & Computer Technologies (InCACCT), pp
+                                                                                           607–612. https://​doi.​org/​10.​1109/​InCAC​C T615​98.​2024.​10551​216
+Acknowledgements                                                                       8. Umbarkar S, Aditi, Acharya B, Baranwal M (2025) Knee osteoarthritis
+Not applicable.                                                                            severity classification using enhanced EfficientNet-B4 with preprocessing
+                                                                                           techniques. In: Proceedings of the International Conference on Intelligent
+Author contributions                                                                       and Cloud Computing (ICoICC), pp 1–6. https://​doi.​org/​10.​1109/​ICoIC​
+MJS collected the patient data, analysed the data and wrote the manuscript,                C64033.​2025.​11052​211
+CK guided the process and reviewed the manuscript, RKP guided the process.             9. Zhang J, Chen X, Yang B, Guan Q, Chen Q, Chen J, Wu Q, Xie Y, Xia Y (2025)
+All authors read and approved the final manuscript.                                        Advances in attention mechanisms for medical image segmentation.
+                                                                                           Comput Sci Rev 56:100721. https://​doi.​org/​10.​1016/j.​cosrev.​2024.​100721
+Funding                                                                                10. Schlemper J et al (2019) Attention gated networks: learning to leverage
+Not applicable. This research received no specific grant from any funding                  salient regions in medical images. Med Image Anal 53:197–207. https://​
+agency in the public, commercial, or not-for-profit sectors.                               doi.​org/​10.​1016/j.​media.​2019.​01.​012
+                                                                                       11. Ali MJ, Moalic L, Essaid M, Idoumghar L (2023) Designing attention based
+Data availability                                                                          convolutional neural network (CNN) architectures for medical image
+The dataset used in this study is publicly available on Kaggle: Knee Osteoar-              classification using genetic algorithm based on variable length-encoding
+thritis Dataset with Severity Grading by Chen, Pingjun (2018). Available online:           scheme. In: Legrand P, Liefooghe A, Keedwell E, Lepagnot J, Idoumghar L,
+https://​www.​kaggle.​com/​datas​ets/​shash​watwo​rk/​knee-​osteo​arthr​itis-​datas​       Monmarché N, Lutton E (eds) Artificial Evolution. EA 2022. Lecture Notes
+et-​with-​sever​ity                                                                        in Computer Science, vol 14091. Springer, Cham. pp 173–186. https://​doi.​
+                                                                                           org/​10.​1007/​978-3-​031-​42616-2_​13
+                                                                                       12. Aftab J, Khan MA, Arshad S, ur Rehman S, AlHammadi DA, Nam Y (2025)
+Declarations                                                                               Artificial intelligence based classification and prediction of medical
+                                                                                           imaging using a novel framework of inverted and self-attention deep
+Ethics approval and consent to participate
+                                                                                           neural network architecture. Sci Rep 15(1):8724. https://​doi.​org/​10.​1038/​
+Not applicable.
+                                                                                           s41598-​025-​93718-7
+                                                                                       13. Tabatabaei S, Rezaee K, Zhu M (2023) Attention transformer mechanism
+Consent for publication
+                                                                                           and fusion-based deep learning architecture for MRI brain tumor clas-
+Not applicable.
+                                                                                           sification system. Biomed Signal Process Control 86:105119. https://​doi.​
+                                                                                           org/​10.​1016/j.​bspc.​2023.​105119
+Competing interests
+                                                                                       14. Liu S, Yue W, Guo Z, Wang L (2024) Multi-branch CNN and grouping
+The authors declare no competing interests.
+                                                                                           cascade attention for medical image classification. Sci Rep 14(1):15013.
+                                                                                           https://​doi.​org/​10.​1038/​s41598-​024-​64982-w
+                                                                                       15. Pacal I, Celik O, Bayram B, Cunha A (2024) Enhancing EfficientNetv2
+Received: 10 March 2026 Accepted: 2 August 2026
+                                                                                           with global and efficient channel attention mechanisms for accurate
+                                                                                           MRI-based brain tumor classification. Cluster Comput 27(8):11187–11212.
+                                                                                           https://​doi.​org/​10.​1007/​s10586-​024-​04532-1
+                                                                                       16. Lin T, Wang M, Lin A, Mai X, Liang H, Tham YC, Chen H (2025) Efficiency
+                                                                                           and safety of automated label cleaning on multimodal retinal images. npj
+                                                                                           Digit Med 8(1):10. https://​doi.​org/​10.​1038/​s41746-​024-​01424-x
+Shundi et al. Egypt J Radiol Nucl Med                      (2026) 57:171                 Page 10 of 10
+
+
+
+
+17. Chen P (2025) Knee osteoarthritis dataset with severity grading. Available
+    at: https://​www.​kaggle.​com/​datas​ets/​shash​watwo​rk/​knee-​osteo​arthr​itis-​
+    datas​et-​with-​sever​ity (accessed 23 Oct 2025)
+18. Google LLC, Google Colaboratory (2024) [Online]. Available: https://​colab.​
+    resea​rch.​google.​com. [Accessed Oct 2025]
+19. Momenpour T, Abu Mallouh A (2025) Optimizing CNN-based diagnosis of
+    knee osteoarthritis: enhancing model accuracy with CleanLab relabeling.
+    Diagnostics (Basel) 15(11):1332. https://​doi.​org/​10.​3390/​diagn​ostic​s1511​
+    1332
+20. Mohammed AS, Hasanaath AA, Latif G, Bashar A (2023) Knee osteoarthri-
+    tis detection and severity classification using residual neural networks on
+    preprocessed X-ray images. Diagnostics (Basel) 13(8):1380. https://​doi.​
+    org/​10.​3390/​diagn​ostic​s1308​1380
+21. Solak FZ (2024) Classification of knee osteoarthritis severity by transfer
+    learning from X-ray images. Karaelmas Sci Eng J 14(2):119–133. https://​
+    doi.​org/​10.​7212/​karae​lmasf​en.​14800​55
+22. Shundi MJ, Karri C, Pullagura RK (2026) AI-driven radiographic assessment
+    of knee osteoarthritis: advances in Kellgren–Lawrence grading. Franklin
+    Open 16:100683. https://​doi.​org/​10.​1016/j.​fraope.​2026.​100683
+23. Tariq T, Suhail Z, Nawaz Z (2023) Knee osteoarthritis detection and classifi-
+    cation using X-rays. IEEE Access 11:48292–48303. https://​doi.​org/​10.​1109/​
+    ACCESS.​2023.​32768​10
+
+
+Publisher’s Note
+Springer Nature remains neutral with regard to jurisdictional claims in pub-
+lished maps and institutional affiliations.
+

@@ -1,0 +1,331 @@
+                                                                                                                                                               An Attention Network With Self-Supervised
+                                                                                                                                                               Learning for Rheumatoid Arthritis Scoring
+                                                                                                                                                                                          1st Deyu Ling                                                                  2nd Wenxin Yu*
+
+
+
+
+2024 IEEE International Symposium on Circuits and Systems (ISCAS) | 979-8-3503-3099-1/24/$31.00 ©2024 IEEE | DOI: 10.1109/ISCAS58744.2024.10558434
+                                                                                                                                                                      School of Computer Science and Technology                                        School of Computer Science and Technology
+                                                                                                                                                                     Southwest University of Science and Technology                                   Southwest University of Science and Technology
+                                                                                                                                                                                 Mianyang, P.R.China                                                              Mianyang, P.R.China
+                                                                                                                                                                                  402849845@qq.com                                                               yuwenxin@swust.edu.cn
+
+                                                                                                                                                                    3rd Zhiqiang Zhang                                                                  4th Jinmei Zou
+                                                                                                                                                      School of Computer Science and Technology                                                  Mianyang Central Hospital
+                                                                                                                                                     Southwest University of Science and Technology                                               Mianyang, P.R.China
+                                                                                                                                                                 Mianyang, P.R.China                                                                letter.zjm@163.com
+                                                                                                                                                          zzq.zhangzhiqiang2018@gmail.com
+
+
+
+                                                                                                                                                        Abstract—Rheumatoid arthritis (RA) is a chronic disease                      prevalent joint-level-based method employs a two-step strat-
+                                                                                                                                                     causing joint pain and disability. Early treatment can prevent ir-              egy: joint detection and individual joint scoring to achieve
+                                                                                                                                                     reversible bone damage. The Sharp/van der Heijde (SvH) method,                  the final SvH score [9]–[11]. Despite impressive results, these
+                                                                                                                                                     a common clinical standard for assessing RA progression, is
+                                                                                                                                                     manual and subjective, leading to inconsistent measurements. To                 models face challenges in clinical applications due to the need
+                                                                                                                                                     overcome this, we propose a deep learning model based on the                    for image preprocessing, joint localization, and more annotated
+                                                                                                                                                     SvH scoring criteria to predict SvH scores of RA patients’ hands.               data. Image-level-based methods train the model on the entire
+                                                                                                                                                     Our efficient attention network, ECBANet, merges supervised                     hand or foot radiograph to predict the overall SvH score,
+                                                                                                                                                     and self-supervised learning to generate attentional weights                    reducing the need for annotated data but also overlooking local
+                                                                                                                                                     without losing feature dimensionality. It effectively captures the
+                                                                                                                                                     local features of the RA hand and enhances the model’s focus on                 detail information in the images [12]–[14]. We propose an
+                                                                                                                                                     crucial cues like joint position and gap. Extensive experiments                 Efficient Convolutional Block Attention (ECBA) mechanism
+                                                                                                                                                     on the only public dataset of hand X-ray images of RA patients                  that captures local RA hand image information with minimal
+                                                                                                                                                     labeled with SvH scores show that our model surpasses the                       parameter size increase.
+                                                                                                                                                     current optimal model for this dataset, reducing MAE by 2%                         Self-supervised learning, a technique that leverages unla-
+                                                                                                                                                     and RMSE by 7.4%.
+                                                                                                                                                        Index Terms—Rheumatoid arthritis, Hand X-ray images, Deep                    beled data to create supervised tasks, has been extensively
+                                                                                                                                                     learning, Attention mechanisms, Self-supervised learning                        applied in various fields, including medical studies [15]–
+                                                                                                                                                                              I. I NTRODUCTION                                       [17]. Liu et al. [18] proposed an assisted self-supervised task
+                                                                                                                                                                                                                                     that extracts additional image information with minimal com-
+                                                                                                                                                         Rheumatoid arthritis (RA) is a chronic disease primarily                    putational overhead. This dense relative localization (Drloc)
+                                                                                                                                                     affecting the synovial tissue of joints, leading to symmetric,                  encourages the model to learn spatial relationships within
+                                                                                                                                                     polyarticular inflammation of the hands and feet. Persistent                    the image, enhancing the robustness of model training when
+                                                                                                                                                     inflammation can cause irreversible joint damage, making                        data is scarce. Inspired by this, we combine ECBA with
+                                                                                                                                                     early diagnosis and treatment crucial [1]. X-ray imaging is                     ResNet [19] and introduce the Drloc module to enhance the
+                                                                                                                                                     commonly used for RA diagnosis due to its accessibility,                        model’s positional learning, forming our model ECBANet.
+                                                                                                                                                     cost-effectiveness, and high imaging capability [2]–[4]. The                       In 2022, Wang et al. [13] provided the only publicly
+                                                                                                                                                     Sharp/van der Heijde (SvH) [5] scoring method is considered                     available dataset of RA hand radiographs assessed by SvH
+                                                                                                                                                     the best for radiographic assessment of RA [6], [7]. However,                   criteria. However, this dataset had significant missing data and
+                                                                                                                                                     it is time-consuming and subjective, often leading to disagree-                 unclear criteria for dividing the training and test sets. Wang
+                                                                                                                                                     ments among specialists [8].                                                    et al. stated that 3,818 RA images were provided, but only
+                                                                                                                                                         CNN-based methods have been utilized to diagnose RA                         2,849 were linked, making it difficult for other researchers to
+                                                                                                                                                     damage. The disclosure of models, datasets, and codes used                      compare with the article. To address this, we pre-processed
+                                                                                                                                                     in RA-related work in recent years are shown in Table I. A                      the original dataset, eliminated duplicates and missing data,
+                                                                                                                                                       This research is supported by the National Key Research and Devel-            and divided it into training, validation, and test sets based on
+                                                                                                                                                     opment Program from the Ministry of Science and Technology of the               stratified sampling principles. We made the processed dataset
+                                                                                                                                                     PRC (No. 2021ZD0110600), Sichuan Science and Technology Program (No.            publicly available on GitHub for more rheumatoid arthritis
+                                                                                                                                                     2022ZYD0116), Sichuan Provincial M. C. Integration Office Program, and
+                                                                                                                                                     IEDA Laboratory Of SWUST.                                                       scholars to communicate and compare. We believe this is a
+                                                                                                                                                       *INDICATES CORRESPONDING AUTHOR.                                              meaningful and pioneering work. The main contributions of
+
+
+
+
+                                                                                                                                                             Authorized licensed use limited to: Universitas Airlangga. Downloaded on August 03,2026 at 04:28:08 UTC from IEEE Xplore. Restrictions apply.
+                               TABLE I                                            The details of our improved efficient channel attention module
+                    R ELEVANT WORK IN RECENT YEARS                                are presented below.
+  Author-Year                      Backbone Network      Dataset      Code        B. Efficient Channel Attention
+  Hirano et al. [20]-2019                CNN                ×          ×              Our Efficient Channel Attention aggregates spatial informa-
+  Rohrbachet et al. [21]-2019           VGG16               ×          ×          tion by compressing the spatial dimension of the input feature
+  Mate et al. [12]-2021                  CNN                ×          ×
+                                                                                  map, using both average and maximum pooling features to
+                                                                                                                                          ec
+                                                                                  enhance the network’s representation capability. Favg       and
+  Chaturvedi et al. [9]-2021          EfficientNet          ×          ×             ec
+                                                                                  Fmax represent the average and maximum pooling features,
+  Li et al. [10]-2022                   U-Net               ×          ×
+                                                            √                     respectively. Most channel attention [23]–[25] methods reduce
+  Wang et al. [13]-2022             ResNet-Dwise50                     ×
+                                                                                  parameter overhead through a multilayer perceptron (MLP)
+   √                                                                              with hidden layers, where the hidden activation size is set to
+       : public, ×: not public.
+                                                                                  RC/r×1×1 , with r being the scaling rate, typically set to 16.
+this paper are as follows:                                                        While this reduces model complexity, it disrupts the direct
+   • An efficient attentional mechanism, ECBA, is proposed,                       correspondence between channels and their weights, leading
+which can effectively capture the local information of RA hand                    to information loss due to the initial dimensionality reduction
+X-ray images and enhance the model’s attention to critical                        followed by an increase. To address this, we perform adap-
+pathological features such as joint position and joint space.                                                                                  ec
+                                                                                  tive one-dimensional convolutional C1D processing on Favg
+   • We design a deep learning model to perform overall SvH                               ec
+                                                                                  and Fmax , generating efficient channel-attention mappings
+scoring on hand radiographs of RA by combining ResNet and                         without dimensionality loss. Finally, the two are combined
+ECBA and introducing the Drloc self-supervised module to                          using element-wise summation, and the weights are mapped
+enhance the model’s learning of location information.                             between (0-1) using the Sigmoid activation function to obtain
+   • We conduct extensive experiments on the only dataset of                      the attention weights Mec ∈ RC×1×1 . In short, the channel
+RA hand X-ray images labeled with SvH scores and compare                          attention is computed as follows:
+it with the optimal model on this dataset. The results show
+                                                                                   Mec (F ) = σ(C1Da (AvgPool(F )) + C1Db (MaxPool(F )))
+that our model predicts the overall SvH score better.
+                                                                                                         ec             ec
+   • We optimize the problematic dataset and share the                                        = σ(C1Da (Favg ) + C1Db (Fmax ))
+processed and directly usable dataset with all RA schol-                                                                                     (2)
+ars for better comparisons and advancement of the field.                          where σ denotes the sigmoid function. C1Da and C1Db are
+The dataset can be downloaded from the following link:                            two mutually independent adaptive one-dimensional convo-
+https://github.com/ldy07/RA-Dataset.                                              lutions with input channel 1, output channel 1, kernel size
+                                                                                  k, and padding bk/2. The efficient channel attention module
+                                  II. M ETHOD                                     calculates channel weights by an adaptive convolutional kernel
+  We propose a new network model, ECBANet, inspired by                            size, which counts k only based on the input number of
+ECA-Net [22] and Drloc [18], for scoring RA hand X-ray                            channels C, without additional parameters or computational
+images. As shown in Fig. 1, we will describe each module in                       effort. Assuming that the input channel dimension is C, the
+more detail below:                                                                kernel size k can be determined adaptively by
+A. ECBA-Block                                                                                                          log2 (C) β
+                                                                                                     k = ϕ(C) =                +                          (3)
+   The process of ECBA-Block is as follows: after the im-                                                                 α      α odd
+age goes through the ResBlock, the extracted features are                         where |t|odd is the nearest odd number to t. We set α and β to
+processed by our ECBA module to highlight the important                           2 and 1 for all the experiments in this paper, respectively,
+features of the image and suppress irrelevant regional re-                        just as [22] did. Using non-linear mapping, the mapping
+sponses before they are added to the original input. ECBA                         ϕ allows high-dimensional channels to have longer range
+consists of two parts: efficient channel attention and spatial                    interaction and low-dimensional channels to have shorter range
+attention. Given an intermediate feature map F ∈ RC×H×W                           interaction. In this way, our efficient channel attention module
+as input, ECBA sequentially infers a 1D efficient channel                         can adaptively adjust the convolutional kernel size according
+attention map Mec ∈ RC×1×1 and a 2D spatial attention map                         to the dimensionality of the input channels to achieve effective
+Ms ∈ R1×H×W , as shown in Fig. 2. The whole attention                             interactions between channels.
+process can be summarized as follows:                                             C. Dense Relative Localization Module and Loss Function
+              F 0 = Mec (F ) ⊗ F, F 00 = Ms (F 0 ) ⊗ F 0                   (1)       The Drloc module implements additional self-supervised
+                                                                                  learning of location information by densely sampling multiple
+where ⊗ denotes element-wise multiplication. F 0 is the feature                   embedding pairs for each image and asking the network
+after applying the improved Efficient Channel Attention, and                      to guess their relative distances, as shown in Fig. 3. This
+F 00 is the final refined output. The spatial attention part still                localization task consists of two main components: position
+uses the structure in CBAM [23] and is not presented here.                        encoding and position prediction.
+
+
+
+
+          Authorized licensed use limited to: Universitas Airlangga. Downloaded on August 03,2026 at 04:28:08 UTC from IEEE Xplore. Restrictions apply.
+  Fig. 1. ECBANet structure for RA scoring. The standard ResNet50 [19] network structure, where each ECBA Block consists of ResBlock and ECBA.
+
+
+
+
+                                                                                                           Fig. 3. The Drloc module.
+
+                                                                                 êi,j ; finally, use L1 loss function to optimize the parameters
+                                                                                 of model:
+                                                                                                                            H    W
+                                                                                                                     1 XX
+                                                                                      ê = gφ (x),      Ldrloc =               [|êi,j − ei,j |1 ]       (5)
+                                                                                                                    HW i=1 j=1
+
+                                                                                 where x is the feature vector of the last layer, gφ is the MLP.
+                                                                                   The labeled supervised learning of our model itself uses
+                                                                                 the RMSE loss function, which reflects the degree of error
+                                                                                 between the predicted and true values and, therefore, better
+                                                                                 guides the updating of model parameters after gradient de-
+                                                                                 scent. It is defined as follows:
+                                                                                                            v
+                                                                                                            u
+                                                                                                            u1 X  N
+Fig. 2. The structure of ECBA-Block. This structure adds the attention
+mechanism to the residual block. It replaces the shared MLP layer in the
+                                                                                                    Lrmse =t         (yi − ŷi )2            (6)
+                                                                                                               N i=1
+channel attention module of CBAM with two adaptive 1D convolutional layers
+(C1D), which form the efficient channel attention.
+                                                                                 where yi is the true value, ŷi is the predicted value, and N is
+   The process of position encoding is: first, divide the image                  the number of samples. The smaller the RMSE loss function,
+into H × W uniform blocks, and normalize the center coor-                        the more accurate our model is.
+dinates of each block to the range of [−1, 1] to obtain pi,j ;                      Eventually, Ldrloc in Drloc will be added to the network-
+then, use a sine function to encode the relative position of each                native losses(Lrmse ) under standard supervision. The final
+block, resulting in a H × W × 2 tensor ei,j :                                    joint loss of the entire model is:
+                     
+                        2i      2j
+                                                                                                      Lall = Lrmse + λLdrloc                            (7)
+              pi,j =       − 1,     −1
+                        H       W                              (4)               where λ is 0.1 in our experiments; together, they act as
+                      π               π       
+              ei,j = sin      pi,j , cos     pi,j                                regularization terms to regulate model training.
+                            2              2
+                                                                                                  III. E XPERIMENTS AND R ESULTS
+   The process of position prediction is: first, input the image
+into the model and extract the feature vector of the last layer;                 A. Experimental Settings
+then, use an MLP to map the feature vector to the predicted                        1) Datasets: We used the dataset of RA double-handed
+value of the relative position, resulting in a H × W × 2 tensor                  radiographs with SvH scores provided by Wang et al. [13].
+
+
+
+
+         Authorized licensed use limited to: Universitas Airlangga. Downloaded on August 03,2026 at 04:28:08 UTC from IEEE Xplore. Restrictions apply.
+        Fig. 4. The ground truth(G) shows the true SvH values of the samples, and the prediction (P) shows the values estimated by our model.
+
+However, the dataset was incomplete and unpartitioned. To                                                      TABLE II
+address this, we processed the original dataset by removing                                       C OMPARISON OF DIFFERENT NETWORKS
+duplicates and missing data, selecting data with labeled pairs,
+                                                                                                  Model                      MAE↓              RMSE↓
+and obtaining 2849 valid datasets. We divided them into 2179
+training sets, 546 validation sets, and 124 test sets according to                         MobileNetV2 [26]*                 15.70              22.89
+the principle of stratified sampling to keep the data distribution                           ResNet50 [19]*                  15.32              22.58
+as consistent as possible.                                                               ResNet-Dwise50 [13]*                14.90              22.01
+   2) Evaluation Metrics: We used two metrics: root mean                                   MobileNetV2 [26]                  14.02              20.18
+square error (RMSE) and mean absolute error (MAE) to                                         ResNet50 [19]                   13.57              19.69
+evaluate model performance. These two metrics are the most                                ResNet-Dwise50 [13]                13.13              19.02
+commonly used evaluation metrics in RA bone damage as-
+                                                                                                  Ours                       12.86              17.60
+sessment tasks and effectively reflect the magnitude of the
+error between the SvH scores predicted by the model and the                           * denotes Wang et al. [13]’s results on the original 3818 dataset, and
+                                                                                      without * denotes our results on the processed 2849 dataset.
+labeled true values in the test set.
+                                                                                ECBA module. This module reduces the MAE by 3.1% and
+B. Results                                                                      the RMSE by 6.9%, indicating that it enables the model to
+   Table II presents the experimental results of Wang et al. [13]               pay more attention to the local features of the image and
+on their publicly available original dataset. However, there are                focus on critical information such as osteoarthritic erosions
+some issues with that publicly available dataset, described                     and narrowing of the bone spacing. To allow the model to learn
+in Section III-A1. These issues prevent us from directly                        more positional information and accurately localize the lesion
+comparing their results with ours. Therefore, our experimental                  area, we introduced the Drloc [18] module to help the model
+results are obtained on the processed dataset. On the processed                 perform self-supervised learning. This combination of self-
+dataset, our model achieved an MAE of 12.86 and an RMSE                         supervised learning and supervised learning training allows the
+of 17.60, which are the best experimental results. The only                     model to acquire more feature information, which improves its
+research paper published on this public dataset was by Wang                     performance. Adding Drloc alone reduces the MAE by 1.6%
+et al. last year, and their model ResNet-Dwise50 achieved an                    and RMSE by 2.8%.
+MAE and RMSE of 13.13 and 19.02, respectively. Although                                                       TABLE III
+there are many new models in the field of natural imagery, to                              Q UANTITATIVE R ESULTS OF A BLATION E XPERIMENTS
+the best of our knowledge, none are currently available for RA
+                                                                                                          ECBA        Drloc        MAE↓         RMSE↓
+bone damage assessment. It can also be seen from Table I that
+                                                                                    Baseline(B)            ×
+                                                                                                           √           ×           13.57         19.69
+the models used in this field are relatively old, and there are
+                                                                                     B+ECBA                            ×
+                                                                                                                       √           13.15         18.32
+almost no open-source models. Therefore, our work mainly
+                                                                                     B+Drloc                ×
+                                                                                                            √            √         13.35         19.14
+compares with this dataset’s current optimal model, ResNet-
+                                                                                       Ours                                        12.86         17.60
+Dwise50. Our model has 2% lower MAE and 7.4% lower
+RMSE metrics than it. We visualize the four sets of sample                                                  IV. C ONCLUSION
+images along with the corresponding labels and the predicted                       In conclusion, we optimized and divided the original dataset
+scores of our model in Fig. 4. It is easy to see that our method                of Wang et al. [13] and uploaded it to GitHub for shar-
+can better predict the SvH score with little difference from the                ing. We designed and combined a new attention mechanism,
+true value of the label.                                                        ECBA, with ResNet [19]. We also introduced the Drloc [18]
+                                                                                self-supervised learning module to form our network model,
+C. Ablation Study                                                               ECBANet. This combination of self-supervised and supervised
+   Table III shows the ablation experimental results. We used                   learning for training allows the model to obtain more local
+the ResNet-50 [19] model as the baseline (B). To enable                         feature information, locate the lesion more accurately, and
+the model to capture subtle RA pathology features in the                        capture subtle RA pathology features. This improves the model
+entire 1024 × 1024 size hand X-ray film, we designed the                        performance and predicts RA injury more accurately.
+
+
+
+
+        Authorized licensed use limited to: Universitas Airlangga. Downloaded on August 03,2026 at 04:28:08 UTC from IEEE Xplore. Restrictions apply.
+                               R EFERENCES                                              in Proceedings of the IEEE/CVF conference on computer vision and
+                                                                                        pattern recognition, 2020, pp. 11 534–11 542.
+ [1] B. Combe, “Progression in early rheumatoid arthritis,” Best Practice &        [23] S. Woo, J. Park, J.-Y. Lee, and I. S. Kweon, “Cbam: Convolutional
+     Research Clinical Rheumatology, vol. 23, no. 1, pp. 59–69, 2009.                   block attention module,” in Proceedings of the European conference on
+ [2] B. J. Tins and R. Butler, “Imaging in rheumatology: reconciling radiol-            computer vision (ECCV), 2018, pp. 3–19.
+     ogy and rheumatology,” Insights into Imaging, vol. 4, no. 6, pp. 799–810,     [24] J. Hu, L. Shen, and G. Sun, “Squeeze-and-excitation networks,” in
+     2013.                                                                              Proceedings of the IEEE conference on computer vision and pattern
+ [3] P. Patil and B. Dasgupta, “Role of diagnostic ultrasound in the as-                recognition, 2018, pp. 7132–7141.
+     sessment of musculoskeletal diseases,” Therapeutic advances in mus-           [25] J. Park, S. Woo, J.-Y. Lee, and I. S. Kweon, “Bam: Bottleneck attention
+     culoskeletal disease, vol. 4, no. 5, pp. 341–355, 2012.                            module,” arXiv preprint arXiv:1807.06514, 2018.
+ [4] J. A. Narvaez, J. Narváez, E. De Lama, and M. De Albert, “Mr imaging         [26] M. Sandler, A. Howard, M. Zhu, A. Zhmoginov, and L.-C. Chen,
+     of early rheumatoid arthritis,” Radiographics, vol. 30, no. 1, pp. 143–            “Mobilenetv2: Inverted residuals and linear bottlenecks,” in Proceedings
+     163, 2010.                                                                         of the IEEE conference on computer vision and pattern recognition,
+ [5] D. Van der Heijde, M. Van Leeuwen, P. Van Riel, and L. Van de Putte,               2018, pp. 4510–4520.
+     “Radiographic progression on radiographs of hands and feet during
+     the first 3 years of rheumatoid arthritis measured according to sharp’s
+     method (van der heijde modification),” 1995.
+ [6] A. Larsen, K. Dale, and M. Eek, “Radiographic evaluation of rheuma-
+     toid arthritis and related conditions by standard reference films,” Acta
+     Radiologica. Diagnosis, vol. 18, no. 4, pp. 481–491, 1977.
+ [7] J. T. Sharp, G. B. Bluhm, A. Brook, A. C. Brower, M. Corbett, J. L.
+     Decker, H. K. Genant, J. P. Gofton, N. Goodman, A. Larsen et al., “Re-
+     producibility of multiple-observer scoring of radiologic abnormalities in
+     the hands and wrists of patients with rheumatoid arthritis,” Arthritis &
+     Rheumatism: Official Journal of the American College of Rheumatology,
+     vol. 28, no. 1, pp. 16–24, 1985.
+ [8] A. A. Renshaw and E. W. Gould, “Comparison of disagreement and
+     error rates for three types of interdepartmental consultations,” American
+     journal of clinical pathology, vol. 124, no. 6, pp. 878–882, 2005.
+ [9] N. Chaturvedi, “Deepra: predicting joint damage from radiographs using
+     cnn with attention,” arXiv preprint arXiv:2102.06982, 2021.
+[10] H. Li and Y. Guan, “Multilevel modeling of joint damage in rheumatoid
+     arthritis,” Advanced Intelligent Systems, vol. 4, no. 11, p. 2200184, 2022.
+[11] S. Honda, K. Yano, E. Tanaka, K. Ikari, and M. Harigai, “Development
+     of a scoring model for the sharp/van der heijde score using convolutional
+     neural networks and its clinical application,” Rheumatology, vol. 62,
+     no. 6, pp. 2272–2283, 2023.
+[12] G. S. Mate, A. K. Kureshi, and B. K. Singh, “An efficient cnn for
+     hand x-ray classification of rheumatoid arthritis,” Journal of Healthcare
+     Engineering, vol. 2021, 2021.
+[13] Z. Wang, J. Liu, Z. Gu, and C. Li, “An efficient cnn for hand x-ray
+     overall scoring of rheumatoid arthritis,” Complexity, vol. 2022, 2022.
+[14] H.-J. Wang, C.-P. Su, C.-C. Lai, W.-R. Chen, C. Chen, L.-Y. Ho, W.-C.
+     Chu, and C.-Y. Lien, “Deep learning-based computer-aided diagnosis
+     of rheumatoid arthritis with hand x-ray images conforming to modified
+     total sharp/van der heijde score,” Biomedicines, vol. 10, no. 6, p. 1355,
+     2022.
+[15] L. Chen, P. Bentley, K. Mori, K. Misawa, M. Fujiwara, and D. Rueck-
+     ert, “Self-supervised learning for medical image analysis using image
+     context restoration,” Medical image analysis, vol. 58, p. 101539, 2019.
+[16] S. Azizi, L. Culp, J. Freyberg, B. Mustafa, S. Baur, S. Kornblith,
+     T. Chen, P. MacWilliams, S. S. Mahdavi, E. Wulczyn et al., “Robust
+     and efficient medical imaging with self-supervision,” arXiv preprint
+     arXiv:2205.09723, 2022.
+[17] Y. Xie, J. Zhang, Y. Xia, and Q. Wu, “Unimiss: Universal medical self-
+     supervised learning via breaking dimensionality barrier,” in European
+     Conference on Computer Vision. Springer, 2022, pp. 558–575.
+[18] Y. Liu, E. Sangineto, W. Bi, N. Sebe, B. Lepri, and M. Nadai, “Efficient
+     training of visual transformers with small datasets,” Advances in Neural
+     Information Processing Systems, vol. 34, pp. 23 818–23 830, 2021.
+[19] K. He, X. Zhang, S. Ren, and J. Sun, “Deep residual learning for image
+     recognition,” in Proceedings of the IEEE conference on computer vision
+     and pattern recognition, 2016, pp. 770–778.
+[20] T. Hirano, M. Nishide, N. Nonaka, J. Seita, K. Ebina, K. Sakurada,
+     and A. Kumanogoh, “Development and validation of a deep-learning
+     model for scoring of radiographic finger joint destruction in rheumatoid
+     arthritis,” Rheumatology advances in practice, vol. 3, no. 2, p. rkz047,
+     2019.
+[21] J. Rohrbach, T. Reinhard, B. Sick, and O. Dürr, “Bone erosion scor-
+     ing for rheumatoid arthritis with deep convolutional neural networks,”
+     Computers & Electrical Engineering, vol. 78, pp. 472–481, 2019.
+[22] Q. Wang, B. Wu, P. Zhu, P. Li, W. Zuo, and Q. Hu, “Eca-net:
+     Efficient channel attention for deep convolutional neural networks,”
+
+
+
+
+         Authorized licensed use limited to: Universitas Airlangga. Downloaded on August 03,2026 at 04:28:08 UTC from IEEE Xplore. Restrictions apply.
+

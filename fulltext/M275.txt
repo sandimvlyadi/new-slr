@@ -1,0 +1,517 @@
+Received 28 February 2024, accepted 17 April 2024, date of publication 29 April 2024, date of current version 8 May 2024.
+Digital Object Identifier 10.1109/ACCESS.2024.3395062
+
+
+
+
+A Sequential VGG16+CNN-Based Automated
+Approach With Adaptive Input for Efficient
+Detection of Knee Osteoarthritis Stages
+SHAFIQ UR REHMAN                       1 AND VOLKER GRUHN2
+1 College of Computer and Information Sciences, Imam Mohammad Ibn Saud Islamic University (IMSIU), Riyadh 11432, Saudi Arabia
+2 Department of Software Engineering, University of Duisburg-Essen, 45141 Essen, Germany
+
+Corresponding author: Shafiq Ur Rehman (srehman@imamu.edu.sa)
+
+
+
+
+  ABSTRACT Osteoarthritis (OA) is a prevalent musculoskeletal disorder, predominantly affecting the knee
+  joint and resulting in significant pain and functional limitations. The Kellgren-Lawrence (KL) grading
+  system, traditionally utilized by radiologists, assesses OA severity through radiographic evaluation of
+  knee bones on both sides. Recent advancements in computer-aided methods have focused on enhancing
+  diagnostic precision and efficiency, leveraging automated classification models with Knee X-rays which
+  represent a cornerstone imaging modality for OA severity assessment. In this study, a novel hybrid
+  model combining Convolutional Neural Networks (CNN) and VGG16 architectures is proposed to achieve
+  accurate OA detection. Various neural networks, including CNN, VGG16, VGG19, ResNet50, and
+  CNN-ResNet, are implemented and compared alongside the proposed method. Additionally, data augmenta-
+  tion techniques are employed to address class imbalance, leading to enhanced accuracies across all models.
+  Analysis demonstrates robust performance of all models on the training set. The proposed hybrid method
+  (CNN-ResNet50) outperforms other state-of-the-art approaches, providing precise results across all five
+  stages of OA according to the KL grading system by achieving an accuracy exceeding 93% on training,
+  validation, and testing datasets.
+
+
+  INDEX TERMS Knee osteoarthritis, X-Ray, Kellgren and Lawrence grading, VGG16/VGG19, ResNet50,
+  convolutional neural network (CNN).
+
+
+I. INTRODUCTION                                                                               Knee X-Ray and Orthoarthritis X-Ray is shown in the
+Osteoarthritis of the knee (KOA) was commonly associated                                      Figure 1. This condition also brings about alterations in
+with older individuals; however, it is now increasingly                                       the bone beneath the cartilage and can impact adjacent soft
+affecting people at younger ages [1] due to various risk                                      tissues. Among arthritis types, knee osteoarthritis stands out
+factors, including but not limited to obesity, inadequate                                     as the predominant cause of knee pain and is commonly
+physical activity, trauma, genetic predisposition, gender and                                 known as knee arthritis [4]. Although there are less prevalent
+bone density [2], [3]. Knee arthritis stands as one of the                                    forms of arthritis, such as rheumatoid arthritis, pseudogout,
+prevalent conditions, emphasizing the crucial need for early                                  and reactive arthritis, that can also contribute to knee pain.
+intervention to prevent its advancement to more severe stages.                                This is imperative due to its substantial economic affect,
+   Knee osteoarthritis is characterized by the deterioration of                               potential for disability, significant pain, and significant
+the articular cartilage in the knee, which is the flexible and                                impact on the patient’s lifestyle [1], [2], [5]. Individuals
+slippery material that typically shields bones from friction                                  affected by osteoarthritis (OA) commonly exhibit symptoms
+and impact within the joint [2]. A clear picture of a normal                                  such as persistent pain, crepitus, swelling, morning stiffness,
+                                                                                              muscle atrophy, reduced quadriceps strength, and compro-
+   The associate editor coordinating the review of this manuscript and                        mised postural control. These manifestations contribute to
+approving it for publication was Hengyong Yu             .                                    challenges in carrying out routine activities of daily living [6].
+
+                                  2024 The Authors. This work is licensed under a Creative Commons Attribution-NonCommercial-NoDerivatives 4.0 License.
+VOLUME 12, 2024                                      For more information, see https://creativecommons.org/licenses/by-nc-nd/4.0/                         62407
+                                                                          S. U. Rehman, V. Gruhn: Sequential VGG16+CNN-Based Automated Approach
+
+
+
+
+                                                                             Several techniques have been used to address the early
+                                                                          detection of OA. Invasive and non invasive methods like
+                                                                          Shear wave elastography (SWE) [11], vibroarthrography
+                                                                          (VAG) are used for OA. The growing utilization of ML-based
+                                                                          techniques is helping professionals in the medical domain by
+                                                                          either partially or fully automating the diagnostic process.
+                                                                          Specifically, supervised ML-based approaches can assist
+                                                                          medical practitioners in making more informed clinical
+                                                                          decisions [12], [13], [14]. In the last decade many machine
+                                                                          learning methods gave good results to automate the process
+                                                                          of OA detection. Hybrid models, created by integrating
+                                                                          VAG with machine learning methods, have been developed.
+                                                                          Nevertheless, there is still ample room for improving these
+                                                                          models or propose some new technique to improve accuracy
+                                                                          and efficiency in detecting this critical disease to easy human
+FIGURE 1. Images of two knee X-Rays: With normal and loss of joint        life.
+space.                                                                       In this paper, a new approach is discussed which is based
+                                                                          on Convolutional neural network CNN model and VGG16
+                                                                          architecture. This hybrid method utilizes the strengths of both
+   Medical experts determine the extent of knee osteoarthritis            models, allowing for a more comprehensive analysis of X-
+(OA) using the Kellgren and Lawrence (KL) grading                         ray images. VGG16, known for its deep and intricate feature
+method [7], designed for visual examination of X-ray images               extraction capabilities [15], captures intricate patterns and
+or MRI [8]. The KL system categorizes knee OA severity into               subtle details present in knee X-Rays. Simultaneously, the
+five grades ranging from grade 0 (normal) to grade 4 (severe)             CNN (Convolutional Neural Network) component enhances
+[7], [9], these grades are outlined below and also shown in the           the model’s ability to discern complex spatial relationships
+Figure 2:                                                                 within the images [16], improving overall diagnostic accu-
+   • Grade 0: (Normal) Images of Healthy knee.                            racy. The hybrid model capitalizes on the complementary
+   • Grade 1 (Doubtful): Images having uncertain joint                    features of VGG16 and CNN, resulting in a more robust and
+      narrowing a potential presence of Osteophytic Lipping.              effective system for knee OA diagnosis.
+   • Grade 2 (Minimal): Images clearly depicting the pres-                   The proposed methodology stands out from other state-of-
+      ence of osteophytes along with potential joint space                the-art approaches in several key ways:
+      narrowing.                                                             Hybrid Model Utilizing Strengths of CNN and VGG16:
+   • Grade 3 (Moderate): Images showing the existence of                  The proposed model combines elements from both Con-
+      numerous osteophytes, along with verified reduction in              volutional Neural Networks (CNN) and VGG16 archi-
+      joint space and mild sclerosis.                                     tectures, leveraging their respective strengths to achieve
+   • Grade 4 (Severe): Images displaying significantly large              accurate results. This hybrid approach may offer improved
+      osteophytes, prominent joint narrowing, and intense                 performance compared to models based solely on one
+      sclerosis.                                                          architecture.
+                                                                             Comprehensive Analysis with Different CNN Models:
+                                                                          The study conducts a thorough analysis by implementing
+                                                                          various CNN models, including VGG16, VGG19, ResNet50,
+                                                                          and CNN-ResNet, alongside the proposed hybrid model. This
+                                                                          comparative analysis provides insights into the strengths and
+                                                                          weaknesses of different architectures and their performance
+                                                                          in OA diagnosis.
+                                                                             Addressing Class Imbalance with Data Augmentation:
+                                                                          The study addresses the class imbalance problem present in
+FIGURE 2. Different stages of OA in knee X-Rays: from normal to severe.
+                                                                          the Osteoarthritis dataset using different techniques of data
+                                                                          augmentation. This approach helps to balance the distribution
+Presently, osteoarthritis is diagnosed through physical                   of data across different classes, leading to enhanced model
+examination and using some imaging modalities such as                     performance and more reliable results.
+arthroscopy, X-ray, and MRI scans [2]. However, X-Ray                        Achieving New State-of-the-Art Results: The proposed
+(plain radiography) is considered as gold standard for diag-              hybrid model, CNN-ResNet50, surpasses other state-of-
+nosing osteoarthritis (OA), in addition to the essential routine          the-art approaches by providing precise results across all
+clinical examination of the symptomatic joint. This method is             five stages of OA according to the KL grading system.
+considered safe, cost-efficient, and widely accessible [10].              With an accuracy exceeding 93% on training, validation,
+
+62408                                                                                                                            VOLUME 12, 2024
+S. U. Rehman, V. Gruhn: Sequential VGG16+CNN-Based Automated Approach
+
+
+
+
+and testing datasets, the hybrid model demonstrates supe-                  Another research presents a computer-assisted diagnostic
+rior performance in OA diagnosis. Overall, the proposed                 (CAD) system designed to detect and automatically classify
+methodology offers a novel and effective approach to OA                 knee osteoarthritis (OA) by processing X-ray images and
+detection, combining advanced neural network architec-                  assigning KL grades. The proposed model utilizes Deep
+tures, comprehensive analysis, and techniques to address                Siamese convolutional neural networks and a fine-tuned
+dataset challenges. Its ability to achieve new state-of-the-            ResNet34 architecture to concurrently detect issues in both
+art results underscores its importance in advancing the field           knees [2]. Class imbalanced issue is resolved using transfer
+of computer-aided diagnosis for Osteoarthritis. The primary             learning. The model achieved a multiclass accuracy of 61%
+contributions of this paper can be outlined as follows:                 for KL grading.
+   • A new model (hybrid of CNN and VGG16) is proposed                     Different machine learning (ML) models were also
+      to utilize strength of both architectures to obtain accurate      employed to detect OA and knee KL grading. In a
+      results                                                           paper, different ML techniques were used [21]. Pre-
+   • Different CNN models are implemented to analyse the                processing was done using circular Fourier filter. Next,
+      results using same dataset                                        a novel normalization technique, relying on predictive
+   • Class imbalance problem present in the Osteoarthritis              modeling through multivariate linear regression (MLR),
+      dataset is resolved using different techniques of data            is employed on the data to minimize variability between
+      augmentation                                                      subjects with osteoarthritis (OA) and those who are healthy.
+   • presented new state-of-the-art results in the diagnosis of         A publicly available X-Ray dataset OsteoArthritis Initiative
+      knee OA using plain knee X-Rays                                   (OAI) was used. ML methods show good classification
+   The structure of the paper is as follows: Section II                 rate for OA detection 82.98% for accuracy. The authors
+provides an overview of the existing work done in the                   of [22] conducted a comprehensive review focusing on
+same area for the diagnosis of OA. Section III explains                 the application of machine learning (ML) techniques for
+the proposed Computer-Aided Diagnosis (CAD) method.                     diagnosing and predicting knee osteoarthritis (KOA). The
+Section IV presents the experimental results and subsequent             survey, covering papers published from 2006 to 2019,
+discussion, while Section IV outlines the conclusions drawn             categorized findings into segmentation, post-treatment plan-
+from the study.                                                         ning, classification, and prediction/regression. Most diag-
+                                                                        nostic models exhibited accuracies ranging from 76.1%
+II. LITERATURE REVIEW                                                   to 92%. The review emphasized the impact of ML in
+Several methods have been used to detect knee osteoarthri-              developing automated solutions for pre- and post-treatment
+tis, some of them are fully automated and some are                      in OA.
+semi-automated. These methods utilize different imaging                    In [23], the authors introduce a discriminative regularized
+modalities, including Knee X-Rays and MRI scans [17].                   autoencoder for enhanced detection, aiming to capture both
+In the context of knee osteoarthritis (OA), Shamir et al. [7]           discriminative and meaningful features. By incorporating
+introduced a technique employing a sliding window strategy              a discriminative loss in the training criteria, the model is
+to pinpoint the knee joints. Antony et al. [18] proposed a              encouraged to account for discriminative data. They used OAI
+fully convolutional network (FCN) system for knee joint                 database to conduct experiments, their method demonstrated
+detection and the automated quantification of KOA severity              an accuracy of 82.53%, surpassing other state-of-the-art deep
+based on the KL scale. This approach demonstrated superior              learning techniques.
+classification accuracy for KL grades 3 and 4 compared                     In another study, an ordinal regression module for neural
+to grades 0, 1, and 2, attributed to subtle variations in the           networks specifically designed to treat KL grading as an
+image(s).                                                               ordinal regression task [24]. This module takes input from
+   In another study, Elastic Net (EN) and Random Forests                the neural network and generates four cut-points, strategically
+(RF) was employed to construct predictive models utilizing              partitioning the prediction space into five distinct KL grades.
+patient assessment data, including signs and symptoms of                Results show that they obtain maximum accuracy of 88.09%
+both knees and medication use. Additionally, a convolutional            using DenseNet161.
+neural network (CNN) was trained exclusively using X-ray                   Von et. al. proposed a model [25] to detect OA using a
+images. They trained models to predict the severity levels of           combination of intrinsic dimension reduction coupled with a
+knee osteoarthritis (KOA) however, the subjectivity in the KL           graph convolutional neural network. OAI dataset was used for
+grade remains a primary concern.                                        the research. They were able to obtain accuracy of 64.64%.
+   A customized YOLOv2 model, due to it’s success in                    In another research [26], the authors suggest an automated
+multiple domains [19], was proposed for knee joint detection,           classification method for knee osteoarthritis images using
+coupled with the fine-tuning of convolutional neural network            deep neural networks (DNNs). After preprocessing the
+(CNN) models using a novel ordinal loss for knee KL grad-               images, a two-step procedure is employed: initially, a VGG
+ing [20]. This approach led to state-of-the-art performance in          network is utilized to extract the knee joint center, followed
+both knee joint detection and KL grading. They obtained 69.7            by classification using the ResNet50 network. Results show
+% accuracy using fine-tuned model.                                      good accuracy of 81.41%.
+
+VOLUME 12, 2024                                                                                                                  62409
+                                                                S. U. Rehman, V. Gruhn: Sequential VGG16+CNN-Based Automated Approach
+
+
+
+
+   In [27], both traditional and deep models are used to
+enhance early knee osteoarthritis (KOA) detection perfor-
+mance. The traditional model incorporates random forest,
+neural networks, and logistic regression, while the deep
+neural networks employs convolutional neural networks
+(CNNs) for classifying knee images and predicting pain
+progression likelihood. Dataset of OAI is used to conduct
+research. A good accuracy of 81% is obtained and it
+is observed that combining traditional and deep learning
+learners (DLLs) on diverse datasets can yield improved
+KOA detection accuracy. Nevertheless, there is room for
+improvement in the performance of knee analysis. Given the
+ordinal nature of the KL grading task, enhancing the knee KL
+grading performance may be achieved through the adoption
+of a more effective loss function or some modified deep
+learning model.
+
+III. PROPOSED METHODOLOGY
+                                                                FIGURE 3. Architecture of convolutional neural network (CNN) [29].
+For diagnosing different stages of Knee Osteoarthritis,
+multiple algorithms are trained on bench mark dataset to
+achieve a robust diagnostic system.
+                                                                are determined by the input images. Subsequently, a 2D
+A. DATASET                                                      convolution layer with 32 filters and a kernel is added.
+The dataset comprises 1650 digital X-ray images of knee         The Rectified Linear Unit (ReLU) is employed for efficient
+joints gathered from renowned hospitals and reputable           computation and rapid convergence. To address the ‘‘vanish-
+diagnostic centers [28]. These X-ray images are captured        ing gradient’’ issue, wherein ReLU yields zero for negative
+using the PROTEC PRS 500E X-ray machine and are in              values, a LeakyReLU is introduced atop the convolution layer
+their original 8-bit gray scale format. Each radiographic       with an alpha value of 0.001. Following this, a dropout layer
+knee X-ray image has been annotated and labeled according       with dropout ratio 0.3 is incorporated.
+to Kellgren and Lawrence grading method by two medical             After dropout layers, convolutional layer is again added
+experts. Detailed statistics of this dataset is given in the    accompanied by LeakyReLU and dropout layers with the
+Table 1.                                                        previously defined parameters. Subsequent to these layers,
+                                                                an additional 2D convolution layer is introduced with the
+B. DATA AUGMENTATION                                            number of filters adjusted according to the size of input
+Table 1 and 2 describe statistics of images used before and     image. A pooling layer is then inserted to down-sample and
+after applying data augmentation to resolve class imbalance     summarize the feature map. To avoid over-fitting, a dropout
+problem. Different augmentation techniques (Horizontal flip,    layer follows the pooling layer in the network.
+Vertical flip, Rotation -45, Rotation 90, Crop 0.1, Crop 0.2,      After this layer, a flattening technique is applied to the
+Gaussian noise, Gamma contrast, Sigmoid contrast, Linear        network’s output, succeeded by two fully connected dense
+contrast, Channel shuffling, and Inverted colors) have been     layers with 12 and 1 units, respectively. LeakyReLU and
+used to generate more images of Knee X-Rays to balance          sigmoid functions serve as activation functions in these fully
+all five classes in the dataset. Figure 5 shows original knee   connected layers.
+X-Ray image and multiple X-Ray images generated using
+different augmentation techniques after applying on original    2) VGG-16
+image.                                                          VGG16, is a well reputed variant of CNN which is
+                                                                constructed sequentially with layers that progressively build
+C. EXPERIMENTAL SETUP                                           the model. Beginning with the input layer, the network
+For computer-aided diagnostic of Knee Osteoarthritis and it’s   features multiple 2D convolutional layers with 64 filters and
+severity level, a new model i.e., VGG-16+CNN is proposed        a kernel, employing Rectified Linear Unit (ReLU) activation
+and it’s performance is compared with CNN, VGG-16, VGG-         functions for computational efficiency. To address the ‘‘dying
+19 and ResNet50.                                                ReLU’’ issue, LeakyReLU is introduced with an alpha of
+                                                                0.001, followed by dropout layers to prevent overfitting.
+1) CNN                                                          This architecture includes additional convolutional layers,
+The CNN architecture, illustrated in Figure 3, is structured    each utilizing specified kernel sizes, and concludes with
+in a sequential manner, constructing the model layer by         fully connected dense layers having 4096 and 1000 units,
+layer. Commencing with the input layer, its dimensions          with LeakyReLU and softmax as activation functions. The
+
+62410                                                                                                                    VOLUME 12, 2024
+S. U. Rehman, V. Gruhn: Sequential VGG16+CNN-Based Automated Approach
+
+
+
+
+VGG16 design is characterized by its systematic layering and            TABLE 1. Statistics of original dataset: Total number of images for each
+                                                                        class and its split into training,testing and validation sets.
+effectiveness in image classification tasks.
+
+3) VGG-19
+VGG19, another prominent CNN architecture, is systemati-
+cally structured with sequential layers to construct the model.
+It initiates with the input layer, adapting its size to the input
+images. The architecture then incorporates a series of 2D
+convolutional layers, each featuring 64 filters and a kernel,
+utilizing Rectified Linear Unit (ReLU) activation functions             TABLE 2. Statistics of dataset after balancing classes: Number of images
+                                                                        for training and testing and validation.
+for computational efficiency. To address the ‘‘dying ReLU’’
+issue, LeakyReLU is added with an alpha value of 0.001,
+followed by dropout layers. This sequential design includes
+additional convolutional layers, each employing specific
+kernel sizes. Towards the end of the architecture, fully
+connected dense layers are introduced, with units numbering
+4096 and 1000, utilizing LeakyReLU and softmax activation
+functions, respectively. VGG19 follows a structured layering
+approach, incrementing the number of filters and units
+systematically, proving effective for image classification              mechanisms. The architecture concludes with a flattening
+tasks.                                                                  step and two fully connected dense layers (12 and 1 units),
+                                                                        using LeakyReLU and sigmoid activations, designed for
+4) RESNET50                                                             efficient feature extraction and image classification.
+ResNet50, a significant advancement in deep learning and
+CNN architectures, introduces a revolutionary concept of                IV. RESULTS AND DISCUSSION
+residual learning. To address the challenges of training                The dataset is partitioned into training, validation, and
+networks with deep leayers, ResNet50 employs residual                   testing sets with a distribution of 70:20:10 (train-
+blocks, allowing the learning of residual functions instead             ing:validation:testing) to conduct a thorough analysis of
+of the entire mapping. Such a design makes it capable of                various models for osteoarthritis (OA) detection. Multiple
+the training of exceptionally deep layers in the networks               neural network architectures, including CNN, VGG16,
+thus making it less prone to vanishing or exploding gradient            VGG19, and ResNet50, are employed. Results from these
+problems. The input layers is adaptable followed by multiple            models are depicted in Table 3. Notably, no preprocessing
+residual blocks, each containing convolutional layers with              or data augmentation is performed in obtaining these initial
+skip connections. The skip connections enable the direct                results. However, Is observed that original data has skewness.
+flow of information, eliminating the degradation problem.               To address this imbalance, different data augmentation
+ResNet50 contains fully connected layers for classification.            techniques are employed.
+The model incorporates 3.8 million trainable parameters, and               The aforementioned models, along with a proposed model,
+50 layers in total.                                                     are then applied to a newly balanced dataset, comprising the
+                                                                        original dataset and augmented data. The outcomes of this
+5) VGG-16+CNN                                                           application are presented in Table 4. It becomes evident that
+The proposed architecture, illustrated in Figure 4, comprises           the proposed model surpasses other existing neural networks
+of two deep networks. The first deep network is VGG16                   in performance. Additionally, data augmentation contributes
+which extracts image features using sequential 2D con-                  to enhanced accuracies across all models.
+volutional layers with ReLU and LeakyReLU activations,                     the proposed model attains an accuracy of 93.27% in
+addressing issues like the ‘‘dying ReLU’’ problem. The                  effectively detecting various grades of OA. These results
+additional convolutional layers of VGG16 alongwith dropout              are represented as the average accuracies for all five
+mechanism contribute to effective feature extraction, cul-              grades (described by KL method). The study underscores
+minating in fully connected dense layers. This systematic               the significance of data augmentation in addressing class
+architecture makes VGG16 adept at capturing hierarchical                imbalance and emphasizes the superior performance of the
+features, which are crutial in image classification tasks. For          proposed model in the context of OA detection.
+classification, another convolutional deep learner is used                 Bar Charts are shown in figures 6 and 7 to show the
+which starts with an adaptive input layer and incorporates              performance of different models before and after applying
+three 2D convolution layers with 32 filters and ReLU                    data augmentation.
+activation. LeakyReLU is used with alpha 0.001, followed                   The proposed hybrid model, combines the VGG16 and
+by a dropout layer with rate 0.3. Additional layers include             CNN architectures, and shows superiority over individual
+specified kernel sizes, LeakyReLU activations, and dropout              models for knee osteoarthritis (OA) diagnosis using X-ray.
+
+VOLUME 12, 2024                                                                                                                            62411
+                                                                             S. U. Rehman, V. Gruhn: Sequential VGG16+CNN-Based Automated Approach
+
+
+
+
+        FIGURE 4. Architecture of the proposed model VGG16+CNN. Extracted features from VGG-16 are provided to CNN for classification.
+
+
+
+
+TABLE 3. Training, validation and testing accuracy of CNN, VGG16, VGG19       TABLE 4. A performance comparison between CNN, VGG16, VGG19,
+and ResNet50.                                                                 ResNet50 and the proposed model (VGG16 + CNN), while considering
+                                                                              Training, Validation and Testing accuracy.
+
+
+
+
+It uses the complementary strengths of the two components.
+VGG16, known for its depth and hierarchical feature                           models allows for a more comprehensive analysis, leveraging
+extraction capabilities, excels in capturing intricate patterns               the strengths of each to create a more robust and accurate
+and abstract representations within the X-ray images. Its                     diagnostic method.
+ability to learn complex hierarchical features is crucial in                     Furthermore, the hybrid model’s performance has the
+discerning important details which are used to indicate                       capacity to capture both global and local contextual informa-
+severity of OA disease. On the other hand, the CNN                            tion of the given input. VGG16’s proficiency in recognizing
+architecture likely contributes by efficiently extracting local               global patterns is complemented by the CNN’s capability
+features and patterns, helping in the recognition of specific                 at capturing local details within the Knee X-ray images.
+abnormalities associated with OA. The integration of both                     This integration potentially addresses the challenges posed
+
+62412                                                                                                                                    VOLUME 12, 2024
+S. U. Rehman, V. Gruhn: Sequential VGG16+CNN-Based Automated Approach
+
+
+
+
+ FIGURE 5. A sample original image and twelve augmented images generated from the original image.
+
+
+
+
+FIGURE 6. Performance of different models in the presence of class        FIGURE 7. Performance comparison between proposed models and all
+imbalance.                                                                the other models after class balancing.
+
+
+
+by the complexity and variability of knee OA present in                   This integration is expected to enhance overall accuracy,
+X-Rays, leading to a more refined and effective diagnostic                enabling physicians to better comprehend the condition
+approach compared to the standalone models. The success                   efficiently.In addition, accurate measuring the knee joint
+of the hybrid model underscores the potential benefits of                 space on the x-ray image can also be considered in the
+combining diverse neural network architectures to enhance                 future to enhance the accuracy and reliability of automated
+diagnostic capabilities in medical image analysis.                        diagnosis of OA.
+   In the future, additional imaging modalities may comple-                  The proposed method can potentially be applied to other
+ment knee X-Rays for assessing the severity of osteoarthritis.            medical imaging modalities, although certain adjustments
+
+VOLUME 12, 2024                                                                                                                       62413
+                                                                    S. U. Rehman, V. Gruhn: Sequential VGG16+CNN-Based Automated Approach
+
+
+
+
+might be necessary depending on the specifics of the                in knee X-ray images. This integration leads to a refined
+modality and the disease being studied. The features relevant       and effective diagnostic approach, surpassing the standalone
+to detecting osteoarthritis might differ slightly between           models.
+modalities, so the model would need to be trained and                  The key features of the study include:
+validated using data from the specific modality of interest.           • This study emphasizes on the critical role of data
+                                                                         augmentation in improving model performance.
+V. CONCLUSION                                                          • It highlights the potential of the proposed model as a
+This research paper rigorously examines the effectiveness                promising tool for accurate and reliable OA detection.
+of various neural network architectures, including CNN,                • This research contributes valuable insights to the evolv-
+VGG16, VGG19, and ResNet50, in the detection of                          ing landscape of medical image analysis, emphasizing
+osteoarthritis (OA) and its severity using five different grades.        the importance of combining complementary strengths
+Recognizing the class imbalance problem in the knee X-Ray                for more effective diagnostic methods.
+dataset, the study applies data augmentation techniques to             The proposed research work can be extended in the future
+resolve this issue. The incorporation of data augmentation          to further advance the field of computer-aided diagnosis for
+emerges as an important factor, contributing to enhanced            OA by integrating multi-modal data, developing ensembled
+accuracies across all models. These findings emphasize              models, incorporating clinical data, validating the technique
+the importance of addressing class imbalance in medical             on diverse populations and end-to-end deployment in clinical
+datasets and underscore the efficacy of the proposed model          Practice. Overall, future research should continue to explore
+in advancing the field of OA detection.                             innovative approaches and technologies to improve the
+   The proposed methodology addresses several challenges            accuracy, reliability, and accessibility of computer-aided
+by leveraging advanced neural network architectures, con-           diagnosis for OA, ultimately enhancing patient care and
+ducting comprehensive analysis, and employing techniques            outcomes in musculoskeletal health.
+to enhance dataset quality and model performance. It pro-
+vides a robust solution for accurate and reliable OA detection,     DECLARATIONS
+contributing to advancements in computer-aided diagnosis            Data Availability: The dataset [28] used in this research is
+for musculoskeletal disorders. The main issues addressed by         freely available.
+this research include:                                                 Conflict of Interest: It is declared by the authors that there
+   Effectiveness of Different Neural Network Architec-              is no conflict of interest.
+tures: The study resolved the question of which neural                 Code availability Code can be provided on request.
+network architecture is most effective for Osteoarthritis (OA)         Authors Contributions Shafiq Ur Rehman worked on
+detection by implementing and comparing various models,             algorithm implementation and wrote the initial draft of the
+including CNN, VGG16, VGG19, ResNet50, and CNN-                     article. Volker Gruhn verified and analyzed the results and
+ResNet. This comprehensive analysis helped identify the             improved article write-up.
+strengths and weaknesses of each architecture and determine
+the optimal approach for OA diagnosis.                              REFERENCES
+   Addressing Class Imbalance: The class imbalance prob-             [1] A. S. Mohammed, A. A. Hasanaath, G. Latif, and A. Bashar, ‘‘Knee
+lem in the OA dataset was resolved using different techniques            osteoarthritis detection and severity classification using residual neural
+of data augmentation. By balancing the distribution of data              networks on preprocessed X-ray images,’’ Diagnostics, vol. 13, no. 8,
+                                                                         p. 1380, Apr. 2023.
+across different classes, the proposed method mitigated the          [2] J. H. Cueva, D. Castillo, H. Espinós-Morató, D. Durán, P. Díaz, and
+risk of biased model training and improved the overall                   V. Lakshminarayanan, ‘‘Detection and classification of knee osteoarthri-
+accuracy and reliability of OA detection.                                tis,’’ Diagnostics, vol. 12, no. 10, p. 2362, Sep. 2022.
+                                                                     [3] M. Cross, E. Smith, D. Hoy, S. Nolte, I. Ackerman, M. Fransen,
+   Achieving State-of-the-Art Results: The proposed                      L. Bridgett, S. Williams, F. Guillemin, C. L. Hill, L. L. Laslett, G. Jones,
+hybrid model, combining elements of CNN and VGG16                        F. Cicuttini, R. Osborne, T. Vos, R. Buchbinder, A. Woolf, and L. March,
+architectures, surpassed other state-of-the-art approaches               ‘‘The global burden of hip and knee osteoarthritis: Estimates from the
+                                                                         global burden of disease 2010 study,’’ Ann. Rheumatic Diseases, vol. 73,
+by providing precise results across all five stages of OA                no. 7, pp. 1323–1330, Jul. 2014.
+according to the KL grading system. By achieving an                  [4] T. Janvier, R. Jennane, A. Valery, K. Harrar, M. Delplanque, C. Lelong,
+accuracy exceeding 93% on training, validation, and testing              D. Loeuille, H. Toumi, and E. Lespessailles, ‘‘Subchondral tibial bone
+                                                                         texture analysis predicts knee osteoarthritis progression: Data from
+datasets, the method demonstrated superior performance in
+                                                                         the osteoarthritis initiative,’’ Osteoarthritis Cartilage, vol. 25, no. 2,
+OA diagnosis.                                                            pp. 259–266, Feb. 2017.
+   This research also introduces a novel hybrid model for            [5] L. Khedher, I. A. Illán, J. M. Górriz, J. Ramírez, A. Brahim, and
+knee osteoarthritis (OA) diagnosis using X-ray images,                   A. Meyer-Baese, ‘‘Independent component analysis-support vector
+                                                                         machine-based computer-aided diagnosis system for Alzheimer’s
+merging the strengths of VGG16 and CNN architectures.                    with visual support,’’ Int. J. Neural Syst., vol. 27, no. 3, May 2017,
+This innovative approach demonstrates a clear superiority                Art. no. 1650050.
+over individual models, based on the complementary features          [6] K. Kalo, D. Niederer, M. Schmitt, and L. Vogt, ‘‘Acute effects of a single
+                                                                         bout of exercise therapy on knee acoustic emissions in patients with
+of each architecture. In particular, the hybrid model excels             osteoarthritis: A double-blinded, randomized controlled crossover trial,’’
+at capturing both global and local contextual information                BMC Musculoskeletal Disorders, vol. 23, no. 1, pp. 1–12, Dec. 2022.
+
+62414                                                                                                                               VOLUME 12, 2024
+S. U. Rehman, V. Gruhn: Sequential VGG16+CNN-Based Automated Approach
+
+
+
+
+ [7] L. Shamir, S. M. Ling, W. W. Scott, A. Bos, N. Orlov, T. J. Macura,              [24] C. W. Yong, K. Teo, B. P. Murphy, Y. C. Hum, Y. K. Tee, K. Xia, and K.
+     D. Mark Eckley, L. Ferrucci, and I. G. Goldberg, ‘‘Knee X-ray image                   W. Lai, ‘‘Knee osteoarthritis severity classification with ordinal regression
+     analysis method for automated detection of osteoarthritis,’’ IEEE Trans.              module,’’ Multimedia Tools Appl., vol. 81, no. 29, pp. 41497–41509,
+     Biomed. Eng., vol. 56, no. 2, pp. 407–415, Feb. 2009.                                 Dec. 2022.
+ [8] J. Abedin, J. Antony, K. McGuinness, K. Moran, N. E. O’Connor,                   [25] C. von Tycowicz, ‘‘Towards shape-based knee osteoarthritis classification
+     D. Rebholz-Schuhmann, and J. Newell, ‘‘Predicting knee osteoarthritis                 using graph convolutional networks,’’ in Proc. IEEE 17th Int. Symp.
+     severity: Comparative modeling based on patient’s data and plain X-ray                Biomed. Imag. (ISBI), Apr. 2020, pp. 750–753.
+     images,’’ Sci. Rep., vol. 9, no. 1, p. 5761, Apr. 2019.                          [26] Y. Wang, S. Li, B. Zhao, J. Zhang, Y. Yang, and B. Li, ‘‘A ResNet-based
+ [9] P. Chen, ‘‘Knee osteoarthritis severity grading dataset,’’ Mendeley Data,             approach for accurate radiographic diagnosis of knee osteoarthritis,’’ CAAI
+     vol. 1, pp. 21–23, Jan. 2018.                                                         Trans. Intell. Technol., vol. 7, no. 3, pp. 512–521, Sep. 2022.
+[10] A. Tiulpin, J. Thevenot, E. Rahtu, P. Lehenkari, and S. Saarakkala,              [27] B. Guan, F. Liu, P. Matthew, A. H. Mirzaian, S. Demehri, T. Neogi,
+     ‘‘Automatic knee osteoarthritis diagnosis from plain radiographs: A deep              A. Guermazi, and R. Kijowski, ‘‘Deep learning approach to predict pain
+     learning-based approach,’’ Sci. Rep., vol. 8, no. 1, p. 1727, Jan. 2018.              progression in knee osteoarthritis,’’ Osteoarthritis Cartilage, vol. 28,
+[11] J. H. Kellgren and J. S. Lawrence, ‘‘Radiological assessment of osteo-                p. S316, Apr. 2020.
+     arthrosis,’’ Ann. Rheumatic Diseases, vol. 16, no. 4, pp. 494–502,               [28] S. Gornale and P. Patravali, ‘‘Digital knee X-ray images,’’ Mendeley Data,
+     Dec. 1957.                                                                            Jan. 2020, vol. 1, doi: 10.17632/t9ndx37v5h.1.
+[12] M. Tamoor, A. Naseer, A. Khan, and K. Zafar, ‘‘Skin lesion segmentation          [29] A. Naseer, T. Yasir, A. Azhar, T. Shakeel, and K. Zafar, ‘‘Computer-
+     using an ensemble of different image processing methods,’’ Diagnostics,               aided brain tumor diagnosis: Performance evaluation of deep learner CNN
+     vol. 13, no. 16, p. 2684, Aug. 2023.                                                  using augmented brain MRI,’’ Int. J. Biomed. Imag., vol. 2021, pp. 1–11,
+[13] Y. S. Malik, M. Tamoor, A. Naseer, A. Wali, and A. Khan, ‘‘Applying                   Jun. 2021.
+     an adaptive otsu-based initialization algorithm to optimize active contour
+     models for skin lesion segmentation,’’ J. X-Ray Sci. Technol., vol. 30, no. 6,
+     pp. 1169–1184, Nov. 2022.
+[14] G. Nasreen, K. Haneef, M. Tamoor, and A. Irshad, ‘‘Review: A
+     comparative study of state-of-the-art skin image segmentation techniques
+     with CNN,’’ Multimedia Tools Appl., vol. 82, no. 7, pp. 10921–10942,
+     Mar. 2023.                                                                                                   SHAFIQ UR REHMAN received the M.S. degree
+[15] D. Albashish, R. Al-Sayyed, A. Abdullah, M. H. Ryalat, and                                                   in computer science from Dresden University of
+     N. A. Almansour, ‘‘Deep CNN model based on VGG16 for breast                                                  Technology, Dresden, Germany, and the Ph.D.
+     cancer classification,’’ in Proc. Int. Conf. Inf. Technol. (ICIT), Jul. 2021,                                degree in computer science from the Department
+     pp. 805–810.                                                                                                 of Software Engineering, University of Duisburg-
+[16] C. B. S. Maior, J. M. M. Santana, I. D. Lins, and M. J. C. Moura,                                            Essen, Germany, in 2020. He was a Consultant
+     ‘‘Convolutional neural network model based on radiological images to                                         (Requirements Engineer) in well-renowned inter-
+     support COVID-19 diagnosis: Evaluating database biases,’’ PLoS ONE,                                          national organizations in Germany. He is currently
+     vol. 16, no. 3, Mar. 2021, Art. no. e0247839.                                                                an Assistant Professor with the College of Com-
+[17] M. Saeed, A. Naseer, H. Masood, S. Ur Rehman, and V. Gruhn,                                                  puter and Information Sciences, Imam Moham-
+     ‘‘The power of generative AI to augment for enhanced skin cancer
+                                                                                      mad Ibn Saud Islamic University (IMSIU), Riyadh, Saudi Arabia. He has
+     classification: A deep learning approach,’’ IEEE Access, vol. 11,
+                                                                                      published several research papers in high-ranked international conferences
+     pp. 130330–130344, 2023.
+                                                                                      and ISI-indexed journals. He is involved in different international-funded
+[18] J. Antony, K. McGuinness, K. Moran, and N. E. O’Connor, ‘‘Automatic
+     detection of knee joints and quantification of knee osteoarthritis severity      projects in the field of cyber-physical systems and cybersecurity. His research
+     using convolutional neural networks,’’ in Proc. Int. Conf. Mach. Learn.          interests include AI, cyber-physical systems, cybersecurity, and requirements
+     Data Mining Pattern Recognit. Cham, Switzerland: Springer, 2017,                 engineering.
+     pp. 376–390.
+[19] S. M. H. Rizvi, A. Naseer, S. Ur Rehman, S. Akram, and V. Gruhn,
+     ‘‘Revolutionizing agriculture: Machine and deep learning solutions for
+     enhanced crop quality and weed control,’’ IEEE Access, vol. 12,
+     pp. 11865–11878, 2024.
+[20] P. Chen, L. Gao, X. Shi, K. Allen, and L. Yang, ‘‘Fully automatic                                          VOLKER GRUHN received the M.S. and Ph.D.
+     knee osteoarthritis severity grading using deep neural networks with a                                     degrees in computer science from the Univer-
+     novel ordinal loss,’’ Computerized Med. Imag. Graph., vol. 75, pp. 84–92,                                  sity of Dortmund, Germany, in 1987 and 1991,
+     Jul. 2019.                                                                                                 respectively. Then, he was with the Fraunhofer
+[21] A. Brahim, R. Jennane, R. Riad, T. Janvier, L. Khedher, H. Toumi, and                                      Institute for Software and System Technology.
+     E. Lespessailles, ‘‘A decision support tool for early detection of knee
+                                                                                                                In 1997, he co-founded adesso AG. Since 2010,
+     OsteoArthritis using X-ray imaging and machine learning: Data from
+                                                                                                                he has been the Chair of Software Engineering
+     the OsteoArthritis initiative,’’ Computerized Med. Imag. Graph., vol. 73,
+     pp. 11–18, Apr. 2019.                                                                                      with the University of Duisburg-Essen, Germany.
+[22] C. Kokkotis, S. Moustakidis, E. Papageorgiou, G. Giakas, and                                               He supervised several Ph.D. students. He has
+     D. E. Tsaopoulos, ‘‘Machine learning in knee osteoarthritis: A review,’’                                   published more than 300 research papers in
+     Osteoarthritis Cartilage Open, vol. 2, no. 3, Sep. 2020, Art. no. 100069.        ISI-indexed journals and high-ranked international conferences. His research
+[23] Y. Nasser, R. Jennane, A. Chetouani, E. Lespessailles, and M. E. Hassouni,       interests include methods for industrial software engineering and the effects
+     ‘‘Discriminative regularized auto-encoder for early detection of knee            of digital transformation on enterprises. He is the Supervisory Board
+     OsteoArthritis: Data from the osteoarthritis initiative,’’ IEEE Trans. Med.      Chairperson.
+     Imag., vol. 39, no. 9, pp. 2976–2984, Sep. 2020.
+
+
+
+
+VOLUME 12, 2024                                                                                                                                                  62415
+

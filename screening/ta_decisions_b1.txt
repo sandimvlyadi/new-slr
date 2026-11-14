@@ -1,0 +1,120 @@
+M001 I G3 Bayesian decision tree calibrated probabilities on ViT embeddings; also MRI
+M002 E EM2 RA diagnosis
+M003 I G1 attention + SSL, RA SvdH total score
+M004 E EM2 fracture
+M005 I G1 RA SvdH; transfer from public datasets with several fine-tuning schemes + ensemble
+M006 E EM1 vibroarthrography
+M007 E EM1 MRI
+M008 E EM3 generic augmentation only
+M009 E EM3 ImageNet transfer only
+M010 E EM3 ImageNet transfer only
+M011 E EM3 no G method
+M012 E EM3 ImageNet transfer only
+M013 E EM4 review (MRI)
+M014 I G1 pretrained vision-language (ViT + BERT) KL grading
+M015 I G1 MSK radiograph foundation model, SSL
+M016 E EM3 no G method
+M017 E EM2 RA detection
+M018 E EM3 TMJ, transfer only
+M019 E EM3 transfer only; imbalance mentioned without method
+M020 E EM2 RA detection
+M021 E EM3 transfer only
+M022 E EM3 interobserver as motivation only
+M023 E EM3 transfer only
+M024 E EM3 no G method
+M025 E EM2 surgical candidate prediction
+M026 E EM3 transfer only
+M027 E EM2 mortality prediction
+M028 I G2 deep ordinal classification
+M029 E EM3 transfer only
+M030 E EM2 arthroplasty candidates
+M031 E EM2 anomaly score + clustering of patient outcomes, not image grading
+M032 E EM2 implant size
+M033 E EM3 pretrained only
+M034 E EM2 arthroplasty assessment
+M035 E EM3 transfer only
+M036 E EM3 transfer only
+M037 E EM3 generic augmentation
+M038 E EM3 transfer only
+M039 I G3 multimodal transformer KL with calibration/uncertainty
+M040 E EM3 no G method
+M041 I G2 hand OA; synthetic data + focal loss + oversampling
+M042 I G4 cascade deep metric learning, label noise
+M043 E EM2 RA vs OA vs normal classification
+M044 I G2,G4 imbalance-aware learning + label smoothing
+M045 E EM1 MRI
+M046 E EM3 pretrained only
+M047 E EM2 osteoporosis
+M048 E EM2 prognosis after HTO
+M049 E EM3 transfer only
+M050 E EM3 no G method
+M051 I G1 fine-tuning strategy (layer freezing) ablation
+M052 I G2,G3 class weighting + calibration
+M053 E EM3 no G method (bilateral input)
+M054 E EM4 review
+M055 E EM3 transfer only
+M056 E EM2 osteoporosis
+M057 E EM2 RA classification
+M058 E EM4 review
+M059 E EM5 radiomics nomogram
+M060 E EM3 transfer only
+M061 I G4 semi-supervised active learning KL
+M062 E EM2 alignment
+M063 E EM4 commentary
+M064 E EM4 review
+M065 E EM2 segmentation
+M066 E EM1 MRI
+M067 E EM1 ultrasound
+M068 I G2 latent diffusion augmentation for imbalance
+M069 E EM3 ensemble of transfer models, no uncertainty
+M070 E EM2 compartment classification
+M071 I G2 vision-language ordinal regression
+M072 E EM3 hand OA, generic augmentation only
+M073 E EM2 surgical planning
+M074 E EM1 MRI segmentation
+M075 E EM3 transfer only
+M076 E EM3 activation function
+M077 I G4 semi-supervised consistency regularization KL
+M078 E EM1 infrared thermography (corrected on re-read)
+M079 E EM2 implant recommendation
+M080 E EM3 no G method
+M081 E EM3 transfer only
+M082 I G1 contrastive learning, multicohort
+M083 I G1,G3 DINO features + calibration
+M084 I G2 GAN synthetic samples for imbalance
+M085 E EM3 transfer only
+M086 E EM5 Bayesian network on clinical data
+M087 E EM2 keypoints
+M088 E EM2 HKA angle
+M089 I G2 ordinal regression module
+M090 E EM3 interobserver motivation only
+M091 I G2 ordinal classification ViT
+M092 E EM1 histology
+M093 E EM3 transfer only
+M094 E EM3 Bayesian hyperparameter tuning only
+M095 I G2,G3,G4 ordinal + calibration + conformal + co-teaching
+M096 E EM3 pretrained only
+M097 E EM3 transfer only
+M098 E EM2 TKR prediction
+M099 E EM3 transfer only
+M100 I G2 hand erosion detection, focal loss
+M101 I G2 class-selective augmentation for imbalance
+M102 E EM4 review
+M103 E EM1 MRI
+M104 E EM2 alignment
+M105 E EM3 pretrained only
+M106 I G4 weakly supervised (mainly MRI; check X-ray part)
+M107 E EM3 pretrained only
+M108 E EM3 transfer only
+M109 E EM2 COVID
+M110 I G3 comparison of UQ methods (MC dropout, evidential, conformal)
+M111 E EM3 transfer only
+M112 E EM1 MRI
+M113 E EM3 no G method
+M114 E EM3 transfer only
+M115 E EM1 MRI
+M116 E EM2 RA diagnosis (pre-training method noted)
+M117 I G4 noise-robust KL grading
+M118 E EM3 transfer only
+M119 E EM3 generic augmentation
+M120 E EM3 generic augmentation

@@ -1,0 +1,956 @@
+                                                        Biomedical Signal Processing and Control 119 (2026) 109819
+
+
+                                                                  Contents lists available at ScienceDirect
+
+
+                                               Biomedical Signal Processing and Control
+                                                          journal homepage: www.elsevier.com/locate/bspc
+
+
+
+
+DeepOsteoCls: Deep learning-based framework for Knee Osteoarthritis
+Classification with qualitative explanations from radiographs and MRI
+volumes
+                                  ,∗
+Akshay Daydar a                    , Arijit Sur b , Subramani Kanagaraj a , Hanif Laskar c
+a Department of Mechanical Engineering, Indian Institute of Technology Guwahati, Assam, India
+b Department of Computer Science and Engineering, Indian Institute of Technology Guwahati, Assam, India
+c Department of Radiology and Imaging Sciences, GNRC hospital, Assam, India
+
+
+
+
+ARTICLE                INFO                              ABSTRACT
+
+Keywords:                                                Knee Osteoarthritis (KOA) is a degenerative joint disorder affecting middle-aged and elderly individuals, with
+Clinical manifestations                                  its diagnosis facing challenges in achieving objective, transparent quantification and incorporating clinical
+Deep learning                                            manifestations, despite advances in deep-learning for medical imaging. To address these issues, in this
+Edge-based features
+                                                         paper, a deep learning-based hybrid (Convolutional Neural Network (CNN)-Transformer encoder) classification
+Multi-scale regional features
+                                                         framework, DeepOsteoCls, is proposed to perform binary and multi-class classification of KOA from X-rays
+Osteoarthritis Initiative (OAI)
+                                                         and MRI scans from OsteoXRNet and OsteoMRNet models separately, with Gradient-weighted Class Activation
+                                                         Mappings (Grad-CAMs). The Osteoarthritis Edge Detection (OAED) and Multi-Resolution Feature Integration
+                                                         (MRFI) modules are also introduced in the proposed framework to facilitate the extraction of edge-based
+                                                         features from X-ray images and multi-scale regional features from the MRI volume, respectively. Furthermore,
+                                                         a disorder-aware weakly supervised training scheme—Domain Knowledge Transfer and Entropy Regularization
+                                                         (DoKTER) is proposed to enhance the explainability of Radiological KOA (RKOA) diagnosis by predicting the
+                                                         region score and GradCAMs of MRI scans. Comprehensive experiments on the Osteoarthritis Initiative (OAI)
+                                                         dataset demonstrated that the proposed framework achieved a classification accuracy of 72.10% for X-ray
+                                                         and 53.16% for MRI in a multi-class classification task, and 85.74% for X-ray and 81.04% for MRI in a
+                                                         binary classification task, outperforming state-of-the-art models. The DoKTER scheme is found to accurately
+                                                         classify the affected region with 65.15% and 62.5% for the OAI and Multi-Hospital Knee Osteoarthritis
+                                                         (MHKOA) datasets, respectively. Additionally, Femoral Cartilage Thickness (FCT) in non-RKOA subjects can
+                                                         be effectively monitored using the region score, with distinct cut-offs values. The code is available at:
+                                                         https://github.com/adaydar/Deep-OsteoCls
+
+
+
+1. Introduction                                                                                 Narrowing (JSN) and the extent of cartilage degradation [3,4] which
+                                                                                                are common indicators of the progression of KOA. The gold standard
+    Knee Osteoarthritis (KOA) is a Musculoskeletal Disorder (MSD) that                          for diagnosing KOA is X-ray imaging [5,6] and, in recent years, Shamir
+tends to impact the knee joint. Some of the major risk factors include                          et al. [7] utilized a weighted nearest neighbors method with custom
+age, gender, and Body Mass Index (BMI). KOA is classified based on                              features. Antony et al. [8] recommended using the pre-trained Convo-
+X-ray imaging, and its severity is classified into 5 categories based on                        lutional Neural Network (CNN) for transfer learning, later optimized
+the Kellgren and Lawrence (KL) grade system [1] as shown in Fig. 1.                             using dual-objective learning. Tuilpin et al. [9] proposed a method
+This system defines five categories: None (0), Doubtful (1), Minimal
+                                                                                                based on the deep Siamese network. Gorriz et al. [10] created an
+(2), Moderate (3), and Severe (4), forming a multi-class categorization.
+                                                                                                end-to-end attention-based network for automatic measurement of the
+According to [2], the KL grades ≥2 are termed Radiological KOA
+                                                                                                severity of KOA. Chen et al. [11] employed pre-trained Visual Geome-
+(RKOA) while the first two grades, KL = 0 and KL = 1, are grouped
+                                                                                                try Group-19 (VGG-19) [12] with adjustable ordinal loss to calculate
+as non-RKOA, forming a binary categorization. Radiographs (X-rays)
+                                                                                                the proportionate penalty for misclassification in KOA. Later, Yong
+and Magnetic Resonance Imaging (MRI) have been used for years to
+diagnose the pathology of KOA, as well as measure the Joint Space                               et al. [13] addressed KL grade ordinality using an Ordinal Regression
+
+
+  ∗ Corresponding author.
+     E-mail addresses: adaydar@iitg.ac.in (A. Daydar), arijit@iitg.ac.in (A. Sur), kanagaraj@iitg.ac.in (S. Kanagaraj), hanif.laskar@gmail.com (H. Laskar).
+
+https://doi.org/10.1016/j.bspc.2026.109819
+Received 19 September 2024; Received in revised form 7 November 2025; Accepted 9 February 2026
+Available online 10 February 2026
+1746-8094/© 2026 Elsevier Ltd. All rights are reserved, including those for text and data mining, AI training, and similar technologies.
+A. Daydar et al.                                                                                         Biomedical Signal Processing and Control 119 (2026) 109819
+
+
+Module (ORM) with pre-trained DenseNet-161. The ordinal loss was                 thereby removing the concurrent presence of subject-matched data
+also employed by Jain et al. [14] during the training of the OsteoHRNet          from both modalities.
+model, which is further equipped with a Convolutional Block Attention                In order to address these issues, OsteoXRNet and OsteoMRNet are
+Module (CBAM) to enhance classification performance. Considering                 introduced to simulate the diagnostic process of KOA from radiolo-
+the uncertainty of the KL grade into account, Wang et al. [15] in-               gists and is demonstrated in Fig. 1(b). The bio-marker identification
+tegrated a learning scheme that fuses label confidence estimation to             process from X-rays is replicated by the OsteoXRNet model, with an
+consider only highly confident samples into the training process. In             emphasis on edge-based features such as JSN, joint line irregularity,
+recent years, transformers have been recently explored in KOA analysis,          and Osteophytes. Similarly, OsteoMRNet explores medical knowledge
+capturing complex relationships in images by breaking down an image              by analyzing the medial and lateral MRI volumes independently in
+into smaller components (patches). Wang et al. [16] utilized a vision            a sequential manner, pretraining post-processing stage of MRI model
+transformer with a multi-stage framework. Sekhri et al. [17] employed            with X-ray images and an exploration of multi-resolution features for
+a Swin Transformer to categorize KOA, addressing data drift across               each region of these volumes. The key contributions can be summarized
+diverse knee X-ray repositories by aligning latent representations.              as follows:
+    While 2D X-rays serve as the gold standard, Magnetic Resonance
+                                                                                    1. A deep-learning based framework named as ‘‘DeepOsteoCls’’ is
+Imaging (MRI) provides a 3D representation of the knee. This allows
+                                                                                       proposed to classify the Knee Osteoarthritis based on X-ray and
+analysis of degradation in knee cartilage and the examination of joint
+                                                                                       MRI independently with detailed qualitative explanations and
+space reduction. Despite traditional limitations in assessing the severity
+                                                                                       clinical insights.
+of KL-grade in KOA, MRI has gained significance in recent years by
+                                                                                    2. A hybrid CNN-transformer encoder-based OsteoXRNet model is
+leveraging CNN for enhanced diagnostics. Guida et al. [18] combined
+                                                                                       proposed to identify the KL grade of KOA with Grad-CAM-based
+the X-ray and MRI features at the intermediate level with anthropo-
+                                                                                       visualization from the X-ray image. In the proposed scheme, the
+morphic information to improve KOA detection. Berrami et al. [19]
+                                                                                       novel Osteoarthritis Edge Detector (OAED) module is introduced
+utilized a semi-supervised framework to detect KOA based on MRI Os-
+                                                                                       to explicitly consider the edge-based features.
+teoarthritis knee score (MOAKS) grading. The semi-supervised scheme
+                                                                                    3. A hybrid CNN-transformer encoder-based OsteoMRNet model is
+includes pre-training on limited subjects to obtain the pseudo labels,
+                                                                                       proposed to classify the KOA, region score, and Grad-CAM from
+followed by fine-tuning on actual and pseudo labels to predict the
+                                                                                       the MRI volume. In the proposed scheme, medial and lateral
+grade. Bien et al. [20] utilize the MRNet framework to discriminate
+                                                                                       regions in the knee MRI volume are analyzed separately, along
+knee abnormalities, including KOA from Anterior Cruciate Ligament
+                                                                                       with the introduction of a Multi-Resolution Feature Integra-
+(ACL) tear, and meniscal tear in the MRNet dataset. These abnormal-
+                                                                                       tion (MRFI) module. The MRFI module aims to capture distinct
+ities are later identified by Tsai et al. [21] using an ELNet framework
+                                                                                       anatomical characteristics of each MRI region by contemplating
+with a custom-designed model that includes multi-slice normalization
+                                                                                       the local and global spatial context.
+and blurpool operations. In overall, most studies [8,10,22–24] in KOA
+                                                                                    4. A weakly supervised Domain Knowledge Transfer and Entropy
+classification solely employ CNN without incorporating essential med-
+                                                                                       Regularization (DoKTER) training strategy is introduced as the
+ical knowledge into the architecture, limiting the potential synergy
+                                                                                       postprocessing stage of OsteoMRNet. The method is integrated
+between clinical insights and deep learning capabilities. Although few
+                                                                                       to precisely focus on the determination of the affected region
+studies attempted to integrate medical background, such as the ordi-
+                                                                                       in RKOA classification by using the region score and Grad-CAM
+nality in KL grading [11,13–15] and anthropomorphic features [18],
+                                                                                       of each slice in the MRI volume. The region score can act as a
+into deep learning architectures. But these efforts have provided limited
+                                                                                       potential biomarker of the femoral cartilage health of non-RKOA
+explanations for their results. For instance, Yong et al. [13] and Guida
+                                                                                       subjects.
+et al. [23] did not verify their predictions using saliency maps, while
+Chen et al. [11] and Wang et al. [15] employed saliency through                  The organization of the paper is as follows: In Section 2, the proposed
+Gradient-weighted Class Activation Mapping (Grad-CAM) but these vi-              approach, including the detailed descriptions of OsteoXRnet and Os-
+sualizations lack comprehensive representation across all KOA grades.            teoMRNet models are presented. In Section 3, the experimental setting
+Jain et al. [14] used Grad-CAMs for all grades, but their results appear         is described, and in Section 4 experimental results are demonstrated.
+to be heavily influenced by the data augmentation process, despite               In Section 5 the details on the ablation studies are provided, while in
+the integration of medical knowledge via a multiscale High Resolu-               Section 6 discussion of the research findings are elaborated. Finally, the
+tion Network (HRNet [25]) model. Overall, some studies either omit               paper is concluded in Section 7.
+Grad-CAM visualizations entirely or fail to provide them for all KOA
+grades, and often lack quantitative evidence supporting their modeling           2. Proposed approach
+strategies. This limits the interpretability and trustworthiness of their
+classification outcomes. In addition, no study have been identified that             The Deep Learning-Based Framework for Knee Osteoarthritis Clas-
+addressed the crucial aspect of analyzing individual MRI slices in the           sification (DeepOsteoCls) is a simple framework for the classifica-
+diagnostic process of KOA, representing a gap in the current body of             tion of KOA and is inspired by the end-to-end DEtection TRansformer
+research in this domain.                                                         (DETR) [27] architecture. The proposed framework consists of two
+    In recent years, number of multimodal approaches have emerged                models namely; OsteoXRNet and OsteoMRNet for the KL grade classifi-
+that exploit cross-modal interactions between X-ray and MRI features             cation from X-ray images and MRI volumes, respectively, as indicated
+using early fusion strategies [18,26] or late fusion mechanisms [24].            in Fig. 2.
+However, such methods rely on the simultaneous availability of both
+imaging modalities, which is not always feasible in clinical settings for        2.1. OsteoXRNet
+diagnosis of KOA. In addition, cross-modal interactions were investi-
+gated only at the architectural level in past works [18,24], ignoring the           The OsteoXRNet is a hybrid CNN-transformer encoder-based net-
+relevance of anatomical alignment in localizing the region of interest on        work that includes two major stages: (1) X-ray image pre-processing
+X-ray and MRI (as suggested by Grad-CAM), indicating a significant gap           using OAED, and (2) feature extraction block and classifier. The X-
+in KOA research. Intuitively, such anatomical alignment suggests that            ray image pre-processing using the OAED stage contains initial pre-
+meaningful features can be independently learned from one modality               processing of the X-ray image in deriving its corresponding edge map.
+and effectively mapped to the diagnostic process of the other modality,          The details of the pre-processing section is explained in the subsequent
+
+                                                                             2
+A. Daydar et al.                                                                                               Biomedical Signal Processing and Control 119 (2026) 109819
+
+
+
+
+Fig. 1. (a) A schematic is shown with X-rays displaying K-L grades from 0 to 4, arranged left to right. The X-rays have two markers: a yellow circle for osteophytes
+and a red dot for Joint Space Narrowing (JSN), (b) The DeepOsteoCls framework is inspired by the decision-making process of the radiologist for Knee Osteoarthritis
+(KOA) diagnosis. The radiologist identifies visual descriptors, including JSN, osteophytes, and bone surface irregularities, in X-rays, and cartilage degradation in
+MRI scans for KOA diagnosis.
+
+
+section. Following this step, the feature extraction block and classifier            coordinates 𝑥 and 𝑦, 𝐹 (𝑢, 𝑣) is the value of the transformed image
+include the VGG-19 [12] model as a backbone feature extractor which                  at frequency coordinates 𝑢 and 𝑣, 𝐼𝑛𝑣.𝐹 𝐹 𝑇 denotes the inverse Fast
+is initially utilized to extract the backbone spatial features from the              Fourier Transform operation, and  −1 is the mathematical notation for
+input X-rays, and then the transformer is used to encode the global                  the inverse Fourier Transform operation.
+correlations between these extracted features as shown in Fig. 2(a). The                 The X-ray and pre-processed X-ray image serve as two inputs to
+incorporation of the transformer encoder with the backbone feature                   the feature extraction backbone. Within this module, the two inputs
+extractor aims to attend to the different parts of the input and capture             undergo independent feature extraction from VGG-19 [12] to generate
+                                                                                                                ′ ′  ′                                 ′   ′      ′
+the long-range dependencies between the extracted features. The input                image features 𝑌𝑖 ∈ R𝐶 ∗𝐻 ∗𝑊 and edge features 𝑌𝑗 ∈ R𝐶 ∗𝐻 ∗𝑊
+                                                                                                ′  ′          ′
+to the model is bi-parted into the input X-ray image 𝑋𝑖 ∈ R𝐶∗𝐻∗𝑊 ,                   (where 𝐶 , 𝐻 , and 𝑊 are the feature dimensions). The subsequent
+and weak edges of the X-ray 𝑋𝑗 ∈ R𝐶1 ∗𝐻∗𝑊 , where 𝐶 and 𝐶1 are                       step involves concatenating the extracted features in a channel-wise
+                                                                                                                                                     ′   ′      ′
+the number of channels for X-ray images and X-ray images with weak                   manner to produce a concatenated feature map 𝑍𝑖𝑗 ∈ R2𝐶 ∗𝐻 ∗𝑊 .
+edges, respectively, while H and W are the dimensions of an input X-ray              A Global Average Pooling (GAP) module [28] is then applied on the
+image.                                                                               𝑍𝑖𝑗 to reduce the channel dimension of the high-level activation map,
+                                                                                     from 2C’ to a smaller dimension d, thus generating a new feature
+2.1.1. OAED module                                                                   map 𝑍 ′ 𝑖𝑗 as indicated in Fig. 2(c). As the transformer expects the
+    The weak edges of knee X-rays are determined through the novel                   sequence as input, the spatial dimension of 𝑍 ′ 𝑖𝑗 is converted into a
+OAED pre-processing module. At first, the module converts the input                  single dimension, resulting in 𝑑 ∗ 𝐻 ′ 𝑊 ′ . Each transformer encoder
+image 𝐼∈ R𝐶∗𝐻∗𝑊 to Fourier Transform 𝐹 using Fast Fourier Transform                  is a standard encoder that includes a multi-head self-attention layer
+(FFT). The subsequent step involves the filtering operation to hide the              followed by a Feed Forward Network (FFN) as depicted in Fig. 2(d).
+                                                                                                                                                             ′ ′
+low-frequency components such as the inter-condylar region. In the                   The sequence of input to the transformer encoder 𝑍 ′ 𝑖𝑗 ∈ R𝑑∗𝐻 𝑊
+                                                                                                                                          𝑑∗𝐻 ′𝑊 ′
+final step, the image is reconstructed again but now only with weak                  is conditioned with positional encoding 𝑃𝑖𝑗 ∈ R               to impart
+edges 𝐽 ∈ R𝐶1 ∗𝐻∗𝑊 using the inverse-FFT method.                                     sequential information. The core mechanism of the transformer encoder
+                                                                                     involves multi-head self-attention, enabling each token to attend to
+             ∑
+             𝑊    ∑
+               −1 𝐻−1
+                                          𝑢𝑥   𝑣𝑦
+𝐹 (𝑢, 𝑣) =              𝑋𝑖 (𝑥, 𝑦) ⋅ 𝑒−𝑖2𝜋( 𝑊 + 𝐻 )                         (1)       diverse portions of the sequence concurrently, fostering the modeling
+             𝑥=0 𝑦=0                                                                 of intricate dependencies. The formulation of multi-head self-attention
+                                                                                     is expressed in Eq. (4).
+𝐹 (𝑢, 𝑣) = 𝐹 𝑖𝑙𝑡𝑒𝑟(𝐹 (𝑢, 𝑣))                                               (2)                                    (        )
+                                                                                                                    𝐐 ⋅ 𝐊𝑇
+                                                                                     Attention(𝐐, 𝐊, 𝐕) = softmax     √      ⋅𝐕                               (4)
+𝑋𝑗 = 𝐼𝑛𝑣.𝐹 𝐹 𝑇 (𝐹̂ ) =  −1 (𝐹 (𝑢, 𝑣))                                     (3)                                          𝑑
+where 𝑋𝑖 and 𝑋𝑗 represent the original and reconstructed image re-                   where Q, K, and V are query matrix, key matrix, and value matrix,
+spectively, 𝑋𝑖 (𝑥, 𝑦) is the pixel intensity of the input image at spatial           respectively. The 𝑑 is the dimensionality of the query and key vectors.
+
+                                                                                 3
+A. Daydar et al.                                                                                             Biomedical Signal Processing and Control 119 (2026) 109819
+
+
+
+
+Fig. 2. Schematic of DeepOsteoCls framework and its components;(a) feature extraction block and classifier, (b) proposed OAED, (c) GAP module [28], (d)
+transformer encoder [29], (e) The MRI slice preprocessing module, (f) Multi-Resolution Attentive-Unet (MtRA-Unet) [30] model for segmentation of femoral
+cartilages, (g) feature extraction block and classifier, (h) the Region of Interest (ROI) in knee MRI, (i) MRI postprocessing module/ DoKTER training scheme, and
+(j) proposed MRFI module.
+
+
+    Subsequently, layer normalization and residual connections are ap-              obtain the logits 𝐿. Finally, a softmax activation function is applied
+plied to augment gradient flow during training. The output of then                  on logits to identify the KL grade.
+undergoes further processing through a feed-forward neural network,
+                                                                  ′ ′               2.2. OsteoMRNet
+resulting in a finalized encoded feature map of 𝑂𝑖𝑗 ∈ R2𝑑∗𝐻 𝑊 .
+This feature map is then passed through the classifier that consists                   The proposed OsteoMRNet is a three-stage model that includes (1)
+of sequential linear transformation, Relu, and dropout operations to                an MRI slice preprocessing module, (2) a feature extraction block and
+
+                                                                                4
+A. Daydar et al.                                                                                                 Biomedical Signal Processing and Control 119 (2026) 109819
+
+
+classifier, and (3) an MRI slice postprocessing module. The input knee           following portion of the feature extraction block and classifier is similar
+MRI volume is parted equally into medial (m) 𝐼𝑚 ∈ R𝐶∗𝐻∗𝑊 and                     to OsteoXRNet which is already discussed in Section 2.1.
+lateral (l) 𝐼𝑙 ∈ R𝐶∗𝐻∗𝑊 knee MRI volumes. It is important to note
+                                                                                               ∑
+                                                                                               𝑁
+that despite the consistency in applying these formulations across both          𝐸(𝑈𝑚 ) = −          𝑝𝑢𝑚 ⋅ log2 (𝑝𝑢𝑚 )                                                 (6)
+regions, the exclusive demonstration of mathematical formulations and                          𝑢=1
+corresponding descriptions is conducted specifically for the medial              Where 𝑝𝑢𝑚 is the probability estimation of the unique element u (u ←
+region and the implementation of the feature extraction block of the             1 to N) from the flattened feature map 𝑈𝑚 .
+OsteoMRNet is similar to that of OsteoXRNet except for the dimensions
+of the input handled by the model.                                               2.2.3. MRI slice postprocessing module
+                                                                                     The MRI slice postprocessing module incorporates the DoKTER
+2.2.1. MRI slice preprocessing module                                            training scheme for training the OsteoXRNet model, as represented in
+    The input medial knee MRI volumes undergo the MRI slice prepro-              Fig. 2(i). The trained model is then utilized to obtain the Grad-CAM plot
+cessing module that includes (1) segmentation of the femoral cartilage           and medial region confidence score 𝐷𝑚 . The 𝐷𝑚 is the summation of
+from the input MRI, (2) elimination of the slices with a pixel threshold         the confidence score 𝐷𝑚,𝑎 of each MRI slice in the medial region. The
+of < 10 pixels, and (3) Center cropping as shown in Fig. 2(e). Seg-              𝐷𝑚 is multiplied with the normalized entropy values 𝐸 ′ (𝑈𝑚 ) to yield
+mentation of the femoral cartilage is achieved using the MtRA-Unet               the medial region score 𝑆𝑚 that corresponds to the amount of severity
+architecture as shown in Fig. 2(f). The MtRA-Unet [30] model incorpo-            in the medial region and is expressed in Eq. (8). This multiplication
+rates two essential components, namely the Multi-Resolution Feature              aims to incorporate the slice-wise confidence of each slice in a specific
+Fusion (MRFF) and the Convolutional Block Attention (CBAM) [31]                  region with the broader context of uncertainty across a specific region
+module to concentrate on the intricate details of small tissue structures        of the MRI volume.
+such as cartilages. After segmentation, slices that have a minimum                      𝑡𝑜
+                                                                                        ∑
+pixel value of less than 10 units are excluded to ensure that no noise           𝐷𝑚 =         𝐷𝑚,𝑎                                                                     (7)
+slices are incorporated into the diagnostic process. These slices un-                   𝑎=1
+
+dergo center-cropping to enhance the visibility of anatomical features,          Where 𝐷𝑚 is the confidence score for 𝑡𝑜 number of slices in MRI
+focusing specifically on the femoral cartilage, tibial cartilage, and the        volume/region.
+subchondral portions of the tibia and femur where anatomical changes                              𝐸(𝑈𝑚 )
+in KOA are notably observed [32,33].                                             𝑆𝑚 = 𝐷 𝑚 ⋅                    + 𝛿𝑚 = 𝐷𝑚 ⋅ 𝐸 ′ (𝑈𝑚 ) + 𝛿𝑚                              (8)
+                                                                                               𝐸(𝑈𝑚 ) + 𝐸(𝑈𝑙 )
+    The pre-processed slices for the medial 𝑃 (𝐼𝑚 )∈ R𝐶∗𝐻∗𝑊 region
+                                                                                 where 𝛿 is the adjustment variable, which is added to the equation to
+are then arranged in descending order based on its distance from the
+                                                                                 calibrate the region score (S) based on its importance in KOA analysis.
+mechanical axis of the knee. A selection was made on a total of 7
+                                                                                 The 𝛿𝑚 and 𝛿𝑙 are assigned as 0.1 and 0, respectively.
+consecutive slices/regions for two primary reasons: (1) to ensure con-
+sistency among the dataset, which is found to have different numbers
+                                                                                 2.2.4. DoKTER training scheme
+of slices/ knee MRI volume and (2) to maintain the sequential order of
+                                                                                      The Domain Knowledge Transfer and Entropy Regularization (DoK-
+the input to the transformer network. It is important to note that the
+                                                                                 TER) training scheme encompasses two phases. First, the OsteoXRNet
+choice of 7 slices/MRI volume is based on the medical domain expert
+                                                                                 model undergoes training on knee X-ray data, focusing on binary
+and a minimum number of slice counts in a region of the knee MRI
+                                                                                 classification into non-RKOA and RKOA. During this initial phase, the
+repository, which is 7 as denoted in Fig. 2(h). These slices are then
+                                                                                 model acquires essential medical knowledge that cannot be attained
+combined in a channel-wise manner to ensure a 2D input for both the
+                                                                                 only through training on natural image datasets like ImageNet. Such
+MRFI module and the feature extraction block of the network.
+                                                                                 training phase acknowledges the model with relevant knee X-ray data
+                                                                                 from which the KL grade is derived. Hence, this stage contributes
+2.2.2. Multi-resolution feature fusion (MRFI) module
+                                                                                 significantly to the precision of the OsteoXRNet model. In the second
+    The MRFI Module is utilized to accurately contemplate global and
+                                                                                 phase, fine-tuning occurs using MRI slices 𝑡𝑠𝑒𝑙 selected from regions
+local spatial attention from each MRI region. The MRFI module consists
+                                                                                 characterized by higher entropy 𝑅(𝐸(𝑈 )𝑚𝑎𝑥 ) which is obtained from the
+of a group norm operation and convolution block of 3*3, 5*5, and 7*7             Densenet-121 [34] feature extractor as represented in Eq. (9). During
+convolution filters that are arranged in a parallel manner as shown in           the fine-tuning stage, the ground truth label for these slices is set
+Fig. 2(j). The convolution block consists of a convolution filter followed       to be the same as the ground truth label of the entire MRI volume
+by batch norm and Relu operations with a single repetition. Given the            (𝐺𝑇𝐼 ), which is termed pseudo labels 𝑃 𝑠𝑒𝑢𝑑𝑜𝑡𝑜 , where 𝑡𝑠𝑒𝑙 ⊆ 𝑡𝑜 and is
+medial (m) region in an MRI volume of the subject, the input feature             indicated in Eq. (10). This training phase is particularly advantageous
+map 𝐴1𝑚 with dimensions 𝐶𝑚 ∗ 𝐻𝑚 ∗ 𝑊𝑚 (Where 𝐶𝑚 is the number of                  in classification tasks where explicit slice labels may be absent, and
+channels, 𝐻𝑚 and 𝑊𝑚 are the slice dimensions) is passed through the              only labels corresponding to the MRI volume are available.
+group norm operation to normalize the input channels according to the                                 {
+mean and standard deviation of the MRI volume. The output of group                      ∑𝑁
+                                                                                                        𝑡𝑚 , 𝑖𝑓 𝑅𝑚 = 𝑅(𝐸(𝑈 )𝑚𝑎𝑥 )
+                                                                                 𝑡𝑠𝑒𝑙 =     𝑡𝑜 , 𝑡𝑜 =                                                 (9)
+norm operation (𝐴2𝑚 ) is then passed through varied convolution filters.                𝑛=1             𝑡𝑙 , otherwise
+The feature maps are then concatenated along the channel dimension
+to produce the shallow region features 𝑍𝑚 .                                      𝑃 𝑠𝑒𝑢𝑑𝑜𝑡𝑜 = 𝐺𝑇𝑛                                                                     (10)
+
+𝑍𝑚 = 𝑔𝑟𝑜𝑢𝑝_𝑛𝑜𝑟𝑚[𝑐𝑜𝑛𝑐𝑎𝑡(𝑇𝑚1 , 𝑇𝑚2 , 𝑇𝑚3 )]                             (5)        Where 𝑡𝑠𝑒𝑙 is the total number of MRI slices utilized for fine-tuning of
+                                                                                 OsteoXRNet model, N is the total number of subjects in the fine-tuning
+These shallow region features are then passed through Densenet-121               set, 𝑡𝑜 is the ROI slices corresponding to 𝐼th subject, 𝐺𝑇𝑛 denotes the
+[34] for extraction of backbone features for medial region 𝑌𝑚 ∈                  ground truth and 𝑃 𝑠𝑒𝑢𝑑𝑜𝑡𝑜 is the pseudo label corresponding to each 𝑡𝑜
+R𝐶𝑚1 ∗𝐻𝑚1 ∗𝑊𝑚1 (where 𝐶𝑚1 , 𝐻𝑚1 , and 𝑊𝑚1 are feature dimensions).               slices of the 𝑛th subject.
+subsequently, these features are flattened to obtain the region-wise
+flattened feature map 𝑈𝑚 which is first utilized to compute the entropy          3. Experimental settings
+𝐸(𝑈𝑚 ) of the region and then select the region based on the entropy
+value for further processing in the MRI slice postprocessing module.                In this section, a comprehensive overview is provided for the exper-
+The formulation of entropy calculation is indicated in Eq. (6). The              imental setup used for the OsteoXRNet and OsteoMRNet models.
+
+                                                                             5
+A. Daydar et al.                                                                                              Biomedical Signal Processing and Control 119 (2026) 109819
+
+
+Table 1                                                                               Table 2
+Distribution of X-ray and MRI volumes across binary and multiclass KL Grades          Parameters of OsteoXRNet and OsteoMRNet models.
+obtained from the OAI and MHKOA repositories.                                          Parameter                        OsteoXRNet                       OsteoMRNet
+ KL Grade          OAI(SetI)                OAI(SetII)             MHKOA               Input shape                      224*224                          300*300
+                   X-ray                    MRI & X-ray            X-ray   MRI         Training Epochs                  50                               50
+                                                                                       Learning Rate                    5 ∗ 10−4                         5 ∗ 10−4
+                   Train       Val   Test   Train    Val    Test   Test    Test
+                                                                                       Weight Decay                     5 ∗ 10−3                         5 ∗ 10−3
+ Grade0            2286        328   639    932      139    257    43      3           Batch Size                       32                               36
+ Grade1            1046        153   296    383      57     120    25      6
+ Grade2            1516        212   447    540      73     149    39      6
+ Grade3            757         106   223    293      32     73     46      2
+ Grade4            173         27    51     61       9      18     7       1          the knee X-ray image 𝑋𝑗 are obtained using an OAED preprocessing
+                   OAI(SetII-bi)            MHKOA-bi                                  module that filters out the non-edge components using a window size
+                   MRI & X-ray              X-ray    MRI                              (r) of 25. Following pre-processing, resulting vectors 𝑃 (𝑋𝑖 ) and 𝑃 (𝑋𝑗 )
+                   Train       Val   Test   Train    Test                             are fed into the feature extraction block and classifier that includes the
+ Non-RKOA          1315        196   377    68       9                                VGG-19 [12] model, a CNN, to produce lower resolution feature maps,
+ RKOA              894         114   240    92       9                                𝑌𝑖 and 𝑌𝑗 with each having dimension of 1024 ∗ 7 ∗ 7. Subsequently, the
+                                                                                      transformed data is directed to a transformer encoder, with a flattened
+                                                                                      shape of 2048 vector size to obtain an encoded feature representation,
+3.1. Dataset details                                                                  𝑂𝑖𝑗 . This encoded representation is then decoded using a classifier
+                                                                                      to determine the KL grade of KOA. The feature extraction block and
+3.1.1. OAI dataset                                                                    classifier are trained for 50 epochs on a slice dimension of 224*224
+    The X-ray images, MRI images, and corresponding labels are col-                   and batch size of 32. The learning rate of 5 ∗ 10−4 with the weight
+lected from the Osteoarthritis Initiative (OAI) [35] repository. This                 decay of 5 ∗ 10−3 and SGD optimizer is adopted to avoid over-fitting.
+dataset is divided into several subsets: OAI(SetI), OAI(SetII), and                   Training details are indicated in Table 2. All experiments are performed
+OAI(SetII-Bi). The OAI(SetI) subset comprises 8260 knee X-ray im-                     on the Nvidia A100 Tensor Core GPU workstation which has 80 GB of
+ages captured in the Anterior-posterior (AP) view, sourced from 4796                  RAM and memory bandwidth at over 2 terabytes per second (TB/s).
+subjects. OAI(SetII) is a subset of OAI(SetI) that contains a total
+of 3136 X-ray images with its respective MRI volumes from 1695                        3.2.2. OsteoMRNet
+subjects. These MRI volumes are acquired through the SAGittal MRI                         The input knee MRI slices with each having a shape of (1, 448, 444)
+sequence using Inversion Weighted Turbo Spin Echo technique, and                      are passed to medial 𝐼𝑚 and lateral 𝐼𝑙 regions of the MRI pre-processing
+Fat Suppression (SAG IW TSE FS). The OAI(SetII-bi) is a subset of                     module, which mainly includes the MtRA-Unet [30] segmentation
+OAI(SetII) with binary annotations, focusing solely on distinguishing                 model where the noise only slices from both regions are removed. The
+between non-RKOA and RKOA classes. Detailed information of the                        segmentation model is trained for 100 epochs on slice dimension of
+dataset is provided in Table 1. Additionally, a separate OAI (3D double               150*150 and batch size of 150. The learning rate of 0.03 and Adam
+echo steady-state (DESS) sequence with water excitation) and OAI-ZIB                  optimizer is adopted to avoid over-fitting. The MRI volume having
+dataset were also collected to obtain the binary segmentation of femoral              poor acquisition and slices with pixel threshold < 10 is removed for
+cartilage. This dataset contributes to the training of 273 MRI volumes                classification analysis. The pre-processed 7 MRI slices/region 𝑃 (𝐼𝑚 )
+and testing on 617 MRI volumes in OAI(SetII) dataset. Furthermore, a                  that constitutes the weight-bearing region are then stacked together in
+sample of 272 MRI volumes from OAI(SetI) dataset is analyzed by the                   channel-wise manner, resulting in an input dimension of (7, 300, 300)
+medical expert to mark the affected region.                                           is passed to the MRFI module, which first normalizes the slice intensity
+                                                                                      based upon the mean and standard deviation of MRI volume and then
+3.1.2. Multi-hospital KOA (MHKOA) dataset                                             computes the multi-resolution features 𝑍𝑚 of dimension of 21 ∗ 300 ∗
+    The X-ray data set is procured from the GNRC and NEIGRIHMS                        300. Subsequently, this data is used as input to the Densenet-121 [34]
+hospitals, which includes a total of 160 X-ray images and 18 MRI                      to generate a low-level feature set 𝑌𝑚 . This feature map is utilized as
+volumes. The X-ray are in Anteroposterior (AP) view, while MRI vol-                   input to the MRI slice postprocessing module and transformer encoder.
+umes are acquired in SAGittal MRI sequence with Proton Density                        The input to the transformer encoder is utilized to determine the grade
+Weighting, a Turbo Spin Echo technique, and SPectral Attenuated                       of KOA, while the input to MRI slice postprocessing is used to determine
+Inversion Recovery for fat signal suppression (SAG PDW TSE SPAIR).                    the entropy 𝐸(𝑈𝑚 ) of the flattened feature map 𝑈𝑚 and Grad-CAM of
+The MHKOA-bi is a subset of MHKOA with binary annotations, focusing
+                                                                                      MRI slices. The feature extraction block and classifier of the model are
+solely on distinguishing between non-RKOA and RKOA classes. X-ray
+                                                                                      trained for 30 epochs on a slice dimension of 300*300 and batch size of
+and MRI volumes are labeled with KL grades by medical professionals.
+                                                                                      36. The learning rate of 5 ∗ 10−4 with the weight decay of 5 ∗ 10−3 and
+The dataset details are described in Table 1. Furthermore, these 18
+                                                                                      SGD optimizer are adopted to avoid over-fitting as indicated in Table 2.
+MRI volumes of MHKOA dataset is analyzed by the medical expert to
+                                                                                      The combined weighted cross entropy loss and ordinal loss are utilized
+annotate the affected region.
+                                                                                      during training to handle class imbalance and address the ordinality of
+                                                                                      KL grade in KOA. The training scheme of the MRI slice postprocessing
+3.2. Data preparation and training details
+                                                                                      module is described in Algorithm 1.
+
+3.2.1. OsteoXRNet
+    The input knee X-ray image 𝑋𝑖 of shape (3, 224,224) is passed                     3.3. Loss functions
+through the X-ray preprocessing module that includes color jitter oper-
+ation where the brightness, contrast, saturation, and hue of the image                    The classification performance of the proposed scheme is assessed
+are adjusted within the range of −0.3 to 0.3. Then the random image                   through the utilization of combined cross-entropy [36] and ordinal
+augmentations with horizontal flipping are generated with a probability               loss [11]. An adjustable ordinal matrix 𝑊 is utilized to denote the
+of 0.5. Finally, the image is normalized with a mean of 0.6613 and                    penalty weights between ground truth 𝐺𝑇 and predicted grades 𝑃𝑟 . The
+a standard deviation of 0.2122 respectively [11]. The weak edges of                   incorrect prediction of grades is handled by the ordinal loss according
+
+                                                                                  6
+A. Daydar et al.                                                                                            Biomedical Signal Processing and Control 119 (2026) 109819
+
+
+Algorithm 1 The DoKTER Training scheme                                              2. Evaluation of DoKTER training Scheme: To validate the pro-
+Inputs: 𝑡𝑠𝑒𝑙 , OsteoXRnet model, updated OsteoXRNet weights                            posed scheme, balanced accuracy, precision, recall, and MAE
+Initialize: OsteoXRNet model with pre-trained Imagenet weights                         are utilized. The primary focus of these metrics is to confirm
+Outputs: Grad-CAM of MRI slices, medial and lateral region score (𝑆𝑚                   the overall performance of DoKTER training scheme with the
+and 𝑆𝑙 )                                                                               domain expert.
+repeat                                                                              3. Evaluation metric for qualitative analysis: The qualitative anal-
+                                                                                       ysis is performed using Grad-CAM. The primary focus of Grad-
+    1. Compute Train OsteoXRNet model on the knee X-ray dataset                        CAM is on ensuring the predicted KL grade produces clinically
+    2. Compute Fine-tune the OsteoXRNet model on the slices from                       accepted results by identifying the correct spatial location of
+       region having maximum entropy 𝐸(𝑈 )𝑚𝑎𝑥                                          KOA abnormalities in X-ray and MRI images, respectively.
+    3. Update model weights using weighted cross entropy and ordinal
+       loss                                                                     Furthermore, ablation study is conducted to verify the effect of the
+                                                                                proposed OAED module and MRFI module in OsteoXRNet and OsteoM-
+                                                                                RNet respectively. In addition, experimental validation is performed
+Until Convergence                                                               to analyze the effect of lateral and medial partition, and effect of the
+Return Model weights                                                            DoKTER training scheme in OsteoMRNet.
+
+                                                                                4. Experimental results
+
+to the different weights, such as assigning higher penalties to grades              The experimental results are bi-parted into the quantitative analysis
+predicted far away from the actual grade and is represented in Eq. (14).        and qualitative analysis section. The results from these sections are
+                                                                                initially validated with the OAI repository, followed by the MHKOA
+         ∑
+         𝑏−1
+,𝜓 =         (𝑊𝜙,𝐺𝑇 + 1) ∗ 𝑞𝜙                                     (11)        repository.
+         𝜙=0
+
+Where ,𝜓 is adjustable ordinal loss for sample 𝜓, 𝑊𝜙,𝐺𝑇 is the penalty        4.1. Quantitative results
+vector for grade 𝜙 and b is the total number of classes in X-ray images/
+MRI volumes (N). The b is assigned as 5 and 2 for multi-class and                   This section is dedicated to validating the quantitative performance
+binary KL grade classification, respectively. 𝑞𝜙 = 𝑝𝜙 if predicted grade        of the proposed OsteoXRNet and OsteoMRNet models. At first, the
+is ground truth (𝐺𝑇 ) of sample 𝜓, otherwise 𝑞𝜙 = 1 − 𝑝𝜙 , 𝑝𝜙 is the            quantitative performance of the OsteoXRNet and OsteoMRNet are as-
+softmax probability of grade 𝜙.                                                 sessed on the OAI dataset using State-of-The-Art (SOTA) methods for
+                                                                                KOA classification, and subsequently, the performance is validated
+                                    1 ∑
+                                         𝑁
+Adjustable Ordinal Loss( ) =                                     (12)        on the MHKOA dataset. The results are followed by the comparison
+                                    𝑁 𝜓=1 ,𝜓                                   of OsteoXRNet and OsteoMRNet models for multi-class and binary
+                                                                                classification tasks using the OAI dataset. Afterwards, the quantitative
+     ⎡1        3     5   7   9⎤
+     ⎢3        1     3   5   7⎥                                                 analysis of the proposed DoKTER training scheme is presented.
+     ⎢                        ⎥
+𝑊𝑚 = ⎢5        3     1   3   5⎥                                     (13)
+     ⎢7        5     3   1   3⎥                                                 4.1.1. Comparison with SOTA models
+     ⎢                        ⎥                                                     OsteoXRNet: The proposed OsteoXRnet model is quantitatively com-
+     ⎣9        7     5   3   1⎦
+     [           ]                                                              pared with Antony et al. [22], Gorriz et al. [10], Chen et al. [11], Yong
+       1       3
+𝑊𝑏 =                                                                (14)        et al. [13], Wang et al. [15], Karim et al. [24], Guida et al. [18] and Jain
+       3       1
+                                                                                et al. [14] for multi-class classification of KOA in the OAI(SetI) dataset
+Where 𝑊𝑚 and 𝑊𝑏 are adjustable ordinal matrix for multi-class and               and is indicated in Table 3 and Fig. 3. It is inferred from the results that
+binary KL grade classification, respectively.                                   the proposed model is performed better as compared to the OsteoHRNet
+   The cross-entropy loss contributes to the overall loss function by           model of Jain et al. [14] with an improvement in accuracy of 0.5%
+providing a balancing effect, treating all mis-classifications with the         as indicated in Table 3. In addition, the proposed model is found to
+same penalty, and is represented in Eq. (15).                                   produce superior results in diagnosing non-RKOA cases as compared to
+                                                                                Chen et al. [11], Yong et al. [13], and Jain et al. [14] as represented
+                                  1 ∑∑
+                                     𝑁       𝑏
+Cross Entropy Loss( ) = −               𝐺𝑇 log(𝑝𝜓,𝑏 )            (15)        in Fig. 3. This emphasizes the significant benefits of integrating edge-
+                                  𝑁 𝜓=1 𝜙=1 𝜓,𝑏
+                                                                                based features, particularly in the prediction of non-RKOA subjects. It
+Where 𝐺𝑇𝜓,𝑏 is ground truth for a sample 𝜓, and class label b, 𝑝𝜓,𝑏 is          is also observed that, in the instance of wrong predictions, the proposed
+the predicted probability that sample 𝜓 belongs to class 𝑏.                     approach has a tendency to predict a lower grade, as opposed to SOTA
+                                                                                models, and a trend is supported by the model’s higher precision of
+Loss() =  +                                                   (16)        0.74. The performance of the OsteoXRNet is further validated using
+                                                                                the MHKOA dataset, yielding an accuracy of 65.62%, precision of 0.63,
+3.4. Evaluation                                                                 recall of 0.67 and F1 Score of 0.82 as indicated in Fig. 3(e).
+                                                                                OsteoMRNet: The proposed OsteoMRNet model is compared quantita-
+   The classification performance of the proposed models is measured            tively with Bien et al. [20], Tsai et al. [21], Guida et al. [23], Karim
+from the quantitative and qualitative analysis as described below;              et al. [24], and Berrimi et al. [19] for binary KL grading on OAI(SetII-
+                                                                                bi) and is represented in Table 3. It is found that the proper training of
+    1. Evaluation metric for quantitative analysis: The quantitative per-       given MRI volumes are achieved for architectures by Bien et al. [20],
+       formance is evaluated using accuracy, precision, recall, F1 Score,       Tsai et al. [21] and the proposed model, unlike the architectures by
+       Cohen’s Kappa Agreement (K), and Mean Absolute Error (MAE).              Guida et al. [23], Karim et al. [24], and Berrami et al. [19] due to (1)
+       The accuracy, precision, recall, and F1 score assess the model’s         the incapability of 3D models in handling an irregular number of slices
+       predictive performance, K measures agreement beyond chance               per subject and (2) varied anatomical positions of knee tissue in each
+       and MAE quantifies prediction errors in a KL grade classification.       single slice within MRI volume. In such conditions, the proposed model
+
+                                                                            7
+A. Daydar et al.                                                                                                      Biomedical Signal Processing and Control 119 (2026) 109819
+
+
+
+
+Fig. 3. Confusion metric of the (a) Chen et al. [11], (b) Yong et al. [13], (C) Jain et al. [14], with proposed OsteoXRNet model on (d) the OAI dataset, and (e)
+the MHKOA dataset for multi-class classification of KL grade. Confusion metric of the (f) Bien et al. [20], and (g) Tsai et al. [21] with the proposed OsteoMRNet
+model on (h) the OAI dataset, and (i) the MHKOA dataset.
+
+
+Table 3                                                                                    Table 4
+Quantitative comparison of the proposed ‘‘OsteoXRNet’’ and ‘‘OsteoMRNet’’                  Classification report of the proposed OsteoXRNet and OsteoMRNet model for
+models in DeepOsteoCls framework with the SOTA models for multi-class and                  multi-class and binary classification task on the OAI dataset.
+binary classification from X-ray and MRI modalities respectively for the OAI                                      Multiclass KL grade classification
+dataset.                                                                                    KL Grade                 OsteoXRNet                           OsteoMRNet
+ X-ray                                                                                                   Precision     Recall     F1 Score    Precision     Recall     F1 Score
+ Study                               Accuracy     Cohen’s Kappa       Mean Absolute         Grade 0        0.77        0.88        0.82         0.70         0.75       0.73
+                                                  Agreement (K)       Error (MAE)           Grade 1        0.33        0.27        0.30         0.22         0.20       0.21
+                                                                                            Grade 2        0.67        0.61        0.64         0.42         0.45       0.43
+ Antony et al. [22]                  61.29%       0.48                NA                    Grade 3        0.71        0.86        0.78         0.58         0.49       0.53
+ Gorriz et al. [10]                  64.30%       0.63                NA                    Grade 4        1.00        0.11        0.20         0.57         0.44       0.50
+ Chen et al. [11]                    69.69%       0.85                0.34                  Overall        0.70        0.55        0.55         0.50         0.47       0.48
+ Yong et al. [13]                    70.23%       0.86                0.33                  Accuracy                  67.10%                                53.16%
+ Wang et al. [15]                    70.13%       NA                  NA                                             Binary KL grade classification
+ Guida et al. [18]                   53.68%       0.69                0.57
+                                                                                                                     OsteoXRNet                           OsteoMRNet
+ Karim et al. [24]                   68.84%       0.83                0.36
+ Jain et al. [14]                    71.74%       0.87                0.31                  Non-RKOA       0.86        0.91        0.89         0.86         0.82       0.84
+                                                                                            RKOA           0.85        0.77        0.81         0.73         0.80       0.76
+ Proposed OsteoXRNet Model           72.10%       0.86                0.32
+                                                                                            Overall        0.86        0.84        0.85         0.80         0.81       0.80
+ MRI                                                                                        Accuracy                  85.74%                                81.04%
+ Bien et al. [20]                    80.00%       0.56                0.20
+ Tsai et al. [21]                    75.00%       0.45                0.25
+ Guida et al. [18]                   67.75%       0.27                0.32
+ Karim et al. [24]                   64.02%       0.14                0.36                 and an F1 score of 0.15% for MRI modality in KOA analysis. The
+ Berrimi et al. [19]                 61%          –                   0.38                 discrepancy between X-ray and MRI is least pronounced for the binary
+ Proposed OsteoMRNet Model           81.04%       0.61                0.19
+                                                                                           classification task, with the class yielding accuracy of 91.51% and
+∙ The best and second best results are denoted in red and blue colors, respectively.       81.96%, respectively. In contrast to the non-RKOA class, the RKOA
+                                                                                           class is better differentiated with the MRI modality with an improve-
+surpassed the Bien et al. [20] exhibited improvements in all quantita-                     ment in accuracy of 3.24%, and recall of 3.89%. However, while the
+tive metrics with the most substantial enhancement being 8.92% in K                        precision and F1 score of the OsteoMRNet model is lower compared
+                                                                                           to the OsteoXRNet model. These results revealed that MRI modality
+and the smallest increase being 1.3% in accuracy. In the case of the
+                                                                                           provided more comprehensive coverage of RKOA cases, although with
+MHKOA-bi dataset, the performance of the proposed model yields an
+                                                                                           a slightly diminished precision in accurately identifying the RKOA
+accuracy of 82.35%, precision of 0.86 and recall of 0.83, indicating the
+                                                                                           cases among the total predicted RKOA instances as compared to X-ray
+robustness of the proposed scheme on a local dataset.
+                                                                                           modality. It is also important to note that the performance of the KOA
+                                                                                           classification for X-ray is lower in Table 4 than Table 3 due to the fact
+4.1.2. Comparison of OsteoXRNet and OsteoMRNet models for multiclass                       that the total number of data samples in training, test and validation set
+and binary classification tasks                                                            are comparatively lower by 61.45%, 62.46% and 62.74% respectively
+    The proposed OsteoXRNet and OsteoMRNet models are compared                             compared to earlier.
+for multiclass and binary classification tasks on OAI(SetII) and OAI(SetII-
+bi) datasets, respectively. It is clearly observed that, for multiclass                    4.1.3. Quantitative analysis of DoKTER training scheme
+classification, the X-ray modality is deemed superior, with an improve-                        The quantitative results for identification of the affected region
+ment in overall accuracy of 26.22%, precision of 40%, recall of 17.02%,                    (i.e. medial and lateral MRI regions) are measured by determining
+
+                                                                                       8
+A. Daydar et al.                                                                                                  Biomedical Signal Processing and Control 119 (2026) 109819
+
+
+
+
+Fig. 4. Boxplot representation of FCT with Group-I and Group-II for (a) OAI dataset, (b) MHKOA dataset. The boxplots are represented for both medial and
+lateral regions.
+
+
+Table 5                                                                                4.2. Qualitative results
+Quantitative results of proposed DoKTER training scheme for the OAI and
+MHKOA datasets.                                                                            This section is dedicated to validating the qualitative performance
+ Dataset           Balanced Accuracy         Precision      Recall          MAE        of the proposed OsteoXRNet and OsteoMRNet models for KOA clas-
+ OAI               65.15%                    0.59           0.65            0.34       sification. The Grad-CAMs are generated after the backbone feature
+ MHKOA             62.5%                     0.53           0.57            0.37       extraction processes in the proposed models and SOTA models.
+                                                                                       OsteoXRNet: The proposed OsteoXRNet model is compared qualitatively
+Table 6                                                                                with the Chen et al.-19 [11] and Jain et al. [14] using Grad-CAMs
+Quantitative analysis of proposed DoKTER training scheme with FCT the OAI              of KL grades >= 1 as depicted in Fig. 5. It is observed that the
+and MHKOA datasets. The analysis is conducted for Group-I and Group-II.                OsteoXRNet model is precisely concentrating on the discriminative bio-
+ Group     Region FCT mean (mm) FCT range (mm) Q1 (mm) Q2 (mm) Q3 (mm)                 markers, including irregular bone surfaces, osteophytes, and JSN of
+ OAI                                                                                   the knee, specifically indicative of KL grades 1 and 2. It is observed
+ Group-I Medial 1.58               (2.30, 0.91)      1.46   1.60     1.71
+                                                                                       from the results that very few noticeable changes are observed for KL
+          Lateral 1.49             (1.95, 0.92)      1.44   1.55     1.69              grades 3 and 4 as compared to the SOTA methods. The in-differentiable
+ Group-II Medial 1.56              (2.26, 1.03)      1.42   1.51     1.62              qualitative results for later grades are very evident, as there are very
+          Lateral 1.4              (1.65,1.12)       1.31   1.44     1.5               unlikely and non-misleading changes in Joint Space Width (JSW) and
+ MHKOA                                                                                 osteophytes. Additionally, the model demonstrates accurate Grad-CAM
+ Group-I Medial 1.77               (1.97, 1.52)      1.68   1.75     1.95              localization regardless of the image quality and orientation of the X-ray
+          Lateral 1.68             (1.72, 1.56)      1.62   1.69     1.73              images that correspond to the MHKOA dataset, as indicated in Fig. 6.
+ Group-II Medial 1.64              (1.81, 1.55)      1.58   1.64     1.70
+                                                                                       OsteoMRNet: The Grad-CAM and region score of the proposed OsteoMR-
+          Lateral 1.60             (1.72, 1.53)      1.54   1.60     1.67
+                                                                                       Net model on the OAI dataset is demonstrated in Fig. 7(a). It is observed
+                                                                                       from the qualitative results that the OsteoMRNet model is precisely con-
+                                                                                       centrated on the femoral and tibial cartilage region and the associated
+balanced accuracy, precision, recall, and MAE of the proposed training                 soft tissues as indicated with the yellow bounding box. Additionally,
+scheme with the domain expert and reported in Table 5. It is observed                  the model demonstrated accurate Grad-CAM localization regardless of
+from the results that the proposed scheme has produced a balanced                      image quality, orientation and image cropping, that corresponds to
+classification accuracy of 65.15%, precision of 0.59, recall of 0.55, and              the MHKOA dataset as indicated in Fig. 7(b). The results confirmed
+MAE of 0.34. Furthermore, the performance of the proposed scheme is                    the utilization of the transformer encoder [29] in localizing the fine-
+validated for the MHKOA dataset that produced a balanced accuracy                      tuning the backbone features obtained from Densenet-121 [34] feature
+of 62.5% and MAE of 0.37. The significance of the region score is                      extractor.
+validated using the Femoral Cartilage Thickness (FCT) of the ROI region
+from MRI slices in both medial and lateral regions as indicated in Table               5. Ablation study
+6 and Fig. 4. The FCT is estimated using the FCT algorithm, following
+                                                                                          This section is dedicated to validating the quantitative effect of
+erosion and dilation operations on the segmentation mask. Detailed
+                                                                                       the proposed OAED module in the OsteoXRNet model and effect of
+information about the FCT computation is described in Appendix. The
+                                                                                       the MRFI module with medial-to-lateral division, and the effect of the
+analysis involved dividing the region score into two groups: group-I,
+                                                                                       proposed DoKTER training scheme with different feature extraction
+with region scores below or equal to 3, and group-II, with region scores
+                                                                                       backbones.
+above 3. This analysis is specifically conducted for non-RKOA subjects,
+as cartilage thickness is a critical indicator of any RKOA progression,
+                                                                                       5.1. Effect of OAED module with different feature extraction backbone on
+as indicated in Table 6. For the OAI dataset, there is only 25% chance                 OsteoXRnet
+the FCT value exceeds 1.62 mm in the medial region and 1.5 mm in the
+lateral region for group-II, compared to nearly 50% in group-I, while                     The VGG-19 [12] is considered as the backbone in the proposed
+for the MHKOA dataset, there is a 25% chance the FCT value exceeds                     OsteoXRNet network and is compared quantitatively with the Resnet-
+1.73 mm in the medial region and 1.67 mm in the lateral region for                     152 [37], Resnet-50 [37], Densenet-121 [34], and VGG-16 [12] back-
+group-II, compared to 50% in group-I. Despite some overlap in the                      bone networks as represented in Table 7. The results revealed that
+inter-quartile ranges (Q3-Q1) and non-significant differences in the FCT               VGG-19 [12] outperformed other SOTA models, exhibiting an accuracy
+range, these findings highlight the importance of the region score as a                improvement of 1.17% and an MAE reduction of 3.03% when applied
+potential biomarker for assessing knee health in non-RKOA subjects.                    without the OsteoXRNet’s OAED module. In the presence of the OAED
+
+                                                                                   9
+A. Daydar et al.                                                                                                Biomedical Signal Processing and Control 119 (2026) 109819
+
+
+
+
+Fig. 5. Comparison of Grad-CAM on X-ray images from architectures by Chen et al. [11], and Jain et al. [14] with the proposed OsteoXRNet model for KL
+grade >= 1 using OAI dataset. Three markers are applied to the X-rays; the osteophytes are indicated by the circular marker in yellow, bone shape irregularity
+is indicated by the circular marker in green, and JSN is indicated by the red dot.
+
+
+
+
+Fig. 6. The Grad-CAM for the proposed OsteoXRNet model for KL grade >= 1 using the MHKOA dataset. X-rays contain two markers; the osteophytes are indicated
+by the circular marker in yellow, and the JSN is indicated by the red dot.
+
+
+
+module, there is an additional accuracy boost of 1%, a K improvement               Table 7
+of 1.17%, and MAE reduction of 3.03%, respectively. Notably, the ap-               Ablation Study for analyzing the effect of OAED module with different feature
+plication of the OAED module in OsteoXRNet demonstrates superiority,               extraction backbone on OsteoXRNet model for the OAI dataset.
+evidenced by an accuracy enhancement of 1.12% specifically for VGG-                 Architecture           Without OAED Module               With OAED Module
+19 [12]. This enhancement is not exclusive to VGG-19 [12] but extends                                      Accuracy    K        MAE          Accuracy     K        MAE
+to all other networks, with the most substantial accuracy improvement               Resnet-152 [37]        69.08%      0.83     0.37         69.38%       0.82     0.38
+reaching 1.27% for the VGG-16 [12] network.                                         Resnet-50 [37]         67.51%      0.83     0.38         65.04%       0.82     0.42
+                                                                                    Densenet-121 [34]      70.05%      0.84     0.36         70.47%       0.84     0.35
+                                                                                    VGG-16 [12]            70.47%      0.87     0.33         71.38%       0.85     0.33
+5.2. Effect of MRFI module and medial-lateral region partition with differ-
+                                                                                    VGG-19 [12]            71.30%      0.86     0.32         72.10%       0.86     0.32
+ent feature extraction backbone in OsteoMRnet
+                                                                                   ∙ The best and second best results are denoted in red and blue colors, respectively.
+
+   The Densenet-121 [34] is considered as the backbone in the pro-
+posed OsteoMRNet network and is compared quantitatively with the
+Resnet-152 [37], Resnet-50 [37], VGG-19 [12], and VGG-16 [12] net-                 an increase in accuracy by 3.10% and an MAE reduction of 17.64%.
+works, as represented in Table 8. The results demonstrated a notable               However, it is important to highlight that this enhancement is spe-
+improvement for the Densenet-121 [34] model when applied with                      cific to Densenet-121 [34], Resnet-152 [37], Resnet-50 [37] as other
+the MRFI module and with medial-lateral (Med-Lat) partition in Os-                 models exhibit lower performance compared to all other networks.
+teoMRNet. Specifically, the improvement for Densenet-121 includes                  Additionally, the Med-Lat partition is observed to consistently enhance
+
+                                                                              10
+A. Daydar et al.                                                                                        Biomedical Signal Processing and Control 119 (2026) 109819
+
+
+
+
+Fig. 7. Visualization of Grad-CAM applied to MRI slices of RKOA, that are produced via DoKTER training scheme on the OAI and MHKOA datasets. The yellow-
+colored bounding boxes indicate total area coverage of the femoral cartilage region and are marked by radiologist.
+
+
+
+
+classification performance across all cases except Resnet-152 [37], and         5.3. Effect of DoKTER training strategy with different feature extraction
+Resnet-50 [37]. It leads to a minimum accuracy improvement of 1.38%,            backbone on OsteoMRnet
+K increase of 6.67%, and MAE reduction of 5.55%, all of which are
+                                                                                   Quantitative comparisons between the DoKTER training scheme and
+deemed significant in the classification performance of KOA.                    other backbone models, including max pooling [20], are conducted,
+
+                                                                           11
+A. Daydar et al.                                                                                                         Biomedical Signal Processing and Control 119 (2026) 109819
+
+
+Table 8                                                                                          Higher precision for RKOA grades demonstrated the model’s reliability
+Ablation Study for analyzing the effect of MRFI module and medial-lateral                        in accurately targeting treatments, reducing unnecessary interventions
+region partition with different feature extraction backbone on OsteoMRNet                        for non-RKOA subjects. These improvements are primarily attributed to
+model for the OAI dataset.                                                                       explicit feature extraction from the edges of X-ray images [40], which
+ Architecture         Med-Lat    Without MRFI Module          With MRFI Module                   effectively delineates joint structures and osteophytes, as demonstrated
+                      Part.
+                                                                                                 in Table 7. The edge map is particularly beneficial in musculoskeletal
+                                 Accuracy   K       MAE       Accuracy    K      MAE
+                                                                                                 imaging, facilitating the observation of bone and tissue boundaries
+ Resnet-152 [37]      ×          76.66%     0.50    0.23      76.82%      0.48   0.23            where significant changes due to abnormalities, fractures, and lesions
+                      ✓          64.69%     0.15    0.38      65.96%      0.15   0.34
+                                                                                                 are likely to occur [41].
+ Resnet-50 [37]       ×          74.23%     0.47    0.26      75.70%      0.47   0.24
+                      ✓          60.88%     0.13    0.40      61.10%      0.14   0.39                For MRI classification, the proposed OsteoMRNet model outper-
+ Densenet-121 [34]    ×          77.31%     0.49    0.23      78.77%      0.53   0.21            forms the Bien et al. [20] and Tsai et al. [21] in every evaluation metric
+                      ✓          78.77%     0.54    0.21      81.04%      0.61   0.19            by achieving a total accuracy improvement of 1.3%. The improvement
+ VGG-16 [12]          ×          75.36%     0.46    0.25      74.39%      0.45   0.26            is mainly due to independent learning of features from the medial
+                      ✓          80.55%     0.59    0.19      76.82%      0.52   0.23
+ VGG-19 [12]          ×          75.26%     0.47    0.25      75.53%      0.45   0.24
+                                                                                                 and lateral regions and integration of the MRFI block to extract the
+                      ✓          79.42%     0.56    0.20      77.96%      0.53   0.22            region-wise multi-scale spatial features [12] as reported in Table 8.
+                                                                                                 The region-specific feature learning from the medial and lateral regions
+∙ The best and second best results are denoted in red and blue colors, respectively.
+                                                                                                 enhances the capability of the model to focus on distinct anatomical
+                                                                                                 characteristics [9]. Concurrently, multi-scale feature extraction using
+Table 9
+                                                                                                 varied kernel sizes at different scales captures both global and local
+Ablation Study for analyzing the effect of pretraining the OsteoXRNet model
+                                                                                                 information, which is particularly beneficial for medical images [30,42,
+with different pseudo labeling strategies and feature extraction backbones on
+the OsteoMRNet model for the OAI dataset.                                                        43]. This dual approach ensures a comprehensive analysis by integrat-
+ Architecture             Pretraining     Entropy               Max pooling          [20]
+                                                                                                 ing detailed and broader contextual features, improving the accuracy
+                                                                                                 and effectiveness of medical image interpretation. The OsteoXRNet
+                                          B. Acc.     MAE       B. Acc.       MAE
+                                                                                                 and OsteoMRNet models are quantitatively compared for multi-class
+ Resnet-152 [37]          ×               44.49%      0.55      57.59%        0.34
+                                                                                                 and binary classification tasks as indicated in Table 4. The results
+                          ✓               52.34%      0.51      54.98%        0.31
+ Resnet-50 [37]           ×               57.15%      0.52      54.86%        0.26               revealed that the performance of multiclass classification of KOA using
+                          ✓               57.28%      0.39      54.66%        0.36               X-rays is superior to that using MRI, while the performance on binary
+ Densenet-121 [34]        ×               49.80%      0.45      57.00%        0.25               classification is comparably high for both X-ray and MRI. This can
+                          ✓               50.15%      0.55      60.76%        0.24               be attributed to the capability of MRI to observe gross changes in
+ OsteoXRNet               ×               50.00%      0.56      52.58%        0.54
+                                                                                                 cartilage and associated soft tissues but these incremental changes are
+                          ✓               65.15%      0.34      54.86%        0.26
+                                                                                                 often subtle and harder to detect with MRI, leading to difficulties
+∙ The best and second best results are denoted in red and blue colors, respectively. B.
+                                                                                                 in accurately differentiating between the multiclass KL grades [18].
+Acc. is the balanced accuracy.
+                                                                                                 Considering the binary classification of KOA into RKOA and non-RKOA,
+                                                                                                 the region score is also introduced using the DoKTER training scheme,
+                                                                                                 which is found to distinguish the affected regions with an accuracy
+and are depicted in Table 9. It is evident from the findings that the                            of 65.15% and 62.15% on OAI and MHKOA datasets, respectively.
+OsteoXRNet model surpassed other backbone schemes such as Resnet-                                Furthermore, the component of the DoKTER training scheme involves
+152, Resnet-50, and Densenet-121, achieving a balanced accuracy of                               pretraining the post-processing stage of the OsteoMRNet model with
+65.15% and a MAE of 0.34 for entropy-based pseudo labeling. The                                  X-ray data, which led to a substantial mean improvement of 48.86% in
+proposed training scheme demonstrated superiority compared to the                                classification performance of the affected region. Overall, the proposed
+max-pooling pseudo labeling method, resulting in an improvement of                               DeepOsteoCls framework accesses the critically affected region in MRI
+7.22% in balanced accuracy and 41.66% in MAE.                                                    by utilizing the X-ray without actually needing a matching X-ray of the
+    Furthermore, it is noteworthy that pre-training the OsteoXRNet                               subject, thus eliminating the dependency on the simultaneous presence
+model with knee X-ray images enhanced the balanced accuracy across                               of both modalities, unlike previous approaches [23,24]. This approach
+all models utilizing the entropy-based pseudo labeling strategy, with                            is proven to enable more flexible and scalable deployment in diverse
+a minimum improvement of 0.2% for Resnet-50 and a maximum                                        clinical environments. It has also been observed that the quantitative
+improvement of 30.3% for OsteoXRNet model. However, this phe-                                    value of the region score provides an approximation of the condition
+nomenon does not hold true for the max-pooling pseudo labeling                                   of the femoral cartilage using thickness values. The region score for the
+scheme in Resnet-50 and Resnet-152 models, although the depreciation                             non-RKOA class is the first of its kind to analyze the condition of the
+in results is not significant, with a maximum depreciation of only                               femoral cartilage based on the learnable deep learning technique. The
+4.74%.                                                                                           region score can also aid in assessing the effectiveness of conservative
+                                                                                                 interventions such as exercise therapy, weight management, orthotic
+6. Discussion                                                                                    devices and disease-modifying KOA drugs over time. In individual
+                                                                                                 non-RKOA subjects, consistent changes in the region score can reflect
+    The proposed DeepOsteoCls framework includes OsteoXRNet and                                  disease stabilization or progression, where an increase (𝑆𝑚 or 𝑆𝑙 > 3)
+OsteoMRNet models to classify the KOA from X-ray and MRI modalities,                             may indicate the need for preventive strategies, while stable or higher
+respectively as indicated in Fig. 2. The quantitative and qualitative                            values (𝑆𝑚 or 𝑆𝑙 ≤ 3) suggest positive treatment response. Therefore,
+results revealed that the proposed framework outperformed the SOTA                               the region score could be integrated into automated MRI analysis
+models for both X-ray and MRI modalities, as reported in Table 3,                                pipelines as part of routine KOA assessments, providing quantitative
+Figs. 5 and 6. The major advantage of the proposed OsteoXRNet model                              measures of femoral cartilage health from which disease progression
+is its superior performance in two key areas: (1) accurate diagnosis                             and therapeutic outcomes can be inferred.
+within non-RKOA subjects, as illustrated in Figs. 3 and 5, and (2)                                   In overall, the proposed DeepOsteoCls framework is found to be
+higher precision for RKOA subjects compared to the state-of-the-art                              advantageous through the introduction of disorder-related clinical in-
+(SOTA) models [11,14]. This result is highly significant, as manual                              formation into the deep learning modeling system. Additionally, the
+differentiation of KL grades 0 and 1 is challenging and at this stage clin-                      proposed framework is validated using the MHKOA dataset at a local
+ical interventions are found to be effective and less invasive [38,39].                          level, ensuring the reliability of the outcomes despite challenges like
+
+                                                                                            12
+A. Daydar et al.                                                                                            Biomedical Signal Processing and Control 119 (2026) 109819
+
+
+
+
+Fig. 8. Overall schematic of the Femoral Cartilage Thickness (FCT) computation scheme. The predicted FC maps are first post-processed with erosion and dilation
+which is followed by the FCT computation algorithm.
+
+
+sub-optimal image acquisition, the presence of artifacts, and noise in-            Acknowledgment
+terference. Furthermore, a new quantitative metric is introduced in the
+paper to monitor the severity of the damaged region in KOA, the con-                   Our Gratitude is expressed to the OAI, GNRC and NEIGRIMS inves-
+dition of the femoral cartilage in MRI volume. However, the research               tigators for providing the dataset. The appreciation is also extended to
+is disadvantaged by several factors. Firstly, a comparison of OsteoMR-             the Department of Biotechnology (DBT), Government of India (GOI),
+Net is performed with the established SOTA models for general knee                 and the North-East Center for Biological Sciences and Healthcare
+examinations such as meniscal tear, ACL tear, and abnormality [20] as              Engineering (NECBH) for providing high-end computational facilities
+the research in RKOA classification is hindered by the unavailability of           (Project Number - BT/NER/143/SP44675/2023). The manuscript does
+credible works. Secondly, each slice is not individually scored in the             not represent the views or beliefs of the OAI, GNRC and NEIGRIMS
+DoKTER scheme, and the validation of the approach is provided only                 investigators, the National Institutes of Health, DBT-GOI, or NECBH,
+through the analysis of femoral cartilage thickness. Lastly, limited hy-           IIT Guwahati.
+perparameter tuning is performed to validate the experimental results.
+In the future, the OsteoXRNet and OsteoMRNet models can be tested                  Appendix
+on diverse demographic data and different acquisition planes of X-ray
+and MRI.
+                                                                                   Automated Femoral Cartilage Thickness (FCT) computation from knee ROI
+7. Conclusion
+                                                                                       The FCT is measured using the fully automated scheme as illustrated
+    In conclusion, the proposed DeepOsteoCls framework incorporates                in Fig. 8. Initially, the input femoral cartilage (FC) ROI mask is post-
+two independent models, OsteoXRNet and OsteoMRNet to assess KL                     processed with the dilation and erosion operation. This operation is
+grade from X-ray and MRI modalities, respectively. The OsteoXRNet                  performed to ensure the continuous segment of the major femoral
+demonstrates superior performance compared to the SOTA models,                     cartilage structure which is a requirement in the FCT computation
+yielding 5.48% improved accuracy for non-RKOA categorization. Sim-                 algorithm. The erosion operation is performed to remove the small,
+ilarly, OsteoMRNet surpassed the current SOTA models by 1.3% in                    isolated noise pixels that are not part of the main cartilage surface.
+accuracy and additionally provided region scores to quantify severity              This operation is followed by the dilation operation, which is useful
+within each MRI region. The enhanced performance of these models                   in smoothing out the boundaries of the cartilage, making the edges less
+can be attributed to the integration of disorder-related imaging features          jagged and more uniform. In the third stage, contours are estimated for
+and medial-lateral partition with multi-resolution region analysis into            Bone-Cartilage Interface (BCI) and Cartilage-Synovial Fluid Interface
+OsteoXRNet and OsteoMRNet models, respectively. Furthermore, the                   (CSI), thus delineating the edges for FCT measurement. The Surface
+outcome of the weakly supervised DoKTER scheme, the region score is                Normal (SN) method is employed, adhering to the criterion specified by
+found to provide the basis for determining the affected region in the              Hoppe et al. [44] and Kauffman et al. [45]. According to this criterion, a
+knee and is observed as the potential biomarker of femoral cartilage               plane is fitted to the surrounding points (3 voxels to each side) for each
+condition of each subject. The classification outcomes, Grad-CAM, and              point on the BCI, and the normal vector is computed from the inner
+region scores can serve as valuable tools for clinicians, empowering               cartilage surface (or BCI) to the outer cartilage surface (or CSI). Follow-
+them to make more informed decisions in KOA analysis.                              ing this criterion, the inner and outer cartilage surfaces are identified
+                                                                                   and labeled as 𝐶1 and 𝐶2 . According to experimental observation, 𝐶1
+CRediT authorship contribution statement                                           represents the contour with the maximum length, while 𝐶2 is associated
+                                                                                   with the second maximum length. Subsequently, for each point 𝑗 on 𝐶1 ,
+   Akshay Daydar: Writing – original draft, Visualization, Software,               a tangent 𝑈𝑗 is drawn using 2 adjacent points, 𝑗 − 1 and 𝑗 + 1. Then, the
+Methodology, Investigation, Data curation, Conceptualization. Arijit               normal 𝑁𝑗 is identified by measuring the 90-degree angle between 𝑈𝑗
+Sur: Writing – review & editing, Validation, Supervision. Subramani                and 𝑁𝑗 . The 𝑁𝑗 initiate from point 𝑗 on surface 𝐶1 and end at point 𝑘 on
+Kanagaraj: Writing – review & editing, Validation, Supervision. Hanif              the surface 𝐶2. The line corresponds to the local thickness at the MRI
+Laskar: Validation, Supervision, Conceptualization.                                slice. The local thickness is combined for all measurement sites denoted
+                                                                                   as 𝑝 within the knee ROI. Subsequently, this aggregated thickness is
+                                                                                   averaged across the total number of measurement sites within the knee
+Declaration of competing interest
+                                                                                   ROI, resulting in the computation of the FCT (𝑇 ) as indicated in Eq.
+                                                                                   (17) (see Fig. 8).
+    The authors declare that they have no known competing finan-                           (                                 )
+                                                                                                √
+cial interests or personal relationships that could have appeared to                     1 ∑
+                                                                                   𝑇 =             (𝑗𝑥 − 𝑘𝑥 )2 + (𝑗𝑦 − 𝑘𝑦 )2                              (17)
+influence the work reported in this paper.                                               𝑝    𝑝
+
+
+                                                                              13
+A. Daydar et al.                                                                                                      Biomedical Signal Processing and Control 119 (2026) 109819
+
+
+
+
+Fig. 9. Validation of the FCT computation algorithm by regression and bland altmann plots in the medial and lateral regions. 𝑇𝑚 and 𝑇𝑙 represents the predicted
+FCT for medial and lateral regions respectively, while 𝑇𝑚𝑎 and 𝑇𝑙𝑎 represents the actual FCT in medial and lateral regions respectively.
+
+
+Table 10                                                                                  [2] G. Li, S. Li, J. Xie, Z. Zhang, J. Zou, C. Yang, L. He, Q. Zeng, L. Shu, G. Huang,
+Comparison of proposed FCT estimation method with manual method (ONIS-                        Identifying changes in dynamic plantar pressure associated with radiological knee
+3.5) using quantitative measures.                                                             osteoarthritis based on machine learning and wearable devices, J. NeuroEng.
+                                                                                              Rehabil. 21 (1) (2024) 45.
+ Parameter                     Medial Region                     Lateral Region
+                                                                                          [3] L. Zhang, Z. Che, Y. Li, M. Mu, J. Gang, Y. Xiao, Y. Yao, Multi-level classification
+ MAE                           0.18                              0.22                         of knee cartilage lesion in multimodal MRI based on deep learning, Biomed.
+ 𝜌                             0.67                              0.62                         Signal Process. Control. 83 (2023) 104687.
+                                                                                          [4] S. Li, S. Zhao, Y. Zhang, J. Hong, W. Chen, Source-free unsupervised adaptive
+                                                                                              segmentation for knee joint MRI, Biomed. Signal Process. Control. 92 (2024)
+                                                                                              106028.
+    This measurement procedure is quantitatively validated using 30                       [5] A.S.C. Bose, C. Srinivasan, S.I. Joy, Optimized feature selection for enhanced
+DESS MRI volume against the manual method using ONIS-3.5 software                             accuracy in knee osteoarthritis detection and severity classification with machine
+                                                                                              learning, Biomed. Signal Process. Control. 97 (2024) 106670.
+and under the supervision of a domain expert. The quantitative results                    [6] J. Abedin, J. Antony, K. McGuinness, K. Moran, N.E. O’Connor, D. Rebholz-
+are indicated in Table 10 and Fig. 9. The quantitative analysis using                         Schuhmann, J. Newell, Predicting knee osteoarthritis severity: comparative
+Spearmann correlation coefficient (𝜌) and Mean Absolute Error (MAE)                           modeling based on patient’s data and plain X-ray images, Sci. Rep. 9 (1) (2019)
+provides substantial evidence for a strong relationship between a set of                      5761.
+                                                                                          [7] L. Shamir, S.M. Ling, W.W. Scott, A. Bos, N. Orlov, T.J. Macura, D.M. Eckley,
+FCT values of the automated method and with manual one. In addition,                          L. Ferrucci, I.G. Goldberg, Knee x-ray image analysis method for automated
+the regression and bland Altman plots are also plotted to examine the                         detection of osteoarthritis, IEEE Trans. Biomed. Eng. 56 (2) (2008) 407–415.
+reliability of the proposed scheme. The regression plot revealed a robust                 [8] J. Antony, K. McGuinness, N.E. O’Connor, K. Moran, Quantifying radiographic
+linear correlation between the two methods, with 𝑇 points aligned                             knee osteoarthritis severity using deep convolutional neural networks, in: 2016
+                                                                                              23rd International Conference on Pattern Recognition, ICPR, IEEE, 2016, pp.
+along the line of equality. Similarly, the BA plots indicated a uniform
+                                                                                              1195–1200.
+distribution of nodes for 𝑇 values from both the manual and proposed                      [9] A. Tiulpin, J. Thevenot, E. Rahtu, P. Lehenkari, S. Saarakkala, Automatic knee
+methods. This suggests there exists no bias or major systematic error in                      osteoarthritis diagnosis from plain radiographs: a deep learning-based approach,
+the proposed thickness measurement method.                                                    Sci. Rep. 8 (1) (2018) 1727.
+                                                                                         [10] M. Górriz, J. Antony, K. McGuinness, X. Giró-i Nieto, N.E. O’Connor, Assessing
+                                                                                              knee OA severity with CNN attention-based end-to-end architectures, in: Inter-
+Data availability                                                                             national Conference on Medical Imaging with Deep Learning, PMLR, 2019, pp.
+                                                                                              197–214.
+    Data will be made available on request.                                              [11] P. Chen, L. Gao, X. Shi, K. Allen, L. Yang, Fully automatic knee osteoarthritis
+                                                                                              severity grading using deep neural networks with a novel ordinal loss, Comput.
+                                                                                              Med. Imaging Graph. 75 (2019) 84–92.
+                                                                                         [12] K. Simonyan, A. Zisserman, Very deep convolutional networks for large-scale
+References                                                                                    image recognition, 2014, arXiv preprint arXiv:1409.1556.
+                                                                                         [13] C.W. Yong, K. Teo, B.P. Murphy, Y.C. Hum, Y.K. Tee, K. Xia, K.W. Lai, Knee
+ [1] J.H. Kellgren, J. Lawrence, Radiological assessment of osteo-arthrosis, Ann.             osteoarthritis severity classification with ordinal regression module, Multimedia
+     Rheum. Dis. 16 (4) (1957) 494.                                                           Tools Appl. (2021) 1–13.
+
+
+                                                                                    14
+A. Daydar et al.                                                                                                            Biomedical Signal Processing and Control 119 (2026) 109819
+
+
+[14] R.K. Jain, P.K. Sharma, S. Gaj, A. Sur, P. Ghosh, Knee osteoarthritis severity            [29] A. Vaswani, N. Shazeer, N. Parmar, J. Uszkoreit, L. Jones, A.N. Gomez, Ł. Kaiser,
+     prediction using an attentive multi-scale deep convolutional neural network,                   I. Polosukhin, Attention is all you need, Adv. Neural Inf. Process. Syst. 30 (2017).
+     Multimedia Tools Appl. (2023) 1–18.                                                       [30] A. Daydar, A. Pramanick, A. Sur, S. Kanagaraj, Segmentation of tibiofemoral joint
+[15] Y. Wang, Z. Bi, Y. Xie, T. Wu, X. Zeng, S. Chen, D. Zhou, Learning from highly                 tissues from knee MRI using MtRA-unet and incorporating shape information:
+     confident samples for automatic knee osteoarthritis severity assessment: data                  Data from the osteoarthritis initiative, 2024, arXiv preprint arXiv:2401.12932.
+     from the osteoarthritis initiative, IEEE J. Biomed. Health Inform. 26 (3) (2021)          [31] S. Woo, J. Park, J.-Y. Lee, I.S. Kweon, Cbam: Convolutional block attention
+     1239–1250.                                                                                     module, in: Proceedings of the European Conference on Computer Vision, ECCV,
+[16] Y. Wang, X. Wang, T. Gao, L. Du, W. Liu, An automatic knee osteoarthritis                      2018, pp. 3–19.
+     diagnosis method based on deep learning: data from the osteoarthritis initiative,         [32] M. Favero, R. Ramonda, M.B. Goldring, S.R. Goldring, L. Punzi, Early knee
+     J. Heal. Eng. 2021 (2021) 1–10.                                                                osteoarthritis, RMD Open 1 (Suppl 1) (2015) e000062.
+[17] A. Sekhri, M. Tliba, M.A. Kerkouri, Y. Nasser, A. Chetouani, A. Bruno, R. Jen-            [33] D. Chen, J. Shen, W. Zhao, T. Wang, L. Han, J.L. Hamilton, H.J. Im, Osteoarthri-
+     nane, Automatic diagnosis of knee osteoarthritis severity using swin transformer,              tis: toward a comprehensive understanding of pathological mechanism, Bone Res.
+     2023, arXiv preprint arXiv:2307.04442.                                                         5 (1) (2017) 1–13.
+[18] C. Guida, M. Zhang, J. Shan, Improving knee osteoarthritis classification using           [34] G. Huang, Z. Liu, L. Van Der Maaten, K.Q. Weinberger, Densely connected
+     multimodal intermediate fusion of X-ray, MRI, and clinical information, Neural                 convolutional networks, in: Proceedings of the IEEE Conference on Computer
+     Comput. Appl. (2023) 1–10.                                                                     Vision and Pattern Recognition, 2017, pp. 4700–4708.
+[19] M. Berrimi, D. Hans, R. Jennane, A semi-supervised multiview-MRI network                  [35] NIMH data archive - OAI — nda.nih.gov, 2023, https://nda.nih.gov/oai/.
+     for the detection of knee osteoarthritis, Comput. Med. Imaging Graph. (2024)                   (Accessed 15 November 2023).
+     102371.                                                                                   [36] C.E. Shannon, A mathematical theory of communication, Bell Syst. Tech. J. 27
+[20] N. Bien, P. Rajpurkar, R.L. Ball, J. Irvin, A. Park, E. Jones, M. Bereket, B.N.                (3) (1948) 379–423.
+     Patel, K.W. Yeom, K. Shpanskaya, et al., Deep-learning-assisted diagnosis for             [37] K. He, X. Zhang, S. Ren, J. Sun, Deep residual learning for image recognition, in:
+     knee magnetic resonance imaging: development and retrospective validation of                   Proceedings of the IEEE Conference on Computer Vision and Pattern Recognition,
+     MRNet, PLoS Med. 15 (11) (2018) e1002699.                                                      2016, pp. 770–778.
+[21] C.-H. Tsai, N. Kiryati, E. Konen, I. Eshed, A. Mayer, Knee injury detection using         [38] Kellgren-lawrence grade (KL) 0 vs. KL 1 knees differ in their MRI predictors
+     MRI with efficiently-layered network (ELNet), in: Medical Imaging with Deep                    of subsequent radiographic osteoarthritis - ACR meeting abstracts —
+     Learning, PMLR, 2020, pp. 784–794.                                                             acrabstracts.org,    2024,      https://acrabstracts.org/abstract/kellgren-lawrence-
+[22] J. Antony, K. McGuinness, K. Moran, N.E. O’Connor, Automatic detection of                      grade-kl-0-vs-kl-1-knees-differ-in-their-mri-predictors-of-subsequent-radiographic-
+     knee joints and quantification of knee osteoarthritis severity using convolutional             osteoarthritis/. (Accessed 29 June 2024).
+     neural networks, in: Machine Learning and Data Mining in Pattern Recognition:             [39] MedKnee: A new deep learning-based software for automated prediction of
+     13th International Conference, MLDM 2017, New York, NY, USA, July 15-20,                       radiographic knee osteoarthritis — mdpi.com, 2024, https://www.mdpi.com/
+     2017, Proceedings 13, Springer, 2017, pp. 376–390.                                             2075-4418/14/10/993. (Accessed 29 June 2024).
+[23] C. Guida, M. Zhang, J. Shan, Knee osteoarthritis classification using 3d cnn and          [40] L.C. Ribas, R. Riad, R. Jennane, O.M. Bruno, A complex network based approach
+     mri, Appl. Sci. 11 (11) (2021) 5196.                                                           for knee osteoarthritis detection: Data from the osteoarthritis initiative, Biomed.
+[24] M.R. Karim, J. Jiao, T. Doehmen, M. Cochez, O. Beyan, D. Rebholz-                              Signal Process. Control. 71 (2022) 103133.
+     Schuhmann, S. Decker, DeepKneeExplainer: explainable knee osteoarthritis                  [41] N.M.H. Hassan, M.H.M. Mahmoud, A robust edge detection technique for
+     diagnosis from radiographs and magnetic resonance imaging, IEEE Access 9                       bone extraction from X-ray images based on image processing techniques,
+     (2021) 39757–39780.                                                                            Multidimens. Syst. Signal Process. 34 (1) (2023) 249–270.
+[25] J. Wang, K. Sun, T. Cheng, B. Jiang, C. Deng, Y. Zhao, D. Liu, Y. Mu, M. Tan, X.          [42] A. Li, Y. Ying, T. Gao, L. Zhang, X. Zhao, Y. Zhao, G. Song, H. Zhang, MF-net:
+     Wang, et al., Deep high-resolution representation learning for visual recognition,             multi-scale feature extraction-integration network for unsupervised deformable
+     IEEE Trans. Pattern Anal. Mach. Intell. 43 (10) (2020) 3349–3364.                              registration, Front. Neurosci. 18 (2024) 1364409.
+[26] A. Tiulpin, S. Klein, S.M. Bierma-Zeinstra, J. Thevenot, E. Rahtu, J.v. Meurs,            [43] C. Zhao, W. Lv, X. Zhang, Z. Yu, S. Wang, Mms-net: multi-level multi-scale
+     E.H. Oei, S. Saarakkala, Multimodal machine learning-based knee osteoarthritis                 feature extraction network for medical image segmentation, Biomed. Signal
+     progression prediction from plain radiographs and clinical data, Sci. Rep. 9 (1)               Process. Control. 86 (2023) 105330.
+     (2019) 20038.                                                                             [44] H. Hoppe, T. DeRose, T. Duchamp, J. McDonald, W. Stuetzle, Surface reconstruc-
+[27] N. Carion, F. Massa, G. Synnaeve, N. Usunier, A. Kirillov, S. Zagoruyko, End-to-               tion from unorganized points, in: Proceedings of the 19th Annual Conference on
+     end object detection with transformers, in: European Conference on Computer                    Computer Graphics and Interactive Techniques, 1992, pp. 71–78.
+     Vision, Springer, 2020, pp. 213–229.                                                      [45] C. Kauffmann, P. Gravel, B. Godbout, A. Gravel, G. Beaudoin, J.P. Raynauld,
+[28] M. Lin, Q. Chen, S. Yan, Network in network, 2013, arXiv preprint arXiv:                       J. Martel-Pelletier, J.P. Pelletier, J.A. de Guise, Computer-aided method for
+     1312.4400.                                                                                     quantification of cartilage thickness and volume changes using MRI: validation
+                                                                                                    study using a synthetic model, IEEE Trans. Biomed. Eng. 50 (8) (2003) 978–988.
+
+
+
+
+                                                                                          15
+

@@ -1,0 +1,793 @@
+                                                         Computers in Biology and Medicine 167 (2023) 107570
+
+
+                                                                Contents lists available at ScienceDirect
+
+
+                                                    Computers in Biology and Medicine
+                                                  journal homepage: www.elsevier.com/locate/compbiomed
+
+
+
+
+DC-AAE: Dual channel adversarial autoencoder with multitask learning for
+KL-grade classification in knee radiographs
+Muhammad Umar Farooq a , Zahid Ullah b , Asifullah Khan c , Jeonghwan Gwak a,b,d,e ,∗
+a
+  Department of IT, Energy Convergence (BK21 FOUR), Korea National University of Transportation, Chungju 27469, South Korea
+b
+  Department of Software, Korea National University of Transportation, Chungju 27469, South Korea
+c
+  Pattern Recognition Lab, DCIS, PIEAS, Nilore, Islamabad 45650, Pakistan
+d
+  Department of Biomedical Engineering, Korea National University of Transportation, Chungju 27469, South Korea
+e
+  Department of AI Robotics Engineering, Korea National University of Transportation, Chungju 27469, South Korea
+
+
+
+ARTICLE              INFO                              ABSTRACT
+
+Keywords:                                              Knee osteoarthritis (OA) is a frequent musculoskeletal disorder that leads to physical disability in older adults.
+Knee osteoarthritis                                    Manual OA assessment is performed via visual inspection, which is highly subjective as it suffers from moderate
+Multi-task learning                                    to high inter-observer variability. Many deep learning-based techniques have been proposed to address this
+Deep learning
+                                                       issue. However, owing to the limited amount of labelled data, all existing solutions have limitations in terms
+Semi-supervised learning
+                                                       of performance or the number of classes. This paper proposes a novel fully automatic Kellgren and Lawrence
+KL-grade classification
+                                                       (KL) grade classification scheme in knee radiographs. We developed a semi-supervised multi-task learning-
+                                                       based approach that enables the exploitation of additional unlabelled data in an unsupervised as well as
+                                                       supervised manner. Specifically, we propose a dual-channel adversarial autoencoder, which is first trained
+                                                       in an unsupervised manner for reconstruction tasks only. To exploit the additional data in a supervised way,
+                                                       we propose a multi-task learning framework by introducing an auxiliary task. In particular, we use leg side
+                                                       identification as an auxiliary task, which allows the use of more datasets, e. g., CHECK dataset. The work
+                                                       demonstrates that the utilization of additional data can improve the primary task of KL-grade classification for
+                                                       which only limited labelled data is available. This semi-supervised learning essentially helps to improve the
+                                                       feature learning ability of our framework, which leads to improved performance for KL-grade classification. We
+                                                       rigorously evaluated our proposed model on the two largest publicly available datasets for various aspects, i.e.,
+                                                       overall performance, the effect of additional unlabelled samples and auxiliary tasks, robustness analysis, and
+                                                       ablation study. The proposed model achieved the accuracy, precision, recall, and F1 score of 75.53%, 74.1%,
+                                                       78.51%, and 75.34%, respectively. Furthermore, the experimental results show that the suggested model not
+                                                       only achieves state-of-the-art performance on two publicly available datasets but also exhibits remarkable
+                                                       robustness.
+
+
+1. Introduction                                                                            about 130 million people around the world [9]. Considering the rapid
+                                                                                           increase in the number of knee OA patients, it is paramount to detect
+    Osteoarthritis (OA) is the most common form of the joint disease                       knee OA at the initial stage and started proper treatment.
+affecting up to 18.0% of women and 9.6% of men over the age                                    Most of the existing techniques for knee OA diagnosis are based
+of 60 around the world [1]. OA is generally characterized by pain,                         on plain radiography because of their easy accessibility and availabil-
+swelling, stiffness, and a grating sensation on movement [2–4]. OA is                      ity [10]. Moreover, through radiography images, the most interesting
+a degenerative joint disease caused by an irreparable deterioration of                     diagnostic features such as subchondral bone changes, joint space
+the joint cartilage located at the end of the bone [5]. These symptoms                     narrowing (JSN), and osteophyte formation could be visualized vividly.
+severely affect the quality of elderly people’s life. Knee OA is one of                    However, such practice allows the diagnosis of knee OA at a later stage
+the leading health burdens contributing to chronic disability in the                       when the cartilage is already worn, and the bone deformity is present,
+world [6,7]. Further, there is a no-disease specific drug to date for                      which takes an individual to physical disability [2,3]. Therefore, in this
+this irreversible degenerative disease [8]. Medication only assists in                     scenario, total knee replacement (TKR) surgery is the only option for
+reducing OA symptoms, specifically pain. It has been reported that by                      a patient. Previous studies illustrate a worldwide growing number of
+the year 2050, this degenerative joint disease disorder (OA) will affect
+
+
+    ∗ Corresponding author at: Department of Software, Korea National University of Transportation, Chungju 27469, South Korea.
+      E-mail address: james.han.gwak@gmail.com (J. Gwak).
+
+https://doi.org/10.1016/j.compbiomed.2023.107570
+Received 4 May 2022; Received in revised form 25 August 2023; Accepted 10 October 2023
+Available online 13 October 2023
+0010-4825/© 2023 Elsevier Ltd. All rights reserved.
+M.U. Farooq et al.                                                                                                              Computers in Biology and Medicine 167 (2023) 107570
+
+
+
+
+Fig. 1. KL-grade classification for knee OA severity grading. (a) Normal: No radiological features of Osteoarthritis, (b) Doubtful: Possible narrowing of joint space and/or doubtful
+osteophytes, (c) Mild: Definite osteophytes and possible narrowing of joint space, (d) Moderate: Definite narrowing of joint space, and some sclerosis and deformity of bone ends,
+(e) Severe: Large osteophytes, severe sclerosis, and definite deformity of bone ends.
+
+
+TKR surgeries [11,12]. In the United States, the annual rate of TKR                           (AAE) [43], which mainly learns the representation of data in an unsu-
+surgeries in adults aged 45–64 years has doubled since 2000 [13,14].                          pervised way. After combining AAE with the supervised classification
+Hence, there is a need for the prevention of global disability.                               networks, we then enable SSL for AAE. Mainly, the unsupervised train-
+    Imaging, as compared to clinical examination, may enable the early                        ing pipeline incorporates the discriminative component of supervised
+detection of knee OA signs at the periods when behavioural inter-                             learning to support the latent representation of AAE, thus preparing
+ventions (for instance, weight loss and exercise programs) could slow                         the grounds for semi-supervised KL-grade classification.
+down the progress of the disease [15]. The Radiographic assessment                                The proposed MTL framework is comprehensively evaluated via two
+is the major imaging tool for knee OA detection in primary care,                              widely used and large datasets (i.e., osteoarthritis initiative (OAI) and
+while Kellgren and Lawrence (KL) are commonly used to evaluate the                            multicenter osteoarthritis study (MOST) datasets). A detailed compar-
+severity of knee OA from plain radiographs. The KL presented the first                        ison has been provided based on parameters like accuracy, precision,
+radiographic classification criteria, based on these features, to grade                       recall, and F1-score to evaluate the effectiveness of the proposed ap-
+and identify OA [16]. There are total of five KL-grade scores such as                         proach in terms of overall performance and robustness. Moreover, a
+0 for the normal case to 4 for a severe case, which is being used to                          detailed analysis of the effects of incorporating additional data and the
+score knee OA as shown in Fig. 1. However, visual diagnosis performed
+                                                                                              auxiliary task has been performed.
+by a radiologist suffers from low inter-rater agreement [17], which
+                                                                                                  The main contributions of our proposed work are summarized as
+generates ambiguity and makes the diagnosis of knee OA very challeng-
+                                                                                              follows:
+ing. Leveraging a computer-aided diagnosis system is the only possible
+solution to make OA diagnosis more systematic and also allow knee OA                              • Aiming to develop a novel semi-supervised multi-task learning-
+detection at early stages [18]. Recently, Deep Learning (DL)-based tech-                            based technique for automatic knee KL-grade classification that
+niques have garnered attention in various industrial applications due to                            helps to exploit additional unlabelled data in an unsupervised as
+their impressive performance [19–21]. These applications span object                                well as supervised manner.
+classification [22–25], segmentation [26–29], medical image motion                                • Introducing a novel dual-channel adversarial autoencoder (DC-
+correction [30,31], and object detection [32]. Specifically, DL-based                               AAE) for automatic KL-grading of knee OA from plain radio-
+techniques have outperformed traditional machine learning techniques                                graphs. The dual-channel helps the network to focus on the knee
+for automatic KL-grading and have become the state-of-art approach in                               joints, which enables our method to outperform the existing
+this realm [17,33,34].                                                                              single-encoder autoencoder (SE-AE).
+    In the OA domain, most of the previously published DL methods
+                                                                                                  • DC-AAE has been evaluated on OAI and MOST datasets, extensive
+employ supervised learning techniques, which require a sufficiently
+                                                                                                    experiments with different aspects such as overall performance,
+large labelled dataset. However, at present, the labelled data is not
+                                                                                                    robustness analysis, effects of additional, and multitask learning
+extensively available. Alternatively, unlabelled data can be employed,
+                                                                                                    effects. The results show DC-AAE not only outperforms the state-
+which can be easily acquired from hospital imaging archives at a
+                                                                                                    of-the-art method but also has generalization power which makes
+significantly lower cost. Therefore, several recent studies [35–37] have
+                                                                                                    our model robust during cross-data analysis.
+employed semi-supervised learning (SSL) for solving labelled dataset
+problems by employing both labelled data and much smaller unlabelled                             The organization of this research is laid out as follows. Section 2
+data. However, such studies utilized unlabelled data only in an un-                           presents related work and the background. A detailed description of
+supervised manner, which restrains the model from learning critical                           the proposed technique has been given in Section 3. While Section 4 is
+information, and thus leads to substandard performance.                                       dedicated to the experimental setup, The findings, and discussion are
+    Alternatively, multi-task learning (MTL) [38] is a more effective                         presented in Section 5. The ablation study is discussed in Section 6.
+approach to enhancing the generalization of the model, which can                              Finally, Section 7 concludes this paper.
+simultaneously learn relevant features for the auxiliary task along
+with the primary task. MTL also helps in the better regularization of
+                                                                                              2. Related work
+models, which eases the exploration of the common high-level discrim-
+inative features. MTL has already been applied for various problems,
+such as speech emotion recognition [39], COVID-19 detection [40],                                 Knee OA severity assessment through classification is possible to
+and tumour detection [41], and has attained significant performance                           achieve by detecting the osteophytes formation in the knee joints and
+improvement. Similarly, we exploit the MTL for the KL-grade classi-                           variations in joint space width [44–46]. To consider the OA detection
+fication task and introduce a dummy auxiliary task for which data                             and KL-grading and to understand it deeply, numerous review papers
+annotation is easy, and thus helps in enabling the utilization of all the                     have been carried out where they mentioned significant contribu-
+unlabelled data during the supervised learning process. Specifically, the                     tions [47–49]. Moreover, Yoo et al. [50] presented a scoring system
+identification of leg sides, i.e., the left and right sides, is introduced as                 to predict radiographic and symptomatic knee OA risks using artificial
+the auxiliary task for MTL.                                                                   neural networks and KNHANES V-1 data.
+    Furthermore, we use generative adversarial models within our MTL                              Recently, CNN outperformed many methods that are based on hand-
+framework because of their exceptional ability to learn the most effi-                        crafted features [51]. In numerous computer vision tasks, CNN-based
+cient features [42]. Specifically, we utilize an adversarial autoencoder                      techniques are highly successful, such as video classification [52],
+
+                                                                                          2
+M.U. Farooq et al.                                                                                                               Computers in Biology and Medicine 167 (2023) 107570
+
+
+
+
+Fig. 2. Overall pipeline of the proposed KL-grade classification solution. In stage one, the bilateral legs X-ray image is fed and the left and right legs are localized. In step two,
+the knee joint images are centrally cropped with twenty percent overlapping. Lastly, our proposed DC-AAE model performs KL-grade classification for both knees.
+
+
+image recognition [53], content-based image retrieval [54], and auto-                         the five KL-grades, which is low as compared to the state-of-the-art
+matic detection and segmentation tasks [55,56]. CNN learns efficient                          accuracy. Therefore, the same group [34] tried to improve the accuracy
+feature representations that are more suitable for fine-grained clas-                         by updating the preprocessing step to utilize a FCN to determine the
+sification [57] like knee OA image classification. Furthermore, the                           knee joint’s bounding box. The FCN method, when combined with a
+visual assessment process of radiographs is tedious. Therefore, different                     CNN for classification, achieved an accuracy of 61.9%, which illustrates
+techniques for automatic diagnosis of knee OA severity, based on DL                           that the FCN method is highly effective in determining the region of
+have recently been developed [17,58–60], which demonstrates that DL-                          interest (ROI). They evaluated their proposed method using OAI and
+based methods allow fully automatic KL-grading. Nguyen et al. [58]                            MOST datasets, which comprised 4,446 images and 5,840 knee images,
+proposed a semixup algorithm to leverage unlabelled data and assess                           respectively, and hence improved the precision rate and accuracy rate
+the KOA severity. They have considered two publicly available datasets,                       of detecting knee joints.
+OAI and the MOST, for model training and testing, respectively, and
+achieved reasonable results.                                                                  3. Proposed method
+    Aleksei et al. [17] proposed a CNN-based model called Deep Siamese
+CNN, which minimizes the number of learnable parameters as com-                                   In each bilateral X-ray scan, we localized each knee joint region and
+pared to standard CNN. Their reported method automatically detects                            leg side selection using a publicly available tool [64] which is employed
+the severity of KOA according to the KL-grading scale. They used                              to detect the ROI i.e., images containing left and right knee joints. The
+random seeds to select different knee joint sub-regions and then fused                        overall flow diagram of the proposed architecture is depicted in Fig. 2,
+the predictions of the selected regions and obtained 66.71% accuracy.                         whereas Section 2 depicts the algorithm pipeline. After cropping the
+Shamir et al. [46] presented a template matching method with a                                ROI around the knee joint, we further cropped the knee joint image by
+sliding window strategy to locate the knee joints. They computed the                          excluding the 25% region from the top and bottom sides, as shown in
+Euclidean distances between 20 pre-defined knee joint images and the                          Fig. 3. We extracted 60% of the residual image from both horizontal
+current shifted window on the down-scaled knee X-ray image. The                               sides, i.e., left and right sides, to obtain medial and lateral views.
+smallest Euclidean distance window is considered as the detected knee                         To avoid the loss of critical spatial contextual information during the
+joint. Chen et al. [59] developed a novel ordinal loss function to train                      central cropping of the knee joint, we performed the lateral and medial
+deep neural networks to measure knee OA severity. They utilized a                             cropping with 20% overlapping from the middle of the knee joint.
+customized one-stage YOLOv2 network to detect the knee joint, and                             Finally, the lateral and medial views of the knee joint are obtained to
+then the knee KL assessment was performed using the VGG-19 model                              feed into the proposed DC-AAE architecture.
+and achieved 69.7% accuracy.                                                                      Our proposed technique mainly consists of KL-grade prediction
+    Albert et al. [61] proposed a fully-automated DL algorithm to assess                      which is performed using DC-AAE networks. The details of each step
+the severity of knee OA in radiographs using the KL-grading system.                           are provided in the following subsections.
+The proposed model consists of two major steps, such as the localization
+of the knee joints in the images and KL-grading classification. They                          3.1. Preprocessing
+evaluated their work using the MOST dataset and obtained 71.90%
+accuracy. Antony et al. [34] presented a fully convolutional network                              The data used in this study, i.e., OAI dataset, was in DICOM file
+(FCN) based approach to detect knee joint regions and classify the                            format which provides the window width (𝑊 𝑊 ) and window centre
+severity of different stages of knee OA and achieved good performance.                        (𝑊 𝐶) dicom tags. The values of these tags are used to determine the
+Nasser et al. [62] introduced an architecture called discriminative                           range of CT (Computed Tomography) values or pixel intensities that
+regularized autoencoder to detect and classify the early detection of                         will be displayed by default. The values of these tags are typically set
+knee OA such as grade 0, grade 1, and grade 2. They have combined a                           by the radiologist or the technologist during image acquisition or post-
+discriminative loss with the standard AE training criterion that aims to                      processing, depending on the clinical task and the anatomical region
+force the learned representation to consider discriminative information.                      being imaged. It is important to note that the window width can affect
+This model is evaluated on the OAI dataset and obtained state-of-the-art                      the diagnostic accuracy of an image and should be chosen carefully to
+performance.                                                                                  optimize the visualization of the ROI. We perform central cropping on
+    Anthony et al. [63] determine the OA severity level by utilizing                          the knee joint to obtain medial and lateral views. The output of the
+transferred learning and the classical VGG-16 CNN architecture with                           tool [64] is cropped horizontally by 50% from the middle, followed by
+X-ray images. They preprocessed these images using the Sobel edge                             central cropping with 20% overlapping from the middle of the knee
+detector and SVM to locate the knee joint area. The model is evaluated                        joint vertically. We cropped the knee joint image by excluding 25%
+on the OAI dataset, which consists of 4,446 X-rays, representing 8,892                        regions from the top and bottom sides, as shown in Fig. 3. To obtain
+total knees. They achieved an accuracy of 59.6% when classifying                              medial and lateral views, we extracted 60% of the residual image from
+
+                                                                                          3
+M.U. Farooq et al.                                                                                                           Computers in Biology and Medicine 167 (2023) 107570
+
+
+
+
+Fig. 3. Pipeline of the central cropping process, (A) is an input image, (B) is 50% image cropped horizontally from the middle, (C) is the central cropping with 20% overlapping
+from the middle of the knee joint vertically, and (D) shows the Lateral and Medial views of the knee joint.
+
+
+
+
+                                    Fig. 4. Structure of DC-AAE with multitask learning for KL-grade classification in the knee radiographs.
+
+
+both horizontal sides, i.e., the left and right sides. To avoid the loss of                𝑧 with similar statistical properties of a given prior distribution 𝑝(𝑑).
+critical spatial contextual information due to central cropping of the                     To further enhance the learning ability of typical AAE, we introduced
+knee joint, we performed the lateral and medial cropping with 20%                          two encoders that generate two latent codes (i.e., 𝑧𝐿 and 𝑧𝑀 ) from
+overlapping from the middle of the knee joint. Finally, the lateral and                    the lateral and medial parts of the knee. The discriminator enforces
+medial views of the knee joint are obtained to feed into the proposed                      distribution by concatenating both latent representations to create 𝑧.
+DC-AAE architecture. Fig. 4 depicts the proposed model flow diagram.                       Notably, the role of the discriminator in an AAE is to distinguish real
+    We also normalized the intensity values, ranging from 0 to 1, by                       (prior distribution) and fake (generated by the encoder). The discrimi-
+using the window centre and window width tag from corresponding                            nator is trained on prior distribution because it provides a well-defined
+DICOM files [65]. The normalization can be defined as follows:                             and consistent target for the discriminator to learn.
+        𝐼 − 𝑊𝑀𝑖𝑛                                                                               In order to exploit the MTL in DC-AAE for utilization of additional
+𝐼𝑛 =               ,                                                             (1)
+       𝑊𝑀𝑎𝑥 − 𝑊𝑀𝑖𝑛                                                                         data in supervised learning, we modified it by incorporating two
+                                                                                           supervised classification networks, including KL-grade and leg-side
+𝑊𝑀𝑖𝑛 = 𝑊 𝐶 − 𝑊 𝑊 ∕2,                                                             (2)
+                                                                                           classification. Our proposed semi-supervised multitask learning model
+                                                                                           has been illustrated in Fig. 4, where the supervised and unsupervised
+𝑊𝑀𝑎𝑥 = 𝑊 𝐶 + 𝑊 𝑊 ∕2,                                                             (3)       paths are highlighted. Eq. (4) describes the multi-task autoencoding loss
+where 𝐼, 𝐼𝑛 , 𝑊 𝐶, and 𝑊 𝑊 represent the original image, normalized                        MTAE which is the combination of supervised and unsupervised losses.
+image, window centre, and window width, respectively. The values of
+                                                                                           MTAE = 𝛼 ∗ AE + 𝐶 ,                                                           (4)
+the window centre and window width are extracted from the DICOM
+tags [65].
+                                                                                           𝐶 = 𝛽 ∗ KL + (1 − 𝛽) ∗ LS .                                                   (5)
+3.2. KL-grade classification using DC-AAE
+                                                                                              Here, AE is the reconstruction loss of the autoencoder as shown
+    We proposed a multi-task learning-based dual-channel adversarial                       in Eq. (6); in Eq. (5) KL and LS are losses for the KL-grade and leg
+autoencoding using an adversarial autoencoder (DC-AAE) framework                           side classification tasks, respectively; to control the weight of each loss
+which also incorporates semi-supervised learning. A typical AAE con-                       term, we use 𝛼 and 𝛽 as the trade-off parameters.
+sists of a traditional autoencoder and an adversarial network to enhance                      DC-AAE contains the autoencoding network (encoders (𝐸𝜃 ) and
+the latent representation learning ability of the framework. In AAE,                       decoder (𝐷𝛿 )) and classifiers (𝐶𝜙 ), there is an adversarial network
+the encoder acts as a generator and generates latent code z which                          that includes a generator (𝐸𝜃 ) and discriminator (𝐷𝜔 ). We trained the
+is connected to the adversarial part (i.e., discriminator). Here, the                      model in three phases by using input data 𝑥: the first reconstruction
+discriminator enforces the generator to produce latent representation                      (unsupervised) phase, the second regularization phase, and finally the
+
+                                                                                       4
+M.U. Farooq et al.                                                                                                 Computers in Biology and Medicine 167 (2023) 107570
+
+
+classification phase. The encoders (𝐸𝜃 ) and the decoder (𝐷𝛿 ) are up-           Table 1
+dated during the reconstruction phase to reduce the reconstruction               5-fold validation quantitative results of our proposed DC-AAE.
+
+error by encoding 𝑥 into latent representation 𝑧. The autoencoder’s                                Acc(%)         Precision(%)         Recall(%)        F1-score(%)
+
+objective function is defined as follows:                                         Fold-0           74.52          74.20                82.90            75.34
+                                                                                  Fold-1           76.37          74.88                77.72            76.13
+AE (𝑥, 𝐷𝛿 (𝐸𝜃 (𝑥))) = ‖𝑥 − ̂𝑥‖22                                     (6)         Fold-2           74.69          73.37                78.76            74.49
+                                                                                  Fold-3           77.36          76.02                76.13            77.22
+    The proposed MTL framework is comprehensively evaluated via two               Fold-4           73.71          72.05                82.94            73.33
+widely used and large datasets (i.e., OAI and MOST datasets). A detailed          Average          75.53          74.10                79.69            75.30
+comparison has been provided based on parameters like accuracy, pre-
+cision, recall, F1-score, and AUC values to evaluate the effectiveness of
+the proposed approach in terms of overall performance and robustness.            both datasets are developed while considering the presence of OA or
+Moreover, a detailed analysis of the effects of incorporating additional
+                                                                                 the susceptibility of it developed in the selected participants. Both
+data and the auxiliary task has been performed. We used an adversarial
+                                                                                 MOST and OAI are primarily approved by the data acquisition sites
+discriminator as a regularization method to improve the quality of the
+                                                                                 and, in particular, by the institutional review board of the University of
+learned representation. During the regularization phase, the adversarial
+                                                                                 California, San Francisco. All the participants showed their consent to
+network first improves its ability to differentiate between samples from
+                                                                                 make the dataset publically available with the condition of anonymity.
+the actual distribution [real] and those generated by the encoder’s
+                                                                                 During the unsupervised learning phase, we considered the Cohort
+latent representation. Then the encoder improves the ability to produce
+                                                                                 Hip & Cohort Knee (CHECK) dataset [66] which consists of 1002
+samples that the discriminator believes as real. This is achieved by
+                                                                                 individuals from the Netherlands having early symptoms of OA of the
+maintaining the discriminator’s weight and bias and adjusting the
+                                                                                 knee. Primarily, this study is based on population-based observations,
+encoder’s weight and bias through error backpropagation. The equation
+                                                                                 whereas a total of 8,363 knee X-rays are used in this research. We
+used to define the discriminator’s objective is shown in Eq. (7).
+                       (                                                         utilized five-fold cross-validation where subjects were divided into five
+           Ldisc = max E𝑑∼𝑝𝑑 [log(𝐷𝜔 (𝑑))]                                       groups in our experiment 1.
+                    𝜔
+                                         )                            (7)
+            +E𝑥∼𝑝𝑥 [log(1 − 𝐷𝜔 (𝐸𝜃 (𝑥)))] .
+                                                                                 4.2. Model configurations
+    Here 𝑝𝑥 is the data distribution and 𝑝(𝑑) =  (𝑑; 0, 𝐼) is the prior
+multivariate Gaussian distribution.                                                  Fig. 4 illustrates the semi-supervised architecture of our proposed
+    In the classification phase, the latent code (𝑧 = 𝐸𝜃 (𝑥)) is input to        method. First, two encoders having four convolutional layers each
+classifiers (𝐶𝜙 ), which minimizes the standard class entropy loss by            are applied to the input for effective KL-grade classification. Next, a
+using the target vector containing the labels of both tasks and pre-             pooling layer is added subsequently after each convolutional layer.
+dicted values. Backpropagation of error is performed to update 𝐸𝜃 . The          Each convolutional layer extracts meaningful information from knee
+following objective function is used to optimize the encoder/generator           joint areas and generates feature maps. Subsequently, the extraction
+network (𝐸𝜃 ).                                                                   of highly relevant features is performed by the pooling and dense
+             (
+Lenc = min E𝑥∼𝑝𝑥 [log(1 − 𝐷𝜔 (𝐸𝜃 (𝑥)))]                                          layers by properly reducing the dimensions. Note that we employed the
+          𝜃
+                                                                                 max-pooling layer since it offers much-improved performance during
+              +E𝑥∼𝑝𝑥 [𝛽AE (𝑥, 𝐷𝛿 (𝐸𝜃 (𝑥)))]+                         (8)
+                                                                                 the validation process as compared to average pooling. Both encoders
+                                             )
+              E𝑥,𝑦∼𝑝𝑋,𝑌 [𝑐 (𝐸𝜃 (𝑥), 𝑦; 𝐶𝜙 )] .                                  encode lateral and medial parts of the knee image into latent codes
+                                                                                 𝑧𝐿 and 𝑧𝑀 , respectively, which are later concatenated together, thus
+    The encoder is updated in all three phases, while the discriminator
+                                                                                 forming 𝑧 with a dimension of 16 × 16 × 16. It is noted that the
+is trained only once. The first, second, and third terms in Eq. (8) are
+                                                                                 validation set is used for determining the size of the latent code.
+updated in the regularization, reconstruction, and classification phases,
+                                                                                 During the regularization stage, a prior distribution 𝑝(𝑑) having mul-
+respectively. Furthermore, all these phases are executed sequentially:
+                                                                                 tivariate Gaussian distribution with unit standard deviation and zero
+first, the reconstruction phase runs, and after that, the regularization
+                                                                                 means is applied to the latent representation (𝑧). In the decoder block,
+and classification phases are executed. Subsequently, the latent repre-
+                                                                                 we replaced convolutional layers with transposed convolution layers,
+sentation (𝑧 generated by the encoder during the unsupervised phase, is
+further fine-tuned by the supervised classification task which facilitates       keeping the remaining structure the same as the encoders.
+semi-supervised learning. Note that no KL-grade labels are used during               Each classifier network, which is fed the latent code 𝑧, is made
+the incorporation of additional auxiliary data and only the loss function        up of four layers: (1) a convolutional layer, (2) a max-pooling layer,
+for leg-side classification is calculated to update the encoder.                 (3) dense layers, and (4) a softmax layer. One convolutional layer
+                                                                                 followed by a max-pooling layer is applied in each classifier which
+4. Experimental setup                                                            helps to capture the relevant features for classification tasks. To provide
+                                                                                 a prediction, we finally applied dense layers followed by a softmax
+4.1. Datasets                                                                    layer immediately after the max-pooling layer. We also used a dropout
+                                                                                 layer with a dropout rate of 0.2 between two dense layers in each
+    We used two publicly available datasets, (i.e., MOST (https://most.          classifier to avoid overfitting. The discriminator architecture in DC-AEE
+ucsf.edu) and OAI (https://nda.nih.gov/oai/)) for the supervised learn-          is used with similar configurations, i.e., containing one convolutional
+ing phase. Note that both datasets have employed a Synaflexer posi-              layer followed by a max-pooling layer, and two dense layers followed
+tioning frame to acquire Posterior-Anterior (PA) bilateral images with           by a softmax layer.
+a fixed flexion at a 10‘ angle of the X-ray beam. The OAI dataset                    We performed step-by-step training on all the models. We first used
+comprised 4,796 individual participants, whereas the data primarily              the CHECK dataset for training the DC-AAE network in an unsupervised
+consists of MRI and X-ray images of nine follow-up checkups over                 manner to initialize the model weights and trained first on all datasets
+96 months. Similarly, the MOST dataset is a collection of radiographs            (i.e., OAI, MOST, and CHECK datasets) for legs side identification
+from 3,026 individuals. However, it includes four follow-up checks               only. The weights learned in this stage were used to initialize the
+over 84 months. Both datasets also differ in terms of the age group              auto-encoder network for the multitask learning phase with KL-grade
+of the participants (i.e., OAI considered participants aged between 45–          classification and leg side identification. Fig. 5 shows the learning curve
+79 years, while this range was 50–79 for the MOST dataset). Mainly,              of our DC-AAE for the supervised phase.
+
+                                                                             5
+M.U. Farooq et al.                                                                                                          Computers in Biology and Medicine 167 (2023) 107570
+
+
+
+
+Fig. 5. Learning curves of proposed DC-AAE for KL-grade classification. Figures (a) and (b) show the learning curve for KL-grade classification accuracy and multitask learning
+loss, respectively.
+
+
+
+
+4.3. Training strategy                                                                     Table 2
+                                                                                           Comparison of deep learning method for automatic knee OA KL-grade classification.
+
+    The step-by-step training of the proposed model shown in Fig. 4 is                      Methods                        Acc (%)        Pr (%)        Re (%)        F1 (%)
+
+performed. We randomly initialize the model and then train the model                        CNN model [59]                 69.69          68.83         70.11         69.45
+along an unsupervised path. Specifically, at first, we only train DC-                       Deep Siamese CNN [17]          66.87          68.23         66.83         67.10
+                                                                                            ResNet-34 [69]                 73.6           73.52         73.69         72.76
+AAE for reconstruction tasks. All the training set X-rays from both OAI                     ResNet-34 + CBAM [69]          75.15          75.18         75.08         74.82
+and MOST datasets and also additional data from the CHECK dataset                           OsteoHRNET [70]                71.74          –             –             –
+are utilized. After optimization of DC-AAE for the reconstruction task,                     Dalia et al. [71]              69.8           –             –             –
+we again used training data to train DC-AAE for the leg side iden-                          Our DC-AAE                     75.53          74.10         79.69         75.30
+tification task. Finally, we use only labelled data from both datasets
+(i.e., OAI and MOST) for training DC-AAE with both tasks, i.e., KL-
+grade classification and leg side identification. Here, we freeze the                      we perform cross-dataset validation to evaluate the robustness of our
+decoder branch since it has already been optimized. In the supervised                      technique. The following subsection reviews our analysis.
+phase, networks have been trained for two tasks (i.e., KL-grade, and
+leg-side classification) KL-grade classification is considered the main
+                                                                                           5.1. Overall performance
+task whereas leg-side identification is considered an auxiliary task.
+Subsequently, more weightage is assigned to the KL-grade classification
+                                                                                               To assess overall performance, we examine the entire pipeline de-
+task during the final training step.
+                                                                                           picted in Fig. 2. We achieved the benchmark performance with the
+    The training was performed with the NVIDIA TESLA V100 TENSOR
+                                                                                           proposed approach by utilizing three datasets (i.e., CHECK, MOST, and
+CORE GPU, whereas the Stochastic Gradient Descent (SGD) optimizer
+with a 0.0001 learning rate was selected. The batch size was 16,                           OAI) for training the model in the unsupervised phase and supervised
+whereas, after each epoch, the accuracy was calculated for validation.                     phase. The five-fold confusion matrices are shown in Fig. 6(a) to (e)
+If after five epochs, the improvement in terms of validation accuracy                      demonstrate the performance of the proposed scheme on OAI datasets.
+was not significant, the learning rate was reduced to half and the                         Results show remarkable performance for severe classes (i.e., grades 3
+model was replaced with the best of five epochs. The minimum value                         and 4) and slight confusion between earlier grades (1 & 2) has been
+for the learning rate was set to 0.00001. During the training process,                     observed. It is important to note that all the confusion is about the
+to get a stable distribution of activation values, each convolutional                      nearby classes, which makes our technique more acceptable from a
+layer is supported by a batch normalization layer [67]. Mainly, the                        clinical perspective.
+non-linearity layer (i.e., rectified linear unit (ReLU)) is used after the                     We also compared the performance of the proposed scheme with an
+batch normalization layer. Note that the ReLU activation was preferred                     existing state-of-the-art technique, without using the CHECK dataset for
+over a hyperbolic tangent and leaky ReLU, mainly due to its enhanced                       a fair comparison, which is shown in Table 2. The results demonstrate
+performance. Additionally, to avoid over-fitting, the early stopping                       that the proposed technique outperforms the previous techniques. The
+strategy has been employed [68]. This technique halts the training                         reason for such performance is the ability of the proposed architecture
+process once it detects no change in the validation loss value, thus                       to incorporate additional data, which has been exploited in unsuper-
+reducing the chances of overfitting the network on the training data.                      vised as well as supervised phases. The proposed model utilizes the
+                                                                                           encoding branches, which also play a significant role in improving the
+5. Results and discussion                                                                  learning ability of the network. This helps to extract the most meaning-
+                                                                                           ful information, which further eases classifier networks. To demonstrate
+    We performed various experiments on two publicly available data-                       the effectiveness of the reconstruction task, we have further enhanced
+sets (i.e., OAI and MOST) to evaluate the proposed scheme. The results                     our experimentation by removing the decoder part of our proposed DC-
+are analysed based on various aspects, such as the effect of the dual-                     AAE using multi-task learning. We referred to this model as model 2 in
+channel, multitask learning, and the effect of additional data. Finally,                   Table 4 and the results are also summarized in Table 4. The results
+
+                                                                                       6
+M.U. Farooq et al.                                                                                                            Computers in Biology and Medicine 167 (2023) 107570
+
+
+
+
+   Fig. 6. 5-fold Confusion matrix of the proposed semi-supervised multi-task learning based DC-AAE (a) to (e) five folds of cross-data validation and (f) are average result.
+
+
+
+
+demonstrate that the performance of our proposed model decreased                            be noticed that the classification error is significantly increased with
+significantly after removing the decoder part. The reason is that the                       SE-AE, especially for grade 2 where confusion with adjacent classes is
+reconstruction task helps the network to learn the most representative                      increased. Most importantly, in a few cases, extreme grades (i.e., 1 and
+latent features. Subsequently, the negative impact of removing the                          4) are also confused, which is a serious drawback of SE-AAE.
+decoder is evident from the degradation of 3.05%, 3.68%, 3.22%, and                             To further investigate the effect of the dual encoding channel, we
+3.57% in accuracy, precision, recall, and F1 score, respectively.                           visualize the activation maps using the Grad-CAM algorithm [72],
+                                                                                            which represents the network focus regions. Fig. 8(a) and (b) demon-
+5.2. Effect of dual channel autoencoder                                                     strate the Grad-CAM output of the SE-AAE and DC-AAE architectures,
+                                                                                            respectively. These results show that the dual encoding channel helps
+    In the proposed approach, we employed dual encoding channels to                         the network to focus on the knee joint region, which contains the most
+extract meaningful information from the lateral and medial parts of the                     significant information for the estimation of KL-grade. Subsequently,
+knee. To investigate the effect of dual encoding channels, we compare                       DC-AAE learns the most relevant features which eases the classification
+the proposed architecture with the conventional single encoder archi-                       of KL-grade.
+tecture by keeping the remaining part the same as the proposed design
+and using the whole joint image as an input. We trained the single                          5.3. Effect of secondary task
+encoder-based architecture in the same way as we followed for DC-AAE.
+Fig. 7(a) and (b) present the confusion matrix which contains the results                     To incorporate the unlabelled data in the supervised learning phase,
+of single encoder-based architecture on MOST and OAI datasets. It can                       we introduced an additional task, i.e., leg side identification, as an
+
+                                                                                        7
+M.U. Farooq et al.                                                                                                       Computers in Biology and Medicine 167 (2023) 107570
+
+
+
+
+                             Fig. 7. Confusion matrix of conventional AAE with single encoder (a) on the MOST dataset and (b) on OAI dataset.
+
+
+
+
+                        Fig. 8. (a) Grad-CAM output of SE-AE and (b) is our DC-AAE model attention map which correctly focused on the knee joint.
+
+
+                                                                                        with multitasking has achieved better results as compared to STL.
+                                                                                        The introduction of the additional task enables our DC-AAE networks
+                                                                                        to exploit the additional data during the supervised learning phase,
+                                                                                        enhancing the model learning ability and subsequently achieving better
+                                                                                        results.
+
+                                                                                        5.4. Effect of additional data
+
+                                                                                            We exploit the additional unlabelled dataset, i.e., the CHECK
+                                                                                        dataset, in both unsupervised and supervised learning phases. To
+                                                                                        analyse the effect of the additional unlabelled dataset, we perform
+                                                                                        experimentation without additional data and with different amounts
+                                                                                        of additional data. We train our DC-AAE architecture with a multitask
+                                                                                        learning-based approach while considering the KL-grade classification
+ Fig. 9. The results of proposed DC-AAE shown with and without an auxiliary task.
+                                                                                        as primary and leg side identification as a secondary task. At first, we
+                                                                                        do not use any unlabelled data, so only the supervised learning phase
+                                                                                        is executed. However, we gradually introduce the addition of unla-
+auxiliary task. To analyse the effect of the secondary task, we trained                 belled data in different amounts (i.e., 1000, 2000, 4000, and 8,363).
+the proposed architecture with one task (i.e., KL-grade classification)                 Fig. 11 presents the results of these experiments where we observed
+in the same settings as we trained our MTL-based model. We first                        a slight improvement in the results when we used 1000 additional
+performed weight initialization of DC-AAE in an unsupervised manner                     unlabelled images. However, when we increase the amount of data, the
+with a training set that included three datasets (i.e., OAI, MOST, and                  performance also increases. Therefore, summarizing Fig. 11, it can be
+CHECK datasets). However, after the unsupervised phase, we trained                      noted that improvement in the auxiliary tasks while adding additional
+the model with only KL-grades labels. Fig. 9 presents the results from                  data eventually helps to improve the performance of the primary task,
+both techniques (i.e., single task learning (STL) and MTL) on the test                  which cements the contribution of this study in proposing a multi-
+set from MOST and OAI datasets. It can be observed that the model                       task semi-supervised framework for KL-grade classification. Intuitively,
+
+                                                                                    8
+M.U. Farooq et al.                                                                                                           Computers in Biology and Medicine 167 (2023) 107570
+
+
+
+
+ Fig. 10. Results of our DC-AAE using multitask learning model, (a) training on OAI dataset and test on MOST dataset, (b) trained on MOST dataset and test on OAI dataset.
+
+
+                                                                                             Table 3
+                                                                                             Robustness analysis of our proposed DC-AAE model.
+                                                                                              Methods                                   Acc (%)    Pr (%)    Re (%)    F1 (%)
+                                                                                              Our DC-AAE (trained on MOST dataset       71.03      69.33     73.82     70.53
+                                                                                              and tested on OAI dataset)
+                                                                                              Our DC-AAE (trained on OAI dataset        73.76      70.79     73.41     71.87
+                                                                                              and tested on MOST dataset)
+
+
+
+
+                                                                                             folds (a to e) in Fig. 12 represent each OA severity grade, while the
+                                                                                             associated area under the curve (AUC) values also shown in Fig. 12
+                                                                                             demonstrate the exceptional performance of our model in classifying
+                                                                                             successive grades. Notably, the classification metrics for grade one have
+                                                                                             lower values compared to the other grades.
+
+                                                                                             6. Ablation study
+Fig. 11. Illustrates the effect of incorporating the additional unlabelled data on the
+performance of KL-grade classification on OAI and MOST datasets.                                 We performed an ablation study on key components in the proposed
+                                                                                             model to quantify the contribution of each component to the overall
+                                                                                             performance of the model. The following results show that all of them
+through the feed of additional data for the auxiliary tasks, a better                        are essential to the proposed model and jointly produce high-quality
+representation of the intrinsic properties of KL-grading is achieved,                        results in KL-grade classification. By removing each component one
+which eventually improves the performance of KL-grade classification.                        by one and the rest of the model remains unchanged, as shown in
+However, it demonstrates the potential of the proposed architecture to                       Table 4 the proposed DC-AAE remarkably improves the performance.
+utilize unlabelled data for the improvement of KL-grade classification.                      After analysing the results, we can learn: (1) The adversarial loss
+                                                                                             function helps to regularize the encoders and improve their general-
+5.5. Robustness analysis                                                                     ization ability, (2) The reconstruction path in unsupervised learning
+                                                                                             empowers the encoders to extract more meaningful features from the
+    To evaluate the robustness of the proposed scheme, we perform                            input data, (3) The addition of a new auxiliary task (classification
+cross-data validation on OAI and MOST datasets. We train the model                           of leg side) enabled us to utilize the additional unlabelled dataset,
+with two different dataset distributions; specifically, we first train                       leading to improved performance of the primary task (classifying knee
+the model on all the OAI and CHECK datasets while following the                              osteoarthritis severity), (4) we can observe that dual encoder not only
+same training strategy mentioned in Section 4, and then evaluate on                          improve the model attention to the knee joint area but also improve
+the MOST dataset. Similarly, in another setting, we utilize the whole                        the model performance. The results indicate that the model utilizing the
+MOST and CHECK datasets for training and testing on OAI datasets.                            concatenation of the latent representation outperforms the model using
+Table 3 compares the performance of cross-dataset experiments with                           the whole frame as input with a single encoder. Concretely, the dual-
+our benchmark performance. It can be noticed that the model shows                            encoder-based architecture achieved higher accuracy, precision, recall,
+promising results even on cross-dataset validation; however, perfor-                         and F1 score values of 1.36%, 1.78%, 0.41%, and 1.65%, respectively.
+mance is slightly degraded due to the reduction of training data in                          This can be attributed to the fact that the use of two cropped inputs
+cross-dataset validation. Fig. 10(a) and (b) illustrate the confusion                        with dual-encoder-based architecture helps to focus more on the knee
+matrix of cross-dataset experimentation on MOST and OAI datasets,                            joint area which plays a crucial role to determine the KL-grade.
+respectively. It can be noticed that confusion in all the classes remains                        Furthermore, the mean (standard deviation (SD)) area under the
+in the adjacent classes, and most importantly, there is no confusion                         receiver operating characteristic curve (AUC) of five-fold validation
+between extreme classes (i.e., KL-grade 0 and 4), which depicts the                          was 0.93 ± 0.01 along with standard deviation ± 1 see Fig. 13. Please
+ability of the network to learn meaningful information, even with                            note, in five-fold cross-validation, an AUC is provided for the model
+limited data, that plays a critical role in distinguishing the extreme                       performance in each fold. The mean cross-validated AUC is the average
+classes. Furthermore, to assess the diagnostic ability of our proposed                       of the AUC values across the five folds. We have incorporated the mean
+model, the receiver operating characteristic (ROC) curves for all five                       ROC curve with standard deviation plotted as a shaded area. As it can
+
+                                                                                         9
+M.U. Farooq et al.                                                                                                          Computers in Biology and Medicine 167 (2023) 107570
+
+
+
+
+Fig. 12. The illustration of ROC curves obtained on all five folds (i.e., from (a) to (e)). Each subfigure represents each fold and contains the ROC curves for each individual
+KL-grade (0 4) using one-vs-all (or one-vs-rest) strategy.
+
+
+                                                                                               weight to the auxiliary task, and continue to vary the weights (ranging
+                                                                                               from 0.1 to 1.0) for the unsupervised task. The outcomes of these initial
+                                                                                               two experiments are succinctly summarized in Fig. 14(a) and (b). It is
+                                                                                               discernible that extremely low or high weights of 𝛼 negatively impact
+                                                                                               the performance of KL-grade classification. Nevertheless, an 𝛼 range
+                                                                                               between 0.4 and 0.7 yielded superior results in both scenarios.
+                                                                                                   These findings suggest that careful calibration of unsupervised task
+                                                                                               weights using 𝛼 can augment system performance. However, an optimal
+                                                                                               𝛼 range must be identified to achieve peak performance.
+                                                                                                   Subsequent experiments were conducted with the 𝛼 value fixed at
+                                                                                               0.5 and 1, and varying 𝛽 weights (0.1 to 0.9), which determine the
+                                                                                               weights for both the primary and auxiliary tasks (as depicted in Eq. (5)).
+                                                                                               As demonstrated by Fig. 14(c) and (d), smaller 𝛽 values lead to subpar
+                                                                                               performance, as the framework predominantly operates as a single-task
+                                                                                               mechanism. Yet, it is important to note that overemphasis on auxiliary
+                                                                                               tasks through high 𝛽 values also deteriorates performance, reaffirming
+                                                                                               the significance of balancing the auxiliary task’s contribution.
+
+                                                                                               7. Conclusion
+
+                                                                                                   This study proposes a novel dual-stage end-to-end fully automatic
+                                                                                               Kellgren-Lawrence (KL) grade classification scheme, which is specially
+                                                                                               designed for KL-grade classification by using the knee joint regions.
+Fig. 13. The illustration of mean ROC curve of five-cross validated folds with standard        Our framework is a semi-supervised multitask learning-based dual-
+deviation as shaded area.
+                                                                                               channel adversarial autoencoders (DC-AAE) for KL-grade classification
+                                                                                               that enables the exploitation of unlabelled data in supervised and un-
+                                                                                               supervised phases. Therefore, other than the largest publicly available
+be seen that the width of the shaded area is very little which shows that                      labelled datasets (i.e., OAI and MOST), we also utilize the CHECK
+there is no significant difference among the five-folds’ performance.                          dataset without KL-grade labels. The step-by-step training on the pro-
+    We further delve into the influence of trade-off parameters, 𝛼                             posed DC-AAE architecture is performed. Specifically, we first train the
+(Eq. (4)) and 𝛽 (Eq. (5)), which represent the weights of unsupervised                         model in an unsupervised manner on all the training sets, incorporating
+tasks, as well as supervised primary and secondary tasks, respectively.                        the additional unlabelled CHECK dataset and OAI and MOST datasets.
+    Fig. 14 illustrates the effects of adjusting the weights, 𝛼 and 𝛽. In                      To utilize the same training set in a supervised manner, we adopt
+the preliminary experiments, the 𝛽 value is kept constant at 0.5 and                           multitask learning by introducing an auxiliary task, i.e., leg side iden-
+1. Specifically, we first assign equal weights to both the primary and                         tification, along with the primary task of KL-grade classification. The
+auxiliary supervised tasks while altering the weights (ranging from 0.1                        proposed technique has been rigorously evaluated on publicly available
+to 1.0) assigned to the unsupervised task. Subsequently, in the second                         datasets (i.e., OAI and MOST) with various aspects such as overall
+experiment, we allocate the highest weight to the primary tasks, zero                          performance, robustness, the effect of additional data, and task. The
+
+                                                                                          10
+M.U. Farooq et al.                                                                                                             Computers in Biology and Medicine 167 (2023) 107570
+
+         Table 4
+         Ablation study of various configurations of our proposed DC-AAE model.
+          Model #      Adversarial loss    Reconstruction loss    Multi-task learning                         Encoder         Evaluation matrices
+                                                                  Leg side              KL-grade              1st    2nd      Acc       Precision    Recall    F1 score
+                                                                  classification        classification
+          1            ✗                   ✓                      ✓                     ✓                     ✓      ✓        72.09     69.99        74.58     71.26
+          2            ✓                   ✗                      ✓                     ✓                     ✓      ✓        72.48     70.42        75.29     71.73
+          3            ✓                   ✓                      ✗                     ✓                     ✓      ✓        73.00     71.07        75.67     72.35
+          4            ✓                   ✓                      ✓                     ✓                     ✓      ✗        74.17     72.32        77.08     73.65
+          5            ✓                   ✓                      ✓                     ✓                     ✓      ✓        75.53     74.10        78.51     75.30
+
+
+
+
+Fig. 14. Illustration of the influence of altering 𝛼 and 𝛽 values on KL-grade classification performance. Subfigures (a) and (b) depict the performance effects with a variation of
+𝛼, holding 𝛽 constant at 0.5 and 1, respectively. Conversely, subfigures (c) and (d) demonstrate the performance consequences of modulating 𝛽 values, while maintaining 𝛼 steady
+at 0 and 1, respectively.
+
+
+results demonstrate that the proposed method not only outperformed                           Acknowledgements
+the state-of-the-art techniques but also showed significant robustness
+while cross-data analysis. Furthermore, we also investigated the effect                         This work was supported by the Basic Science Research Program
+of introducing dual encoding channels at the encoding branch and                             through the National Research Foundation of Korea (NRF), South Korea
+demonstrated its effectiveness by presenting attention maps.                                 funded by the Ministry of Education (Grant No. NRF-2020R1I1A307
+                                                                                             4141; RS-2023-00248444), and ‘‘Regional Innovation Strategy (RIS)’’
+                                                                                             through the National Research Foundation of Korea (NRF), South Korea
+CRediT authorship contribution statement                                                     funded by the Ministry of Education (MOE) (2021RIS-001).
+
+    Muhammad Umar Farooq: Conceptualization, Methodology, Soft-                              Appendix A. Supplementary data
+ware, Investigation, Writing – original draft, Writing – review & editing.
+Zahid Ullah: Methodology, Investigation, Writing – original draft,
+                                                                                                 Supplementary material related to this article can be found online
+Writing – review & editing. Asifullah Khan: Formal analysis, Inves-                          at https://doi.org/10.1016/j.compbiomed.2023.107570.
+tigation, Writing – review & editing. Jeonghwan Gwak: Conceptual-
+ization, Methodology, Software, Formal analysis, Investigation, Writ-
+                                                                                             References
+ing – original draft, Writing – review & editing, Supervision, Project
+administration.
+                                                                                               [1] D.A. Varghese, Prevalence of latent tuberculosis in patients with rheumatoid
+                                                                                                   arthritis and ankylosing spondylitis (Ph.D. thesis), Christian Medical College,
+                                                                                                   Vellore, 2020.
+Declaration of competing interest                                                              [2] P.A. Dieppe, L.S. Lohmander, Pathogenesis and management of pain in
+                                                                                                   osteoarthritis, Lancet 365 (9463) (2005) 965–973.
+                                                                                               [3] A. Mobasheri, M. Batt, An update on the pathophysiology of osteoarthritis, Ann.
+    The authors declare that they have no known competing finan-                                   Phys. Rehabil. Med. 59 (5–6) (2016) 333–339.
+cial interests or personal relationships that could have appeared to                           [4] A. Mathiessen, P.G. Conaghan, Synovitis in osteoarthritis: Current understanding
+influence the work reported in this paper.                                                         with therapeutic implications, Arthritis Res. Ther. 19 (1) (2017) 1–9.
+
+
+                                                                                        11
+M.U. Farooq et al.                                                                                                                  Computers in Biology and Medicine 167 (2023) 107570
+
+
+ [5] M. Cross, E. Smith, D. Hoy, S. Nolte, I. Ackerman, M. Fransen, L. Bridgett, S.              [33] J. Antony, Automatic Quantification of Radiographic Knee Osteoarthritis Severity
+     Williams, F. Guillemin, C.L. Hill, et al., The global burden of hip and knee                     and Associated Diagnostic Features Using Deep Convolutional Neural Networks
+     osteoarthritis: Estimates from the global burden of disease 2010 study, Ann.                     (Ph.D. thesis), Dublin City University, 2018.
+     Rheum. Dis. 73 (7) (2014) 1323–1330.                                                        [34] J. Antony, K. McGuinness, K. Moran, N.E. O’Connor, Automatic detection of
+ [6] B. Heidari, Knee osteoarthritis prevalence, risk factors, pathogenesis and features:             knee joints and quantification of knee osteoarthritis severity using convolutional
+     Part i, Casp. J. Int. Med. 2 (2) (2011) 205.                                                     neural networks, in: International Conference on Machine Learning and Data
+ [7] J.W. Bijlsma, F. Berenbaum, F.P. Lafeber, Osteoarthritis: An update with                         Mining in Pattern Recognition, Springer, 2017, pp. 376–390.
+     relevance for clinical practice, Lancet 377 (9783) (2011) 2115–2126.                        [35] S. Laine, T. Aila, Temporal ensembling for semi-supervised learning, 2016, arXiv
+ [8] E. Losina, M.E. Daigle, L. Suter, D. Hunter, D. Solomon, R. Walensky, J.                         preprint arXiv:1610.02242.
+     Jordan, S.A. Burbine, A.D. Paltiel, J.N. Katz, Disease-modifying drugs for knee             [36] V. Verma, K. Kawaguchi, A. Lamb, J. Kannala, Y. Bengio, D. Lopez-Paz, Inter-
+     osteoarthritis: Can they be cost-effective? Osteoarthr. Cartil. 21 (5) (2013)                    polation consistency training for semi-supervised learning, 2019, arXiv preprint
+     655–667.                                                                                         arXiv:1903.03825.
+ [9] K. Lim, C.S. Lau, Perception is everything: OA is exciting, Int. J. Rheum. Dis.             [37] D. Berthelot, N. Carlini, I. Goodfellow, N. Papernot, A. Oliver, C. Raffel,
+     14 (2) (2011) 111–112.                                                                           Mixmatch: A holistic approach to semi-supervised learning, 2019, arXiv preprint
+[10] C. Palazzo, C. Nguyen, M.-M. Lefevre-Colau, F. Rannou, S. Poiraudeau, Risk                       arXiv:1905.02249.
+     factors and burden of osteoarthritis, Ann. Phys. Rehabil. Med. 59 (3) (2016)
+                                                                                                 [38] R. Caruana, Multitask learning, Mach. Learn. 28 (1) (1997) 41–75.
+     134–138.
+                                                                                                 [39] S. Latif, R. Rana, S. Khalifa, R. Jurdak, J. Epps, B.W. Schuller, Multi-task semi-
+[11] S. Salih, A. Hamer, Hip and knee replacement, Surgery (Oxford) 31 (9) (2013)
+                                                                                                      supervised adversarial autoencoding for speech emotion recognition, IEEE Trans.
+     482–487.
+                                                                                                      Affect. Comput. (2020).
+[12] A.J. Carr, O. Robertsson, S. Graves, A.J. Price, N.K. Arden, A. Judge, D.J. Beard,
+                                                                                                 [40] A. Amyar, R. Modzelewski, H. Li, S. Ruan, Multi-task deep learning based
+     Knee replacement, Lancet 379 (9823) (2012) 1331–1340.
+                                                                                                      CT imaging analysis for COVID-19 pneumonia: Classification and segmentation,
+[13] B.S. Ferket, Z. Feldman, J. Zhou, E.H. Oei, S.M. Bierma-Zeinstra, M. Mazumdar,
+                                                                                                      Comput. Biol. Med. 126 (2020) 104037.
+     Impact of total knee replacement practice: Cost effectiveness analysis of data
+                                                                                                 [41] Y. Zhang, H. Li, J. Du, J. Qin, T. Wang, Y. Chen, B. Liu, W. Gao, G. Ma, B.
+     from the osteoarthritis initiative, bmj 356 (2017).
+[14] P. Baker, K. Muthumayandi, C. Gerrand, B. Kleim, K. Bettinson, D. Deehan,                        Lei, 3D multi-attention guided multi-task learning network for automatic gastric
+     Influence of body mass index (BMI) on functional improvements at 3 years                         tumor segmentation and lymph node classification, IEEE Trans. Med. Imaging
+     following total knee replacement: A retrospective cohort study, PLoS One 8 (3)                   40 (6) (2021) 1618–1631.
+     (2013) e59079.                                                                              [42] S. Sahu, R. Gupta, G. Sivaraman, W. AbdAlmageed, C. Espy-Wilson, Adversarial
+[15] K. Baker, T. McAlindon, Exercise for knee osteoarthritis, Curr. Opin. Rheumatol.                 auto-encoders for speech based emotion recognition, 2018, arXiv preprint arXiv:
+     12 (5) (2000) 456–463.                                                                           1806.02146.
+[16] J. Kellgren, J. Lawrence, Radiological assessment of osteo-arthrosis, Ann. Rheum.           [43] A. Makhzani, J. Shlens, N. Jaitly, I. Goodfellow, B. Frey, Adversarial
+     Dis. 16 (4) (1957) 494.                                                                          autoencoders, 2015, arXiv preprint arXiv:1511.05644.
+[17] A. Tiulpin, J. Thevenot, E. Rahtu, P. Lehenkari, S. Saarakkala, Automatic knee              [44] H. Oka, S. Muraki, T. Akune, A. Mabuchi, T. Suzuki, H. Yoshida, S. Yamamoto, K.
+     osteoarthritis diagnosis from plain radiographs: A deep learning-based approach,                 Nakamura, N. Yoshimura, H. Kawaguchi, Fully automatic quantification of knee
+     Sci. Rep. 8 (1) (2018) 1–10.                                                                     osteoarthritis severity on plain radiographs, Osteoarthr. Cartil. 16 (11) (2008)
+[18] J. Buckland-Wright, I. Carmichael, S. Walker, Quantitative microfocal radiogra-                  1300–1306.
+     phy accurately detects joint changes in rheumatoid arthritis, Ann. Rheum. Dis.              [45] L. Shamir, S.M. Ling, W. Scott, M. Hochberg, L. Ferrucci, I.G. Goldberg, Early
+     45 (5) (1986) 379–383.                                                                           detection of radiographic knee osteoarthritis using computer-aided analysis,
+[19] Z. Ullah, M. Usman, S. Latif, A. Khan, J. Gwak, SSMD-UNet: Semi-supervised                       Osteoarthr. Cartil. 17 (10) (2009) 1307–1312.
+     multi-task decoders network for diabetic retinopathy segmentation, Sci. Rep. 13             [46] L. Shamir, S.M. Ling, W.W. Scott, A. Bos, N. Orlov, T.J. Macura, D.M. Eckley,
+     (1) (2023) 9087.                                                                                 L. Ferrucci, I.G. Goldberg, Knee x-ray image analysis method for automated
+[20] Z. Ullah, M. Usman, J. Gwak, MTSS-AAE: Multi-task semi-supervised adversarial                    detection of osteoarthritis, IEEE Trans. Biomed. Eng. 56 (2) (2008) 407–415.
+     autoencoding for COVID-19 detection based on chest X-ray images, Expert Syst.               [47] D. Saini, T. Chand, D.K. Chouhan, M. Prakash, A comparative analysis of
+     Appl. 216 (2023) 119475.                                                                         automatic classification and grading methods for knee osteoarthritis focussing
+[21] M. Usman, A. Rehman, A. Shahid, S. Latif, S.S. Byon, S.H. Kim, T.M. Khan, Y.G.                   on X-ray images, Biocybern. Biomed. Eng. (2021).
+     Shin, MESAHA-Net: Multi-encoders based self-adaptive hard attention network                 [48] A.Q. Zafar, R. Zamani, M. Akrami, The effectiveness of foot orthoses in the
+     with maximum intensity projections for lung nodule segmentation in CT scan,                      treatment of medial knee osteoarthritis: A systematic review, Gait Posture 76
+     2023, arXiv preprint arXiv:2304.01576.                                                           (2020) 238–251.
+[22] Z. Ullah, M. Usman, S. Latif, J. Gwak, Densely attention mechanism based                    [49] S. Moustakidis, N.I. Papandrianos, E. Christodolou, E. Papageorgiou, D. Tsaopou-
+     network for COVID-19 detection in chest X-rays, Sci. Rep. 13 (1) (2023) 261.                     los, Dense neural networks in knee osteoarthritis classification: A study on
+[23] N. Orlov, L. Shamir, T. Macura, J. Johnston, D.M. Eckley, I.G. Goldberg, WND-                    accuracy and fairness, Neural Comput. Appl. (2020) 1–13.
+     CHARM: Multi-purpose image classification using compound image transforms,                  [50] T.K. Yoo, D.W. Kim, S.B. Choi, E. Oh, J.S. Park, Simple scoring system and
+     Pattern Recognit. Lett. 29 (11) (2008) 1684–1693.                                                artificial neural network for knee osteoarthritis risk prediction: A cross-sectional
+[24] L. Shamir, N. Orlov, D.M. Eckley, T. Macura, J. Johnston, I. Goldberg, WND-                      study, PLoS One 11 (2) (2016) e0148724.
+     CHARM: Multi-Purpose Image Classifier, Astrophysics Source Code Library, 2013,
+                                                                                                 [51] A. Khan, A. Sohail, U. Zahoora, A.S. Qureshi, A survey of the recent architec-
+     pp. ascl–1312.
+                                                                                                      tures of deep convolutional neural networks, Artif. Intell. Rev. 53 (8) (2020)
+[25] L. Shamir, N. Orlov, D.M. Eckley, T. Macura, J. Johnston, I.G. Goldberg,
+                                                                                                      5455–5516.
+     Wndchrm–an open source utility for biological image analysis, Source Code Biol.
+                                                                                                 [52] S.-E. Moon, C.-J. Chen, C.-J. Hsieh, J.-L. Wang, J.-S. Lee, Emotional EEG
+     Med. 3 (1) (2008) 1–13.
+                                                                                                      classification using connectivity features and convolutional neural networks,
+[26] M. Usman, B.-D. Lee, S.-S. Byon, S.-H. Kim, B.-i. Lee, Y.-G. Shin, Volumetric lung
+                                                                                                      Neural Netw. 132 (2020) 96–107.
+     nodule segmentation using adaptive roi with multi-view residual learning, Sci.
+                                                                                                 [53] G. Lou, H. Shi, Face image recognition based on convolutional neural network,
+     Rep. 10 (1) (2020) 12839.
+                                                                                                      China Commun. 17 (2) (2020) 117–124.
+[27] A. Rehman, M. Usman, A. Shahid, S. Latif, J. Qadir, Selective deeply supervised
+                                                                                                 [54] K.N. Sukhia, M.M. Riaz, A. Ghafoor, S.S. Ali, Content-based remote sensing image
+     multi-scale attention network for brain tumor segmentation, Sensors 23 (4)
+                                                                                                      retrieval using multi-scale local ternary pattern, Digit. Signal Process. 104 (2020)
+     (2023) 2346.
+[28] M. Usman, Y.-G. Shin, DEHA-Net: A dual-encoder-based hard attention network                      102765.
+     with an adaptive ROI mechanism for lung nodule segmentation, Sensors 23 (4)                 [55] H. Ramadan, C. Lachqar, H. Tairi, Saliency-guided automatic detection and
+     (2023) 1989.                                                                                     segmentation of tumor in breast ultrasound images, Biomed. Signal Process.
+[29] D. Dai, C. Dong, S. Xu, Q. Yan, Z. Li, C. Zhang, N. Luo, Ms RED: A novel multi-                  Control 60 (2020) 101945.
+     scale residual encoding and decoding network for skin lesion segmentation, Med.             [56] K.C. Kim, H.C. Cho, T.J. Jang, J.M. Choi, J.K. Seo, Automatic detection and
+     Image Anal. 75 (2022) 102293.                                                                    segmentation of lumbar vertebrae from X-ray images for compression fracture
+[30] M. Usman, S. Latif, M. Asim, B.-D. Lee, J. Qadir, Retrospective motion correction                evaluation, Comput. Methods Programs Biomed. 200 (2021) 105833.
+     in multishot MRI using generative adversarial network, Sci. Rep. 10 (1) (2020)              [57] S. Yang, Feature Engineering in Fine-Grained Image Classification (Ph.D. thesis),
+     4786.                                                                                            2013.
+[31] S. Latif, M. Asim, M. Usman, J. Qadir, R. Rana, Automating motion correction                [58] H.H. Nguyen, S. Saarakkala, M.B. Blaschko, A. Tiulpin, Semixup: In-and out-
+     in multishot MRI using generative adversarial networks, 2018, arXiv preprint                     of-manifold regularization for deep semi-supervised knee osteoarthritis severity
+     arXiv:1811.09750.                                                                                grading from plain radiographs, IEEE Trans. Med. Imaging 39 (12) (2020)
+[32] M. Usman, A. Rehman, A. Shahid, S. Latif, S.S. Byon, B.D. Lee, S.H. Kim, Y.G.                    4346–4356.
+     Shin, et al., MEDS-Net: Self-distilled multi-encoders network with bi-direction             [59] P. Chen, L. Gao, X. Shi, K. Allen, L. Yang, Fully automatic knee osteoarthritis
+     maximum intensity projections for lung nodule detection, 2022, arXiv preprint                    severity grading using deep neural networks with a novel ordinal loss, Comput.
+     arXiv:2211.00003.                                                                                Med. Imaging Graph. 75 (2019) 84–92.
+
+
+                                                                                            12
+M.U. Farooq et al.                                                                                                              Computers in Biology and Medicine 167 (2023) 107570
+
+
+[60] M. Górriz, J. Antony, K. McGuinness, X. Giró-i Nieto, N.E. O’Connor, Assessing           [66] J. Wesseling, J. Dekker, W. Van den Berg, S. Bierma-Zeinstra, M. Boers, H. Cats,
+     knee OA severity with CNN attention-based end-to-end architectures, in: Inter-                P. Deckers, K. Gorter, P. Heuts, W. Hilberdink, et al., CHECK (cohort hip and
+     national Conference on Medical Imaging with Deep Learning, PMLR, 2019, pp.                    cohort knee): Similarities and differences with the osteoarthritis initiative, Ann.
+     197–214.                                                                                      Rheum. Dis. 68 (9) (2009) 1413–1419.
+[61] A. Swiecicki, N. Li, J. O’Donnell, N. Said, J. Yang, R.C. Mather, W.A. Jiranek,          [67] S. Ioffe, C. Szegedy, Batch normalization: Accelerating deep network training
+     M.A. Mazurowski, Deep learning-based algorithm for assessment of knee os-                     by reducing internal covariate shift, in: International Conference on Machine
+     teoarthritis severity in radiographs matches performance of radiologists, Comput.             Learning, PMLR, 2015, pp. 448–456.
+     Biol. Med. 133 (2021) 104334.                                                            [68] L. Prechelt, Early stopping-but when? in: Neural Networks: Tricks of the Trade,
+[62] Y. Nasser, R. Jennane, A. Chetouani, E. Lespessailles, M. El Hassouni, Dis-                   Springer, 1998, pp. 55–69.
+     criminative regularized auto-encoder for early detection of knee OsteoArthritis:         [69] B. Zhang, J. Tan, K. Cho, G. Chang, C.M. Deniz, Attention-based cnn for kl
+     Data from the osteoarthritis initiative, IEEE Trans. Med. Imaging 39 (9) (2020)               grade classification: Data from the osteoarthritis initiative, in: 2020 IEEE 17th
+     2976–2984.                                                                                    International Symposium on Biomedical Imaging, ISBI, IEEE, 2020, pp. 731–735.
+[63] J. Antony, K. McGuinness, N.E. O’Connor, K. Moran, Quantifying radiographic              [70] R.K. Jain, P.K. Sharma, S. Gaj, A. Sur, P. Ghosh, Knee osteoarthritis severity
+     knee osteoarthritis severity using deep convolutional neural networks, in: 2016               prediction using an attentive multi-scale deep convolutional neural network,
+     23rd International Conference on Pattern Recognition, ICPR, IEEE, 2016, pp.                   2021, arXiv preprint arXiv:2106.14292.
+     1195–1200.                                                                               [71] Y. Dalia, A. Bharath, V. Mayya, S.S. Kamath, Deepoa: Clinical decision support
+[64] A. Tiulpin, J. Thevenot, E. Rahtu, S. Saarakkala, A novel method for automatic                system for early detection and severity grading of knee osteoarthritis, in:
+     localization of joint area on knee plain radiographs, in: Scandinavian Conference             2021 5th International Conference on Computer, Communication and Signal
+     on Image Analysis, Springer, 2017, pp. 290–301.                                               Processing, ICCCSP, IEEE, 2021, pp. 250–255.
+[65] Softneta, DICOM library anonymize, share, view DICOM files ONLINE dicomli-               [72] R.R. Selvaraju, M. Cogswell, A. Das, R. Vedantam, D. Parikh, D. Batra, Grad-
+     brary.com, 2023, https://www.dicomlibrary.com/dicom/dicom-tags/. (Accessed                    cam: Visual explanations from deep networks via gradient-based localization, in:
+     28 Jan 2023).                                                                                 Proceedings of the IEEE International Conference on Computer Vision, 2017, pp.
+                                                                                                   618–626.
+
+
+
+
+                                                                                         13
+

@@ -1,0 +1,432 @@
+                                                                                                                                                     DEEP SEMI-SUPERVISED ACTIVE LEARNING FOR KNEE OSTEOARTHRITIS SEVERITY
+                                                                                                                                                                                    GRADING
+
+
+
+
+2022 IEEE 19th International Symposium on Biomedical Imaging (ISBI) | 978-1-6654-2923-8/22/$31.00 ©2022 IEEE | DOI: 10.1109/ISBI52829.2022.9761668
+                                                                                                                                                                          Abu Mohammed Raisuddin∗                             Huy Hoang Nguyen∗                     Aleksei Tiulpin
+
+                                                                                                                                                                Research Unit of Medical Imaging, Physics and Technology, University of Oulu, Finland
+                                                                                                                                                                                                                      ∗
+                                                                                                                                                                                                                          Equal Contributions
+
+
+
+                                                                                                                                                                                 ABSTRACT
+                                                                                                                                                     This paper tackles the problem of developing active learning
+                                                                                                                                                     (AL) methods in the context of knee osteoarthritis (OA) di-
+                                                                                                                                                     agnosis from X-ray images. OA is known to be a huge bur-                              KL 0           KL 1           KL 2           KL 3          KL 4
+
+                                                                                                                                                     den for society, and its associated costs are constantly rising.
+                                                                                                                                                     Automatic diagnostic methods can potentially reduce these                                    Fig. 1. Knee radiographs with KL grades
+                                                                                                                                                     costs, and Deep Learning (DL) methodology may be its key
+                                                                                                                                                     enabler. To date, there have been numerous studies on knee
+                                                                                                                                                     OA severity grading using DL, and all but one of them assume                    Nevertheless, these supervised learning (SL)-based methods
+                                                                                                                                                     a large annotated dataset available for model development. In                   were conducted in an idealized scenario, in which a large
+                                                                                                                                                     contrast, our study shows one can develop a knee OA severity                    amount of labeled samples was available. Such a huge de-
+                                                                                                                                                     grading model using AL from as little as 50 samples randomly                    mand for annotations is expensive in practice, as it requires
+                                                                                                                                                     chosen from a pool of unlabeled data. The main insight of this                  highly skilled radiologist(s) to generate the training dataset.
+                                                                                                                                                     work is that the performance of AL improves when the model
+                                                                                                                                                     developer leverages the consistency regularization technique,                       Recently, there was an attempt to achieve annotation-
+                                                                                                                                                     commonly applied in semi-supervised learning.                                   efficient training in KOA grading via semi-supervised learn-
+                                                                                                                                                                                                                                     ing (SSL), which needs a small amount of labeled samples
+                                                                                                                                                          Index Terms— Deep Active Learning, Knee Osteoarthri-                       along with low-cost unlabeled data [7]. The core idea was
+                                                                                                                                                     tis, Epistemic Uncertainty, Monte-Carlo Dropout, Consis-                        to use the consistency regularization (CR) approach to make
+                                                                                                                                                     tency Regularization                                                            the model invariant to perturbations in input and parameter
+                                                                                                                                                                                                                                     spaces. However, the authors of [7] assumed that sets of la-
+                                                                                                                                                                           1. INTRODUCTION                                           beled samples with equally distributed KL grades were given.
+                                                                                                                                                                                                                                     We argue that such an assumption is not realistic, as no prior
+                                                                                                                                                     Osteoarthritis (OA) is a joint disease affecting hundreds of                    knowledge on labels in the unlabeled data pool is usually
+                                                                                                                                                     millions of people worldwide [1]. This musculoskeletal disor-                   available.
+                                                                                                                                                     der is degenerative. The severity of OA is commonly assessed
+                                                                                                                                                                                                                                         In this paper, contrary to the prior art, we instead con-
+                                                                                                                                                     using X-ray imaging according to the Kellgren-Lawrence
+                                                                                                                                                                                                                                     sider a realistic scenario, in which we do not have any prior
+                                                                                                                                                     (KL) system [2], which consists of 5 grades scaling from KL
+                                                                                                                                                                                                                                     knowledge about the data distribution. We aim to construct
+                                                                                                                                                     0 (no OA) to KL 4 (severe OA) (see Figure 1).
+                                                                                                                                                                                                                                     the set of labeled samples in an iterative manner while lever-
+                                                                                                                                                         The knee joint is the largest one in the human body, and it
+                                                                                                                                                                                                                                     aging pre-selected unlabeled data during the iterative acquisi-
+                                                                                                                                                     is one of the most affected joint by OA. A patient with knee
+                                                                                                                                                                                                                                     tion process. Here, we adapt a Deep Active Learning (DAL)
+                                                                                                                                                     OA (KOA) may experience knee pain at its early stages, and
+                                                                                                                                                                                                                                     approach and combine it with CR approach of SSL. In sum-
+                                                                                                                                                     has poor life-quality due to disability at the final stage. Under-
+                                                                                                                                                                                                                                     mary, our contributions are as follows:
+                                                                                                                                                     going total knee replacement is the only available treatment
+                                                                                                                                                     option for patients with severe KOA. As a result, the burden                    1. We apply DAL methods for annotation-efficient training
+                                                                                                                                                     of OA is large at a societal level. For instance, OA was in the                    in automatic KOA severity grading. To the best of our
+                                                                                                                                                     top-2 of the most expensive health expenditures in the United                      knowledge, this is the first study to apply DAL for KOA
+                                                                                                                                                     States in 2013 [3]. One of the potential solutions to reduce                       severity prediction.
+                                                                                                                                                     the negative impacts of OA is its early detection where deep                    2. We utilize CR during DAL training processes.
+                                                                                                                                                     learning (DL) can be useful.                                                    3. We systematically study the effect of including SSL train-
+                                                                                                                                                         Recent literature has shown that DL-based methods have                         ing in DAL methods on the performance of OA severity
+                                                                                                                                                     high potential for automatic KOA severity grading [4, 5, 6].                       grading.
+
+
+
+
+                                                                                                                                                           Authorized licensed use limited to: Istanbul Universitesi. Downloaded on November 13,2022 at 22:02:03 UTC from IEEE Xplore. Restrictions apply.
+                                                                                         Siamese          Unlabeled set         Labeled set
+                                                              KL grade
+                         CNN
+                                                                                         network
+                                                                                                                                               Query labels
+                                                                                                                       Remove                    Add
+
+                   Weight sharing    Concat      Classifier
+
+
+
+                                                                                             Semi-SL            Uncertainty
+                         CNN
+                                                                                            training on        estimation on      Count
+
+
+                                                                                                                                          Uncertainty
+
+
+
+                     Fig. 2. Siamese network
+                                                                                                          Fig. 3. Our workflow
+                           2. METHODS
+                                                                                    We finally note here that in practice it is popular to use
+2.1. Semi-supervised learning                                                   Least Confidence (LC) [11, 12] and Entropy (Ent) of the out-
+Consistency regularization (CR) is a central idea of a vari-                    put as total uncertainty measures. Here, it is assumed that
+ety of SSL methods [7, 8]. Consider a data sample x, two                        p(θ|x̂, D) is simply a point estimate obtained with a standard
+semantics-preserving augmentations T and T 0 , and a neural                     training technique.
+network, denoted by the parametric function fθ with the pa-
+rameters θ. CR aims to enforce invariance of fθ to minor
+                                                                                2.3. Siamese network
+input and parameter perturbations. Formally, the consistency
+regularizer can be written as                                                   For training DAL, we use a Siamese network from Nguyen et
+                                                      2
+                                                                                al. [7]. This architecture’s backbone is a VGG-like neural
+                   kfθ0 (T (x)) − fθ00 (T 0 (x))k2                       (1)    network that processes a pair of knee patches in parallel as
+                                                                                depicted in Figure 2. Once the representations of the patches
+where θ0 and θ00 denote the model parameters under dropout.                     are obtained, we concatenate and pass them through a classi-
+We note that, in the context of this study, the term SSL and                    fier to predict the KL grade of the given knee.
+CR can be read interchangeably.
+
+2.2. Uncertainty measures                                                       2.4. Regularized active learning
+
+When performing active learning, one needs to consider so-                      Our pipeline is presented in Figure 3. First, we create a la-
+called acquisition functions, which help to obtain the points                   beled set DL by randomly sampling ninit data points from
+of interest for annotations. The natural choice for acquisi-                    the full dataset D, obtain an unlabeled set DU = D \ DL , and
+tion function is some form of uncertainty. There are two                        initialize an empty set U for later use. We then run an AL
+main types of uncertainty considered in machine learning –                      algorithm that iteratively learns to identify (i) the least uncer-
+aleatoric and epistemic [9]. The former represents the ex-                      tain samples U with respect to the model to be added to the
+pected amount of noise in the data, and the latter the lack of                  SSL training process, and (ii) the hardest samples L to be an-
+model knowledge.                                                                notated for improving the model’s performance on the main
+    For a deep neural network trained with training data                        task.
+D, the prediction ŷ of a new data point x̂ and model pa-                            At each iteration, we train the model using the SSL al-
+rameters θ, total uncertainty can be computed as Unct =                         gorithm with the CR on the set DL ∪ U . While we use a
+H[Ep(θ|x̂,D) p(ŷ|θ, x̂, D)], and data uncertainty as Uncd =                    cross-entropy loss for predictions of DL ’s samples, we ap-
+Ep(θ|x̂,D) H [p(ŷ|θ, x̂, D)]. In our notation we denote H an                   ply the consistency regularizer on representations of samples
+the entropy, and p(ŷ|θ, x̂, D) – predictive posterior for x̂ given             from DL ∪ U using (1) as in [8]. Subsequently, we utilize
+the model parameters θ and training dataset D. Our method                       the trained model to estimate the uncertainties of unlabeled
+relies on computing posterior samples with the Monte-Carlo                      samples in DU .
+Dropout (MCD) approach [10].                                                         Since our model has the least knowledge on samples with
+    Epistemic uncertainty is often represented by mutual in-                    the highest uncertainties, we query labels of the top-nb and
+formation (MI) between the model prediction and the poste-                      add them to DL for the next iteration. Simultaneously, we
+rior distribution over the model parameters [9], but can be                     generate a set U of nSS samples with the lowest uncertain-
+estimated using the total and aleatoric uncertainty, that is                    ties as the unlabeled set of the SSL algorithm. We continue
+                                                                                this cycle until a pre-defined budget N of labeled samples is
+               MI(ŷ; f |x̂, D) = Unct − Uncd .                          (2)    reached.
+
+
+
+
+      Authorized licensed use limited to: Istanbul Universitesi. Downloaded on November 13,2022 at 22:02:03 UTC from IEEE Xplore. Restrictions apply.
+                Table 1. Train and test dataset details.                                Table 2. Effect of semi-supervised learning (SSL) on balanced ac-
+ Split     Acquisition Site   # Knees    KL0    KL1    KL2     KL3    KL4               curacy (BA) for different query methods. Model trained on the full
+                  A              1397     483    239    438     194     43              dataset achieved 64.13±0.88 BA. ENT-MCD indicates the entropy
+                  B              1883     765    336    445     272     64              calculated from MCD samples. MI-MCD indicates mutual informa-
+ Train                                                                                  tion between model posterior and data target distributions (epistemic
+                  C              2535    1065    450    632     307     81
+                                                                                        uncertainty) computed from MCD [10] samples.
+                  D              2235     841    432    572     323     67
+                                                                                                           Query       SSL          50                    250                    500            800
+  Test            E               903     294    140    287     143     39
+                                                                                                                         X      20.96±0.22       40.06±2.34                   49.14±2.07     56.39±0.59
+                                                                                                      ENT-MCD
+                                                                                                                         7      21.37±0.52       37.43±2.83                   50.39±1.85     52.18±1.83
+                          3. EXPERIMENTS                                                                                 X      20.96±0.22       28.68±2.03                   42.81±1.08     50.91±0.73
+                                                                                                      MI-MCD
+                                                                                                                         7      21.37±0.52       28.66±2.13                   43.02±4.81     51.97±1.35
+3.1. Data                                                                                                                X      20.49±0.29       30.19±2.97                   43.99±1.73     46.59±1.55
+                                                                                                            LC
+                                                                                                                         7      20.04±0.59       25.01±1.77                   36.73±3.68     45.17±4.45
+We used plain radiographs from the Osteoarthritis Initia-
+tive (OAI) cohort (https://nda.nih.gov/oai). The                                                                         X      20.49±0.29       34.72±2.76                   40.49±2.66     50.07±1.08
+                                                                                                           ENT
+dataset consists of 4796 patients who were examined at a                                                                 7      20.04±0.59       23.37±2.38                   36.12±2.26     49.97±1.77
+baseline (first visit) and follow-up visits. In this work, we                                          Random            7      20.71±0.67       21.92±1.39                   34.73±1.54     43.5±1.93
+only used data from the baseline. Among the 5 acquisition
+sites of the cohort, we allocated data from sites A, B, C,
+and D for training (8050 samples), and the data from site                               3.3. Results
+E for independent evaluation (953 samples). The KL grade
+distribution for the whole baseline is shown in Table 1. We                             We present our detailed and graphical results in Table 2
+followed pre-processing steps in [4, 7] to extract knee patches                         and Figure 4, respectively. Here, we considered different
+from bilateral knee radiographs.
+
+3.2. Implementation details                                                                                      ENT              Random                                     LC              Random
+                                                                                                                 ENT + SSL        Full data                                  LC + SSL        Full data
+We implemented our codebase in PyTorch and ran all our                                                60                                                               60
+
+
+
+
+                                                                                  Balanced accuracy                                                Balanced accuracy
+experiments on NVidia V100 GPUs. All the models were                                                  50                                                               50
+trained for 500 epochs with a batch size of 32. Following [7],
+                                                                                                      40                                                               40
+we used the Adam optimizer with a learning rate of 1e−3, β
+values of (0.9, 0.99), and without weight decay. During train-                                        30                                                               30
+
+ing, we dropped the learning rate by a factor of 10 at 300th                                          20                                                               20
+and 400th epochs.
+                                                                                                            50
+                                                                                                           100
+                                                                                                           150
+                                                                                                           200
+                                                                                                           250
+                                                                                                           300
+                                                                                                           350                                                               50
+                                                                                                                                                                            100
+                                                                                                                                                                            150
+                                                                                                                                                                            200
+                                                                                                                                                                            250
+                                                                                                                                                                            300
+                                                                                                                                                                            350
+                                                                                                           400
+                                                                                                           450
+                                                                                                           500
+                                                                                                           550                                                              400
+                                                                                                                                                                            450
+                                                                                                                                                                            500
+                                                                                                                                                                            550
+                                                                                                                   # labeled samples                                           # labeled samples
+                                                                                                           600
+                                                                                                           650
+                                                                                                           700
+                                                                                                           750
+                                                                                                           800                                                              600
+                                                                                                                                                                            650
+                                                                                                                                                                            700
+                                                                                                                                                                            750
+                                                                                                                                                                            800
+    Regarding the architecture, we used the horizontal-
+vertical pooling, based on the reported empirical results                                                          (a) Entropy                                              (b) Least confidence
+in [7]. For the DAL setting, we set ninit = 50, nb = 50, and                                                     MI-MCD              Random                                  ENT-MCD               Random
+N = 800 (approximately 10% of full baseline data). For SSL,                                                      MI-MCD + SSL        Full data                               ENT-MCD + SSL         Full data
+we dynamically let nSS be the same as |XL | in each iteration.                                        60                                                               60
+
+
+
+
+                                                                                  Balanced accuracy                                                Balanced accuracy
+Besides the random query as a baseline method, we conducted                                           50                                                               50
+experiments on four other uncertainty estimation algorithms –
+                                                                                                      40                                                               40
+namely entropy [13, 9], least confidence [11, 12], and mutual
+information from MCD (MI-MCD) [13, 9, 10] and entropy                                                 30                                                               30
+from MCD (ENT-MCD). In MI-MCD and ENT-MCD, we                                                         20                                                               20
+used 50 forward passes of MCD.                                                                              50
+                                                                                                           100
+                                                                                                           150
+                                                                                                           200
+                                                                                                           250
+                                                                                                           300
+                                                                                                           350
+                                                                                                           400
+                                                                                                           450
+                                                                                                           500
+                                                                                                           550
+                                                                                                                                                                             50
+                                                                                                                                                                            100
+                                                                                                                                                                            150
+                                                                                                                                                                            200
+                                                                                                                                                                            250
+                                                                                                                                                                            300
+                                                                                                                                                                            350
+                                                                                                                                                                            400
+                                                                                                                                                                            450
+                                                                                                                                                                            500
+                                                                                                                                                                            550
+                                                                                                                   # labeled samples                                           # labeled samples
+                                                                                                           600
+                                                                                                           650
+                                                                                                           700
+                                                                                                           750
+                                                                                                           800                                                              600
+                                                                                                                                                                            650
+                                                                                                                                                                            700
+                                                                                                                                                                            750
+                                                                                                                                                                            800
+    In the data preparation step, we split the data into a train-
+ing set (80%) and a validation set (20%) with a stratification                                                     (c) MI-MCD                                                 (d) ENT-MCD
+by patient. Once models were trained, we independently eval-
+                                                                                        Fig. 4. Added value of CR for different active learning query strate-
+uated them on data from the site E for final reports.
+                                                                                        gies: (a) Entropy of network’s probabilities, and (b) Least Con-
+    Since the data were imbalanced as shown in Table 1, we                              fidence, (c) epistemic uncertainty (MI) from MCD, (d) total un-
+evaluated models and performed model selection based on                                 certainty (entropy) from MCD. All sub-figures show comparison
+balanced accuracy (BA). We trained each setting 5 times with                            between random sampling (red), naı̈ve query sampling (blue) and
+different random seeds and reported average BAs and stan-                               query-based sampling with CR and black dashed line indicates the
+dard errors.                                                                            BA with full baseline.
+
+
+
+
+         Authorized licensed use limited to: Istanbul Universitesi. Downloaded on November 13,2022 at 22:02:03 UTC from IEEE Xplore. Restrictions apply.
+                                                    0.30                                                                                            0.30
+                                                                                                   0.30
+    0.20                                                                                                                                            0.25
+                                                    0.25                                           0.25
+    0.15                                            0.20                                           0.20                                             0.20
+%                                               %   0.15
+                                                                                               %
+                                                                                                   0.15
+                                                                                                                                                %   0.15
+    0.10
+                                                    0.10                                           0.10                                             0.10
+    0.05                                                                                                                                            0.05
+                                                    0.05                                           0.05
+    0.00                                            0.00                                           0.00                                             0.00
+           0.0   0.2   0.4   0.6    0.8   1.0              0.0   0.2   0.4   0.6   0.8   1.0               0.0   0.2    0.4   0.6   0.8   1.0              0.0    0.2   0.4   0.6   0.8   1.0
+                       ENT-MCD                                         ENT-MCD                                          ENT-MCD                                         ENT-MCD
+
+    0.30                                            0.25
+                                                                                                                                                    0.20
+                                                                                                   0.175
+    0.25                                            0.20                                           0.150
+    0.20                                                                                                                                            0.15
+                                                    0.15                                           0.125
+%   0.15                                        %                                              %   0.100                                        %   0.10
+                                                    0.10                                           0.075
+    0.10
+                                                                                                   0.050                                            0.05
+    0.05                                            0.05
+                                                                                                   0.025
+    0.00                                            0.00                                           0.000                                            0.00
+           0.0   0.2   0.4   0.6    0.8   1.0              0.0   0.2   0.4   0.6   0.8   1.0               0.0    0.2   0.4   0.6   0.8   1.0              0.0    0.2   0.4   0.6   0.8   1.0
+                       ENT-MCD                                         ENT-MCD                                          ENT-MCD                                         ENT-MCD
+                 (a) Iteration 1                                 (b) Iteration 4                                 (c) Iteration 8                                 (d) Iteration 15
+
+Fig. 5. Effect of CR on ENT-MCD uncertainty distribution of the test set - without (top row) and with (bottom row) SSL
+training.
+
+
+acquisition functions representing total uncertainty and epis-                                 DL to knee OA grading.
+temic uncertainty computed from MCD (denoted as MI-                                                Though our results show clear benefit of SSL for DAL,
+MCD). When training the methods with the CR, we found                                          some limitations of this study should be discussed. First, we
+that ENT-MCD (total uncertainty) outperformed the others in                                    selected the initial data randomly. Although realistic, random
+most cases.                                                                                    selection does not guarantee good data distribution. In such a
+    Naı̈ve Entropy and LC based sampling techniques have                                       scenario, it is possible that the selected data will be highly bi-
+shown improvements with CR. For MI-MCD and ENT-MCD                                             ased, there could be zero sample for a certain KL grade. That
+based sampling techniques, the model outperforms random                                        may result in poorly-trained models and low-quality uncer-
+baseline with and without SSL, but SSL makes the perfor-                                       tainty estimates, negatively affecting the next iterations. This
+mance curve more smooth and stable (e.g. there are some                                        could ripple through all the iterations of DAL. We think fu-
+sudden big performance drops for without SSL cases which                                       ture studies should focus on optimizing initial data subset se-
+are resolved with SSL).                                                                        lection. Second, DAL is expensive in terms of computational
+    In other words, after enforcing the CR over DL ∪U in each                                  power even for 8050 data points. We believe, future inte-
+iteration, we observe that all the uncertainty-based methods                                   gration of transfer learning by Self-Supervised learning with
+were stabilized, which results in substantial improvements                                     Semi-Supervised DAL can help the model learn faster. Fi-
+from the random query baseline once at least 300 labeled sam-                                  nally, the use of MCD could potentially result in mode col-
+ples were added to the data pool.                                                              lapse which in turn will result in poor uncertainty estimation.
+    We visualize the effect of CR on uncertainty distribu-                                     Combating mode collapse could help gain even better perfor-
+tion in Figure 5 over DAL iterations on the independent test                                   mance with MI-MCD and ENT-MCD queries. We believe
+set. Specifically, we show the ENT-MCD distributions from                                      future studies should consider using deep ensemble [14] or
+the 1st , 4th , 8th , and 15th iterations. As the DAL itera-                                   deep ensemble of MCD [15] to fight this limitation.
+tions progress, the total uncertainty distribution did not shift                                   To conclude, we have shown that SSL improves DAL in
+towards zero for models without SSL, i.e. the amount of low-                                   the context of knee OA grading. In general, our results in-
+uncertainty samples did not increase over time. However, for                                   dicate that DAL may be beneficial for cost-effective DL in
+models with SSL, we observed the opposite.                                                     medical image analysis or interpretation, and we call for more
+                                                                                               studies investigating such approaches.
+                                   4. DISCUSSION
+                                                                                                     5. COMPLIANCE WITH ETHICAL STANDARDS
+We studied DAL for KOA severity prediction and empirically
+showed that CR from SSL stabilized and enhanced the perfor-                                    This research study was conducted retrospectively using
+mance of DAL and improved the quality of uncertainty mea-                                      human subject data made available in open access by Os-
+sure. This facilitates the use of AL in practical applications of                              teoarthritis Initiative (https://nda.nih.gov/oai). A
+
+
+
+
+           Authorized licensed use limited to: Istanbul Universitesi. Downloaded on November 13,2022 at 22:02:03 UTC from IEEE Xplore. Restrictions apply.
+new ethical approval was not required, as the ethical approval                  [6] Kevin Leung, Bofei Zhang, Jimin Tan, Yiqiu Shen,
+and informed consent of the patients were obtained by OAI                           Krzysztof J Geras, James S Babb, Kyunghyun Cho, Gre-
+and published under open access permission group.                                   gory Chang, and Cem M Deniz, “Prediction of total
+                                                                                    knee replacement and diagnosis of osteoarthritis by us-
+               6. ACKNOWLEDGEMENTS                                                  ing deep learning on knee radiographs: data from the
+                                                                                    osteoarthritis initiative,” Radiology, vol. 296, no. 3, pp.
+This study is supported by the internal funds of the University                     584–593, 2020.
+of Oulu, Finland and the Finnish Center for Artificial Intelli-
+                                                                                [7] Huy Hoang Nguyen, Simo Saarakkala, Matthew B
+gence (FCAI). CSC – IT Center for Science is acknowledged
+                                                                                    Blaschko, and Aleksei Tiulpin, “Semixup: in-and
+for providing generous computational resources. Egor Pan-
+                                                                                    out-of-manifold regularization for deep semi-supervised
+filov and Terence McSweeney are acknowledged for proof-
+                                                                                    knee osteoarthritis severity grading from plain radio-
+reading. The authors declare no conflict of interest.
+                                                                                    graphs,” IEEE Transactions on Medical Imaging, vol.
+    The OAI is a public-private partnership comprised of
+                                                                                    39, no. 12, pp. 4346–4356, 2020.
+five contracts (N01-AR-2-2258; N01-AR-2-2259; N01-AR-
+2-2260; N01-AR-2-2261; N01-AR-2-2262) funded by the                             [8] Samuli Laine and Timo Aila,       “Temporal ensem-
+National Institutes of Health, a branch of the Department of                        bling for semi-supervised learning,” arXiv preprint
+Health and Human Services, and conducted by the OAI Study                           arXiv:1610.02242, 2016.
+Investigators. Private funding partners include Merck Re-
+search Laboratories; Novartis Pharmaceuticals Corporation,                      [9] Yarin Gal, “Uncertainty in deep learning,” 2016.
+GlaxoSmithKline; and Pfizer, Inc. Private sector funding
+                                                                               [10] Yarin Gal and Zoubin Ghahramani, “Dropout as a
+for the OAI is managed by the Foundation for the National
+                                                                                    bayesian approximation: Representing model uncer-
+Institutes of Health. This manuscript was prepared using an
+                                                                                    tainty in deep learning,” in international conference on
+OAI public use data set and does not necessarily reflect the
+                                                                                    machine learning. PMLR, 2016, pp. 1050–1059.
+opinions or views of the OAI investigators, the NIH, or the
+private funding partners.                                                      [11] Burr Settles, “Active learning literature survey,” 2009.
+
+                       7. REFERENCES                                           [12] Dan Wang and Yi Shang, “A new active labeling method
+                                                                                    for deep learning,” in 2014 International joint confer-
+ [1] Theo Vos, Stephen S Lim, Cristiana Abbafati, Kaja M                            ence on neural networks (IJCNN). IEEE, 2014, pp. 112–
+     Abbas, Mohammad Abbasi, Mitra Abbasifard, Mohsen                               119.
+     Abbasi-Kangevari, Hedayat Abbastabar, Foad Abd-
+                                                                               [13] Claude Elwood Shannon, “A mathematical theory of
+     Allah, Ahmed Abdelalim, et al., “Global burden of
+                                                                                    communication,” The Bell system technical journal, vol.
+     369 diseases and injuries in 204 countries and territories,
+                                                                                    27, no. 3, pp. 379–423, 1948.
+     1990–2019: a systematic analysis for the global burden
+     of disease study 2019,” The Lancet, vol. 396, no. 10258,                  [14] Balaji Lakshminarayanan, Alexander Pritzel, and
+     pp. 1204–1222, 2020.                                                           Charles Blundell, “Simple and scalable predictive un-
+                                                                                    certainty estimation using deep ensembles,” arXiv
+ [2] Jonas H Kellgren and JS1006995 Lawrence, “Radio-
+                                                                                    preprint arXiv:1612.01474, 2016.
+     logical assessment of osteo-arthrosis,” Annals of the
+     rheumatic diseases, vol. 16, no. 4, pp. 494, 1957.                        [15] Remus Pop and Patric Fulop, “Deep ensemble bayesian
+ [3] Celeste M Torio and Brian J Moore, National Inpa-                              active learning: Addressing the mode collapse issue in
+     tient Hospital Costs: The Most Expensive Conditions by                         monte carlo dropout via ensembles,” arXiv preprint
+     Payer, 2013: Statistical Brief #204, Agency for Health-                        arXiv:1811.03897, 2018.
+     care Research and Quality (US), Rockville (MD), 2006.
+ [4] Aleksei Tiulpin, Jérôme Thevenot, Esa Rahtu, Petri
+     Lehenkari, and Simo Saarakkala, “Automatic knee os-
+     teoarthritis diagnosis from plain radiographs: a deep
+     learning-based approach,” Scientific reports, vol. 8, no.
+     1, pp. 1–10, 2018.
+ [5] Aleksei Tiulpin and Simo Saarakkala, “Automatic grad-
+     ing of individual knee osteoarthritis features in plain ra-
+     diographs using deep convolutional neural networks,”
+     Diagnostics, vol. 10, no. 11, pp. 932, 2020.
+
+
+
+
+     Authorized licensed use limited to: Istanbul Universitesi. Downloaded on November 13,2022 at 22:02:03 UTC from IEEE Xplore. Restrictions apply.
+

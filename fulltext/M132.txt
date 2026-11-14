@@ -1,0 +1,1108 @@
+Neural Processing Letters (2022) 54:5199–5224
+https://doi.org/10.1007/s11063-022-10857-y
+
+
+
+
+A Novel Focal Ordinal Loss for Assessment of Knee
+Osteoarthritis Severity
+
+Weiqiang Liu1,2,3 · Tianshuo Ge1,3 · Linkai Luo1,2,3 · Hong Peng1,3 · Xide Xu1,3 ·
+Yuangui Chen1,3 · Zefeng Zhuang4
+
+Accepted: 19 April 2022 / Published online: 24 May 2022
+© The Author(s), under exclusive licence to Springer Science+Business Media, LLC, part of Springer Nature 2022
+
+
+
+Abstract
+Knee osteoarthritis (KOA) occurs mostly in the elderly and often causes physical disability
+and limitation. Early detection and intervention are particularly important in reducing the
+deterioration of knee disease. Currently, early detection of KOA is mainly evaluated by
+a Kellgren-Lawrence (KL) Classification with five class. KL is an ordered classification
+problem. The cross-entropy loss (CEL) and fixed penalty loss (FPL) are commonly used in KL
+system. Both CEL and FPL do not take into account the ease of classification between samples,
+which results in that the obtained model has deficiency. In this paper, a novel focal ordinal loss
+(FOL) is proposed by combining FPL and focal loss (FL) for KL. In the training algorithm
+based on FOL, the difficult or easy example is first identified according to the predicted
+probability toward to the true label at each epoch. The sample with a high predicted probability
+is considered as an easy sample. On the contrary, it is considered as a difficult sample. The
+weights for easy samples in the loss are then adjusted down in the next epoch, which results in
+that the training process can focus on difficult samples. The performance of FOL is validated
+on an X-ray image dataset from the Osteoarthritis Initiative (OAI) with several classical
+CNN models, such as VGG, Resnet, Densenet and Googlenet. The experimental results show
+that FOL achieves significant improvements in many performance measures, especially in
+mean square error (MSE). In addition, the experimental results on the augmented dataset
+and the Resnet with the convolutional block attention module (CBAM) also show similar
+improvements from FOL. It indicates that FOL is effective and superior to CEL and FPL in
+the numerous models and two data types (original and augmented) for KL grading.
+
+Keywords Knee osteoarthritis · KL grading · Focal ordinal loss · Data augmentation ·
+CBAM
+
+
+
+B Linkai Luo
+    luolk@xmu.edu.cn
+1   Department of Automation, Xiamen University, Xiamen 361000, China
+2   National Institute for Data Science in Health and Medicine, Xiamen University, Xiamen 361000,
+    China
+3   Xiamen Key Laboratory of Big Data Intelligent Analysis and Decision Making, Xiamen University,
+    Xiamen 361000, China
+4   Department of Informatics, University of Zurich, 8057 Zurich, Switzerland
+
+
+                                                                                                   123
+5200                                                                                     W. Liu et al.
+
+
+1 Introduction
+
+Knee Osteoarthritis (KOA) is a frequent degenerative disease of the knee joint in middle
+and elderly people that seriously affects the quality of life [1]. With the aging of the world
+population, KOA has become an important public health issue. According to the research of
+the World Health Organization, the current prevalence of progressive KOA is 10-15% in the
+people over 60 years old. It is predicted that by 2050, the people aged above 60 years with
+KOA will exceed 20% of the total global population, of which, one-third of KOA patients
+will be disabled and physical impaired [2]. With high morbidity and disability rates, KOA
+poses a serious threat to public health and increases the socio-economic burden [3]. However,
+there is still no effective treatment for KOA. Therefore, early diagnosis of KOA is crucial to
+prevent its deterioration [4].
+    Imaging is an important approach in diagnosing KOA, such as MRI and X-ray [5]. MRI
+is not used for routine KOA diagnosis due to its expensive equipment and high examination
+costs, especially in backward areas [6], while X-ray is an economical, convenient and rapid
+imaging modality that is widely used in clinical practice, especially in the examination of the
+skeletal system. In addition, X-ray has an advantage in the contrast of bone structures [7]. In
+1957, Kellgren and Lawrence proposed the KL classification system for KOA [8], in which
+knee osteoarthritis is classified into five grades according the severity. An example and the
+corresponding criteria for each grade are shown in Fig. 1.
+    In determining KL grades, the experience and carefulness of doctor plays a decisive role.
+Different doctors often give different results on the same image because the criteria for KL
+grading are relatively vague as well as different experiences. Statistically, the reliability of KL
+graders currently is not high, which ranges from approximately 0.67 to 0.73 [9]. In addition,
+misclassifying a grade of the knee as a nearby grade (e.g. grade 0 to grade 1) is far less serious
+than misclassifying a grade as a distant grade (e.g. grade 0 to grade 4). Therefore, it is not
+sufficient only using the accuracy of grading alone and the mean squared error (MSE) [10]
+may be a better solution in evaluating the performance of grading KOA.
+    There are many existing works in grading KOA. It is a regular way to combine extracted
+features and classification method to address KL grading issues. Brahim et al. [11] used inde-
+pendent component analysis for feature extraction, and then used random forest approach to
+obtain a binary classification result of 82.98%. Subramoniam et al. [12] used local binary
+
+
+
+
+Fig. 1 KL grades and their corresponding criterion
+
+
+123
+A novel focal ordinal loss for assessment of knee…                                         5201
+
+
+pattern to pre-process 130 X-ray images first, and then used K-nearest neighbour classifiers
+with Euclidean, cosine, and martingale for KL grading and obtained a result of 93%. Fur-
+thermore, some researchers conducted the classification through the perspective of knee joint
+location. Shamir et al. [13] used template matching to localize the knee joint position on X-
+ray images and extracted six types of features, and obtained an accuracy of 43.1% with the
+weighted nearest neighbor rule. Minciullo et al. [14] used the affine transformation method
+to match the location of the key points of the knee joint, and subsequently used the random
+forest method to classify the key points, and obtained an accuracy of 47.9%. In order to better
+outline the knee joint after locating, Saleem et al. [15] proposed a novel method to diagnose
+KOA. They used histogram of gradients (HOG) to locate the region of interest (ROI) in the
+images, the edges of femur and tibia were then extracted by Canny operator. Their method
+obtained a binary classification accuracy of 99.19%.
+    In recent years, many convolutional neural network (CNN), such as Resnet [16], VGG [17],
+Googlenet [18] and Densenet [19] have been widely used in various medical classification
+tasks such as liver cancer detection and diabetic retinopathy detection [20–23]. In contrast,
+the research with deep learning for KL classification of osteoarthritis is still in its start-up
+phase [24]. Antony et al. [25, 26] designed a new CNN model with a weighted combination
+of cross-entropy loss (CEL) and mean-squared error loss and obtained an accuracy of 63.6%.
+Marc et al. [27] proposed a novel end-to-end CNN framework to automatically quantify
+the severity of knee osteoarthritis and achieved a recognition result of 64.3%. Tiulpin et
+al. [28] used a deep siamese network to score the severity grade of knee osteoarthritis and
+achieved an accuracy of 66.7%. Unfortunately, the above approaches do not make full use of
+the relationships between labels and the manifold of the data. To improve these drawbacks,
+Nasser et al. [29] proposed an autoencoder network with discriminative information loss
+and achieved an average accuracy of 82.53% in binary classification. After that, Nguyen et
+al. [30] used a deep semi-supervised learning method based on manifold learning to train a
+valid model and obtained an accuracy of 70.9%. In addition, some scholars investigated KL
+classification from the perspective of object detection. Liu et al. [31] proposed a novel object
+detection method for automatic scoring of KL classification by an improved faster R-CNN
+and obtained a multi-classification accuracy of 71.1%. Norman et al. [32] used U-net to
+extract the ROI of the knee and exploited the Densenet to classify KL grades, and achieved
+an average sensitivity of 77.2% and a specificity of 91.5%.
+    It is a common practice in machine learning to impose a larger penalty to difficult sample.
+For example, the classical AdaBoost algorithm [33] gradually increased the penalty weight
+of difficult samples through serial training. Lin et al. [34] proposed focal loss (FL) to focus
+on the difficult samples in object detection and obtained an improved accuracy. Chen et al.
+[35] assigned higher penalty for the predicted results that are further away from the actual
+classes with a fixed penalty loss (FPL). It makes the predicted KL grades to converge more
+easily to the actual grades. However, the drawback of this approach is that the penalty weight
+matrix cannot be adaptively adjusted during the training process. The difficult samples often
+change during training.
+    Attention mechanisms [36] have shown great success in various computer vision tasks such
+as image classification [37–41] and image segmentation [42–52]. A representative of attention
+mechanism is the convolutional block attention module (CBAM) [53] where both channel
+attentional and spatial attentional mechanism are introduced to extract features. Zhang et al.
+[54] proposed a CBAM-CNN for knee osteoarthritis, in which a Resnet was applied to first
+extract knee features from radiographs and then the knee features are combined with the
+features extracted by the CBAM to automatically perform KL prediction. However, it does
+not take into account the difficult samples.
+
+                                                                                    123
+ 5202                                                                                 W. Liu et al.
+
+
+
+
+ Fig. 2 Ordinal penalty loss versus cross-entropy loss
+
+
+    To address the shortcomings of existing works on automatic classification of KL classes
+ for osteoarthritis of the knee, we propose a novel focal ordinal loss. The focal ordinal loss
+ focuses the difficult samples in each epoch of training by reducing the weights of easy-to-
+ classify samples at next epoch. In addition, CBAM is introduced into our model and some
+ data-augmentation schemes are adopted. The experiments with some classical CNN network
+ models show that the focal ordinal loss performs better than the cross-entropy loss as well
+ as the fixed penalty weights loss. The main contributions of this paper are as follows:
+  (i) A novel focal ordinal loss is proposed by combining the focal loss and the fixed penalty
+      loss.
+ (ii) The focal ordinal loss obtains a better performance than the cross-entropy loss and the
+      fixed penalty loss in the automatic classification of KL classes for osteoarthritis of the
+      knee.
+(iii) The focal ordinal loss also performs well in the model with data augmentation and CBAM.
+    The remainder of the paper is organized as follows. Section 2 briefly introduces the fix
+ penalty loss and the focal loss. The focal ordinal loss and its extension in data-augmentation
+ and CBAM are presented in Sect. 3. In Sect. 4, extensive numerical experiments are carried
+ out and the corresponding results are discussed. Finally, the conclusion and future work are
+ drawn in Sect. 5.
+
+
+
+
+ 123
+A novel focal ordinal loss for assessment of knee…                                         5203
+
+
+2 Related Work
+
+2.1 Fixed Penalty Loss Algorithm
+
+The traditional cross-entropy loss function assigns the same penalty weight to the incor-
+rect prediction, which fails to reflect the difference between different misjudgements. The
+approach based on FPL [35] is showed in Fig. 2 where an ordinal penalty matrix W is
+designed to represent the penalty between predicted and true grades. In Fig. 2, W is an n × n
+matrix, where wi j ∈ W represents the penalty weight of predicted grade j on true grade
+i, i, j ∈ {1, . . . , n} and n is the number of KL grading. It can be seen that each grade has
+a penalty weight of 1 on itself, and have a higher penalty weight if the predicted grade is
+further away from the true classification grade. Suppose the predicted probability vector of
+a sample is p and the true grade is i, the FPL for the prediction is
+
+                                                              
+                                                              n
+                                    loss( p, i) = wi · q =          wi j q j                (1)
+                                                              j=1
+
+
+where                                         
+                                                  pj,       if j  = i
+                                      qj =                                                  (2)
+                                                  1 − pj,     if j = i
+
+   The reason of q j = 1 − p j for j = i is that we want to get a small loss when the predicted
+grade is the true grade. Eqs. (1) and (2) can be simplified as
+
+                                                              
+                                                              n
+                                   loss( p, i) = w̃i · p =          w̃i j p j               (3)
+                                                              j=1
+
+
+where                                         
+                                                  0,       if j = i
+                                    w̃i j =                                                 (4)
+                                                  wi j + 1, other wise
+
+2.2 Focal Loss
+
+In the KL grade task, the correct classification of difficult samples plays an important role in
+classification performance. Liu et al. [31] have added the FL to object detection in the knee
+ROI, and obtained good localization results. The FL is a variant of the standard CEL. The
+standard cross-entropy loss is
+                                    C E( p, i) = − log( pi )                                 (5)
+
+The FL is defined as
+                                   F L( pi ) = −αi (1 − pi )γ log( pi )                     (6)
+
+where αi is a balance coefficient between the positive and negative sample sizes, (1 − pi )γ
+is the coefficient for difficult sample, and γ is a non-negative hyper-parameter. The FL treats
+difficult samples and easy samples the same when γ = 0, while it focuses more on difficult
+samples when γ > 0. Figure 3 illustrates the CEL and the FL curves with different γ where
+αi = 1.
+
+                                                                                    123
+5204                                                                             W. Liu et al.
+
+
+
+
+Fig. 3 Focal loss versus cross-entropy loss
+
+
+
+2.3 The Convolutional Block Attention Module
+
+CBAM contains two main components, the channel attention module and the spatial attention
+module. Given the feature mapping of an intermediate layer F ∈ R C×H ×W , a block of CBAM
+containing a channel attention mapping Mc ∈ R C×1×1 and a spatial attention mapping
+Ms ∈ R 1×H ×W can be described by
+
+                                                             
+                               F = Mc (F) ◦ F, F = Mc (F ) ◦ F                           (7)
+
+                                                             
+where ◦ the element-wise multiplication, Mc (F) and Ms (F ) needs to be broadcast copied
+                   
+to the size of F . F respectively. Figure 4 describes the computational process for a block
+of CBAM. The SENet [55] is the winner of ImageNet 2017 and CBAM improves upon it.
+    The channel attention module is calculated by
+
+               Mc (F) = σ (M L P(Avg Pool_S(F)) + M L P(Max Pool_S(F)))
+                                                                                         (8)
+                    =σ (W1 (W0 (Favg
+                                  c ))+W (W (F c )))
+                                         1  0 max
+
+
+where σ denotes the Sigmoid function.Avg Pool_S and Max Pool_S is the average pooling
+and the max pooling in the spatial dimension respectively, W0 ∈ R C/r ×C and W1 ∈ R C×C/r
+are the learned parameters in the shared MLP by the average pooling and the maximum
+pooling.
+   Similarly, the spatial attention module is calculated by
+
+                    Ms (F) = σ ( f 7×7 ([Avg Pool_C(F); Max Pool_C(F)]))
+                                                                                         (9)
+                         =σ ( f 7×7 ([Favg
+                                         s ; F s ]))
+                                              max
+
+
+where Avg Pool_C and Max Pool_C is the average pooling and the max pooling in the
+channel dimension respectively, f 7×7 represents a convolution operation with a convolution
+kernel size of 7 × 7.
+
+123
+A novel focal ordinal loss for assessment of knee…                                          5205
+
+
+
+
+Fig. 4 Channel attention and spatial attention flow chart
+
+
+
+
+3 Materials and Methodology
+
+In this section, the dataset used in this paper is first introduced. Then, a data prepossessing
+scheme is carried out to mitigate the problem of class imbalance. Finally, a new focal ordinal
+loss function is proposed to improve the deficiencies of CEL and FPL in the KL grade of
+knee osteoarthritis.
+
+3.1 Dataset
+
+The images used to assess knee x-rays in this paper are taken from the Osteoarthritis Initiative
+(OAI) [56], a study of knee osteoarthritis. There are 4796 participants between 45 to 79 years
+old. The dataset collated from Chen et al. [35] contains 4130 X-ray images and all images
+are randomly split into training, validation and test sets according to the ratio of 7: 1: 2. The
+distribution of the dataset is shown in Fig. 5.
+
+3.2 Data Preprocessing
+
+From Fig. 5, we see that the distribution of samples is unbalanced. The proportion of samples
+with grade 0 (normal condition) and grade 2 (mild symptoms) in the total sample are 39.38%
+and 26.33% respectively, while the proportions of samples with grade 3 (moderate symptoms)
+and grade 4 (severe symptoms) are only 13.15% and 0.03% respectively. To alleviate the
+unbalanced problem in the size of classes, we augment the samples of minority classes.
+   Considering that all the knee joint images in the original dataset are vertically placed and
+that the knee joints are all located in the center of the images, we use cropping, contrast
+enhancement and image filtering to augment the samples of minority classes.
+
+                                                                                     123
+5206                                                                                 W. Liu et al.
+
+
+
+
+Fig. 5 The distribution of the dataset in this paper
+
+
+
+
+    Cropping: As the main factors for knee osteoarthritis are the lower femur and the upper
+tibia, all of these areas are preserved when cropping. For an image, we crop 15% from its
+top, bottom, left and right directions respectively. The cropped image is 160 pixels in length
+and width. In order to meet the requirements of the size of input image, the cropped image
+is scaled up to 224 × 224 that is the size of the image before cropping.
+    Contrast enhancement: Suppose AGV is the average grayscale value over all pixel points
+for an image. If AGV ≤ 130, which means the overall grayscale values are dark, they are
+scaled to the interval [0, 255], otherwise the grayscale values remain unchanged.
+    Image filtering: The mean filtering with 7 × 7 template is used. Mean filtering makes the
+image smoother and has a denoising effect.
+    Data augmentation is performed only in the training and validation sets. Different data
+augmentation schemes are designed for each classification so that the number of samples in
+each classification is basically balanced.
+    The size of grade 0 is the largest. Thus, not any data augmentation is performed in grade 0
+and other categories will be augmented to this size. For grade 1, the samples are cropped so
+that the number of augmented samples is twice as large as before. For grade 2, half of samples
+are randomly selected for cropping so that the number of augmented samples reaches 1.5
+times of the previous one. For grade 3, the original sample set is cropped and enhanced by
+contrast respectively, so that the number of augmented samples is three times the original
+one. For grade 4, cropping, contrast enhancement and mean filtering are all used so that the
+number of augmented samples is 12 times of the previous one. The augmentation scheme is
+shown in Figs. 6, 7 and the distribution of samples in the training and validation sets after
+augmentation is shown in Fig. 8.
+    The images in the dataset used in this paper are all 224 × 224 single-channel grayscale
+images, rather than RGB images. In order to meet the input requirements of Resnet, the
+single-channel grayscale images are simply copied to compose three-channel images. In
+addition, the images are normalized by the z-score.
+
+123
+A novel focal ordinal loss for assessment of knee…                                        5207
+
+
+
+
+Fig. 6 The example for data enhancement
+
+
+
+
+Fig. 7 The process of data enhancement
+
+
+
+
+3.3 Focal Ordinal Loss Function
+
+The FPL does not focus on the difficult samples. In this section, a new loss, the focal ordinal
+loss (FOL), is proposed by combining the focal loss and the fixed penalty loss. The proposed
+FOL not only has the characteristics of fixed penalty loss, but also can focus on the difficult
+samples.
+   Figure 9 is a schematic diagram about the FOL of a sample whose correct class is grade
+1. From Fig. 9, FOL focuses on the difficult samples or incorrectly classified samples by
+lowering the loss weight of the easy samples or correctly classified samples.
+
+                                                                                    123
+5208                                                                                 W. Liu et al.
+
+
+
+
+Fig. 8 The sample distribution after data enhancement
+
+
+
+   Specially, the FOL of a sample is defined by
+
+                                     Fol(q, i) = f c · (q ⊗ wi )                            (10)
+
+where q is defined by (2), i is the true grade, wi is the fixed penalty vector,
+                                      
+                                          q γ , if the prediction is ture
+                               fc =       −
+                                          →                                                 (11)
+                                           1,                 otherwise
+
+is the focal vector. The multiplicative coefficient γ in this paper is set to 2 as recommended
+by Kaiming He et al [16]. The FOL can also be calculated by
+
+                                     Fol(q, i) = f c · (q ⊗ w̃i )                           (12)
+
+where w̃i is defined by (4).
+   The FOL can be seen as an extension of the FPL. It focuses on the difficult samples and
+the focal vector is variable in the training process, while the penalty weight remains the same
+in the FPL. In addition, the FOL can be also seen as an extension of the FL. It extends the
+cross-entropy version of FL to the version of FPL.
+
+
+4 Numerical Experiments
+
+To illustrate the effectiveness and advantages of the proposed FOL in this paper, numerical
+experiments are conducted to compare FOL with CEL and FPL. Similarly, the experiments
+are extended to the case of adding the convolutional block attention module as well as the
+case with the above data augmentation.
+
+123
+A novel focal ordinal loss for assessment of knee…                                             5209
+
+
+
+
+Fig. 9 The proposed framework of Focal ordinal loss
+
+
+
+4.1 Evaluation Measures
+
+Suppose the predicted confusion matrix of an n classification task (n ≥ 2) is
+
+                                                     ⎡         ⎤
+                                                 k00 · · · k0n
+                                               ⎢               ⎥
+                                         C M = ⎣ ... . . . ... ⎦                               (13)
+                                                 kn0 · · · knn
+
+where ki j represents the number of samples with a true label of i and the predicted label of
+j.
+   In a multi-classification problem, the definitions of True Positive (TP), False Positive
+(FP), True Negative (TN) and False Negative (FN) are different from their definitions in
+bi-classification. In an n classification task (n > 2), if class i (i ∈ {0, 1, 2, . . . , n − 1}) is
+considered as positive class, the TP, FP, TN and FN indicators for the class i are computed
+by (16), (17), (18) and (19), respectively.
+
+                                                 T Pi = kii                                    (14)
+                                                      n−1
+                                           F Pi =           ki j − T P                         (15)
+                                                      j=0
+                                                      n−1
+                                           F Ni =           kii − T P                          (16)
+                                                      j=0
+                                         n−1 n−1
+                               T Ni =                ki j − T P − F P − F N                    (17)
+                                         i=0 j=0
+
+
+                                                                                        123
+5210                                                                                       W. Liu et al.
+
+
+   The precision, recall, specificity and F1 scores for the class i are computed by (18), (19),
+(20) and (21) respectively.
+
+                                      pr eci = T PTi +F
+                                                     Pi
+                                                        Pi                                        (18)
+                                       r eci = T PTi +F
+                                                      Pi
+                                                         Ni                                       (19)
+                                     speci = T NTi +F
+                                                   Ni
+                                                       Pi                                         (20)
+                                           2× pr eci ×r eci
+                                     F1i = pr eci +r eci                                          (21)
+
+    The automatic classification of KL grades in this paper is a five-level classification task,
+i.e. n = 5. Combined with the reality, it is clear that misclassifying a knee KL grade as
+a nearby grade (e.g. grade 0 as grade 1) is far less serious than misclassifying a grade as
+a distant grade (e.g. grade 0 as grade 4). The accuracy (ACC) does not truly reflect this
+characteristic, while the mean squared error (MSE) [10] can address it well. Therefore, MSE
+may be a better performance measurement compared with ACC in the KL grading task. The
+performance measurements used in this paper and the calculation formulas are as follows.
+
+                                                           4
+                                                                kii
+                                      ACC =             i=0
+                                                       4 4                                        (22)
+                                                                       ki j
+                                                      i=0 j=0
+                                                4     4
+                                                           ki j ×(i− j)2
+                                   MSE =
+                                               i=0 j=0
+                                                     4         4
+                                                                                                  (23)
+                                                                       ki j
+                                                      i=0 j=0
+
+
+Kappa Coefficient
+                                    K A P P A = ACC−
+                                                 1− pe
+                                                       pe
+                                                                                                  (24)
+
+where
+                                            4    4           4
+                                              (    ki j ×        k ji )
+                                    pe =
+                                           i=0 j=0         j=0
+                                                 4 4
+                                                                                                  (25)
+                                               (         ki j )2
+                                                 i=0 j=0
+
+
+The kappa coefficient is a consistency test that is a more accurate measure than ACC when
+the class imbalance problem exists. Its value ranges from -1 to 1. The higher the kappa
+coefficient, the better the model performance.
+   Precision
+                                                 4                            4
+                                                      ( pr eci ×                  ki j )
+                                 P R EC =
+                                                i=0                      j=0
+                                                          4        4
+                                                                                                  (26)
+                                                                         ki j
+                                                       i=0 j=0
+
+
+In this paper, the multi-classification precision is calculated using a weighted method. And
+the weight of each class is the proportion of its samples to the total sample size.
+   Recall is computed by the macro scheme, i.e.
+
+                                                       4
+                                                              (r eci )
+                                                                                                  (27)
+                                       R EC = i=0 5
+
+123
+A novel focal ordinal loss for assessment of knee…                                                 5211
+
+
+   Specificity
+                                                          4                        4
+                                                              (speci ×                   ki j )
+                                       S P EC =
+                                                      i=0                         j=0
+                                                                   4       4
+                                                                                                   (28)
+                                                                                  ki j
+                                                                  i=0 j=0
+
+   The F1 score can be regarded as a kind of harmonic mean of the model precision and
+recall, and its value ranges from 0 to 1. The higher the F1 score is, the stronger the model
+performance. In this paper, a weighted method is used for the calculation of F1 score of
+multi-classification, i.e.
+                                                      4                    4
+                                                           (F1i ×                 ki j )
+                                           F1 =
+                                                     i=0                   j=0
+                                                              4        4
+                                                                                                   (29)
+                                                                           ki j
+                                                           i=0 j=0
+
+
+
+4.2 Experimental Design
+
+In order to verify the effectiveness of the proposed method, four classical CNN networks
+are used for validation. The four classical CNN networks are VGG, Resnet, Densenet and
+Googlenet. Experiments are conducted with the original data approach, the data augmentation
+approach and the CBAM approach respectively, where the CBAM is only applied in the
+Resnet. The setting of hyper-parameters has a great impact on the model performance. In
+this paper, following the parameter setting of Chen et al [35], the initial learning rate is set
+to 5 × 10−4 and a discrete staircase is used to reduce the learning rate by multiplying it with
+0.8 every five training rounds. And the Stochastic gradient descent (SGD) is used for model
+optimization. The penalty matrix of the fixed penalty loss and the initial penalty matrix of
+the proposed FOL are                       ⎡            ⎤
+                                              13579
+                                           ⎢3 1 3 5 7⎥
+                                           ⎢            ⎥
+                                     W =⎢               ⎥
+                                           ⎢5 3 1 3 5⎥                                     (30)
+                                           ⎣7 5 3 1 3⎦
+                                              97531
+   For the Resnet network with the CBAM, the batch size is set to 6 and the epoch is set
+to 30 according to the parameters recommended by Sanghyun Woo et al [53], while for the
+remaining networks without the CBAM, the batch size is set to 24 and the epoch is set to
+18. All experiments are repeated 10 times to obtain stable results. The codes for all methods
+are realized by Python and executed in a GPU framework of Pytorch with Intel(R) Xeon(R)
+E5-2620 v4 @2.10GHz and NVIDIA GeForce(R) GTX 1080 Ti.
+
+4.3 Experimental Results and Analysis
+
+4.3.1 The Results of Different Loss Functions for the Original Dataset and the
+      Augmented Dataset Without CBAM
+
+Tables 1 and 2 show the performance comparison of three loss function with Resnet models
+on the original dataset and the enhanced dataset, respectively. In the tables, the model is
+represented by the format of “network name-layer-loss function” and the performance is
+represented by the format of “mean ± standard deviation”. The best results are marked in
+bold.
+
+                                                                                                  123
+                                                                                                                                                                5212
+
+123
+
+      Table 1 Performance comparison of loss functions with Resnet models on the original dataset
+      Model/loss               ACC(%)                MSE                   KAPPA                Precision       Recall          SPE             F1
+
+      ResNet-18-CEL            63.89 ± 1.300         0.678 ± 0.045         0.774 ± 0.014        60.84 ± 1.300   62.95 ± 1.600   84.53 ± 1.100   61.34 ± 1.600
+      ResNet-18-FPL            63.83 ± 1.300         0.642 ± 0.068         0.770 ± 0.022        60.08 ± 3.400   62.38 ± 2.300   85.00 ± 1.000   60.04 ± 2.600
+      ResNet-18-FOL            64.10 ± 0.900         0.598 ± 0.048         0.794 ± 0.097        61.87 ± 2.000   61.78 ± 1.400   84.28 ± 1.400   61.98 ± 1.200
+      ResNet-34-CEL            64.82 ± 1.300         0.624 ± 0.046         0.790 ± 0.013        62.38 ± 0.900   62.30 ± 1.300   84.67 ± 0.800   62.50 ± 2.100
+      ResNet-34-FPL            64.60 ± 1.200         0.609 ± 0.034         0.790 ± 0.600        62.78 ± 1.000   62.65 ± 1.500   85.08 ± 0.900   62.42 ± 1.200
+      ResNet-34-FOL            64.09 ± 0.900         0.553 ± 0.040         0.806 ± 1.100        63.51 ± 1.800   63.95 ± 1.500   86.47 ± 0.800   63.11 ± 1.300
+      ResNet-50-CEL            64.68 ± 1.500         0.616 ± 0.016         0.79 ± 0.005         61.66 ± 1.500   62.73 ± 1.700   85.68 ± 0.500   62.12 ± 1.100
+      ResNet-50-FPL            64.98 ± 1.000         0.587 ± 0.057         0.795 ± 0.023        62.68 ± 2.200   61.70 ± 1.000   85.60 ± 1.100   62.72 ± 2.400
+      ResNet-50-FOL            65.19 ± 0.900         0.558 ± 0.051         0.805 ± 0.012        63.41 ± 3.600   64.04 ± 2.500   86.61 ± 0.900   63.62 ± 1.800
+      ResNet-101-CEL           64.15 ± 1.200         0.625 ± 0.028         0.786 ± 0.009        62.00 ± 1.100   63.68 ± 1.500   85.15 ± 0.800   62.31 ± 1.200
+      ResNet-101-FPL           63.98 ± 1.200         0.588 ± 0.048         0.796 ± 0.013        63.13 ± 1.200   62.61 ± 1.400   85.24 ± 1.300   62.81 ± 1.100
+      ResNet-101-FOL           64.30 ± 1.000         0.543 ± 0.041         0.809 ± 0.012        63.83 ± 1.400   63.40 ± 2.300   85.79 ± 1.200   63.55 ± 1.400
+      ResNet-152-CEL           64.50 ± 1.000         0.607 ± 0.043         0.789 ± 0.013        62.45 ± 2.900   63.94 ± 2.100   85.58 ± 1.300   63.12 ± 1.700
+      ResNet-152-FPL           65.60 ± 1.200         0.577 ± 0.045         0.800 ± 0.045        63.60 ± 2.000   63.93 ± 2.900   85.57 ± 1.100   63.83 ± 1.800
+      ResNet-152-FOL           65.17 ± 0.800         0.517 ± 0.017         0.816 ± 0.004        65.63 ± 1.100   64.88 ± 1.800   86.77 ± 0.700   65.10 ± 0.900
+
+
+
+
+                                                                                                                                                                W. Liu et al.
+      Table 2 Performance comparison of loss functions with Resnet models on the augmented dataset
+      Model/loss               ACC(%)               MSE                  KAPPA                 Precision       Recall          SPE             F1
+
+      ResNet-18-CEL            64.21 ± 1.000        0.661 ± 0.025        0.780 ± 0.008         61.07 ± 0.900   63.48 ± 1.300   85.06 ± 0.500   61.28 ± 0.800
+      ResNet-18-FPL            64.76 ± 1.100        0.597 ± 0.036        0.797 ± 0.010         63.38 ± 1.100   64.07 ± 1.500   85.76 ± 0.700   62.79 ± 1.200
+      ResNet-18-FOL            63.36 ± 1.300        0.531 ± 0.026        0.811 ± 0.007         65.12 ± 1.000   65.02 ± 1.200   86.47 ± 0.600   63.55 ± 0.800
+      ResNet-34-CEL            64.70 ± 1.300        0.622 ± 0.054        0.789 ± 0.016         61.79 ± 1.500   63.88 ± 0.900   84.49 ± 1.000   62.30 ± 1.500
+      ResNet-34-FPL            65.14 ± 0.600        0.585 ± 0.049        0.800 ± 0.012         63.45 ± 1.700   64.85 ± 1.500   86.21 ± 1.200   63.37 ± 1.400
+                                                                                                                                                               A novel focal ordinal loss for assessment of knee…
+
+
+
+
+      ResNet-34-FOL            64.93 ± 1.300        0.519 ± 0.041        0.819 ± 0.012         65.32 ± 2.100   65.92 ± 2.000   86.78 ± 1.600   64.19 ± 2.400
+      ResNet-50-CEL            64.58 ± 1.100        0.624 ± 0.030        0.790 ± 0.006         62.11 ± 1.500   63.46 ± 1.600   85.02 ± 0.600   64.38 ± 0.006
+      ResNet-50-FPL            65.04 ± 0.900        0.574 ± 0.042        0.806 ± 0.010         62.70 ± 1.900   64.97 ± 0.800   85.67 ± 0.600   63.11 ± 1.400
+      ResNet-50-FOL            65.09 ± 0.800        0.508 ± 0.026        0.820 ± 0.007         65.75 ± 1.400   66.31 ± 1.200   86.95 ± 0.800   65.11 ± 1.000
+      ResNet-101-CEL           64.51 ± 0.700        0.630 ± 0.032        0.787 ± 0.008         61.87 ± 1.500   63.28 ± 1.600   85.18 ± 1.100   62.29 ± 1.100
+      ResNet-101-FPL           65.02 ± 1.300        0.579 ± 0.025        0.802 ± 0.008         62.78 ± 1.300   63.94 ± 1.600   86.16 ± 0.700   63.09 ± 1.000
+      ResNet-101-FOL           64.02 ± 1.100        0.509 ± 0.015        0.819 ± 0.004         65.66 ± 1.000   65.03 ± 1.000   87.06 ± 0.600   64.35 ± 0.800
+      ResNet-152-CEL           65.37 ± 1.100        0.613 ± 0.037        0.791 ± 0.010         62.90 ± 1.000   63.88 ± 1.500   85.32 ± 1.000   62.82 ± 1.000
+      ResNet-152-FPL           64.96 ± 1.200        0.566 ± 0.039        0.806 ± 0.010         63.62 ± 1.400   64.82 ± 1.500   85.94 ± 0.900   63.67 ± 1.100
+      ResNet-152-FOL           64.78 ± 1.500        0.490 ± 0.048        0.826 ± 0.016         66.36 ± 1.800   66.43 ± 2.500   87.53 ± 1.200   65.15 ± 1.700
+
+
+
+
+123                                                                                                                                                            5213
+5214                                                                                W. Liu et al.
+
+
+
+
+Fig. 10 A comparison of confusion matrices among the three loss functions
+
+
+
+    As can be seen from Tables 1 and 2, the proposed FOL outperforms the baseline methods
+in most of the performance measurements on the original dataset and enhanced dataset
+at all levels of the Resnet model, especially in the performance of MSE. On the original
+dataset, MSE is decreased by 12.11% on average compared to the baseline models, while
+it is decreased by 18.82% on the enhanced dataset. In addition, the proposed FOL achieves
+substantial improvements in all the performance measurements except for ACC that is slightly
+inferior to CEL and the FPL.
+    To demonstrate the benefits of FOL more intuitively, confusion matrices for the three test
+sets are used for comparison. As an example, Fig. 10 shows the compared results of ResNet-
+50 on the augmented datasets. To ensure fairness in the comparison, the chosen three test
+sets have similar ACC.
+    In Fig. 10, the rows of each confusion matrix represent the true labels of the samples
+and the columns represent the predicted labels. Due to the ordinal nature of the KL grades,
+a better model should classify the samples as correctly as possible and minimize the gap
+between the predicted labels and the true labels to the misclassified samples. As shown in
+the red dashed box in Fig. 10, both the number of samples misclassified to grade 0 for CEL
+and FPL are greater than the ones misclassified to grade 1 while the true label is grade 2. In
+contrast, the FOL achieves an effective improvement in the gap. This indicates that the FOL
+can effectively guide the model to cluster the predicted labels towards the true labels. This
+is the main reason that the MSE of FOL is far better than the two baseline losses although
+ACC is not much different.
+    In order to verify the generality of the FOL, we also carry out the comparison experi-
+ments with Densenet, VGG and Googlenet networks. Table 3-6 list the comparison results,
+respectively.
+    The results in Tables 3, 4, 5, 6 are similar to those of Resnet. The proposed FOL achieves
+the significant improvements in all measures except for ACC. It verifies the effectiveness and
+the type of the FOL compared to CEL and FPL.
+
+
+4.3.2 The Results with CBAM
+
+Referring to the work of Chen et al. [35], the experiments with CBAM are only carried out for
+the Resnet. Table 7, 8 list the comparison results on the original datasets and the augmented
+datasets respectively, in which the model is represented by the format of “CBAM-number of
+layers-loss function”.
+
+123
+      Table 3 Performance comparison of loss functions with Densenet models on the original datasets
+      Model/loss                 ACC(%)               MSE                   KAPPA                Precision       Recall          SPE             F1
+
+      Densenet-121-CEL           66.49 ± 0.800        0.575 ± 0.038         0.804 ± 0.009        63.69 ± 1.700   64.99 ± 1.300   85.64 ± 0.900   63.98 ± 1.800
+      Densenet-121-FPL           66.06 ± 0.900        0.571 ± 0.033         0.803 ± 0.008        63.59 ± 1.500   62.65 ± 2.200   85.30 ± 0.800   63.60 ± 1.300
+      Densenet-121-FOL           65.77 ± 1.000        0.530 ± 0.034         0.816 ± 0.011        64.81 ± 1.600   65.05 ± 2.000   86.42 ± 0.900   64.61 ± 1.500
+                                                                                                                                                                 A novel focal ordinal loss for assessment of knee…
+
+
+
+      Densenet-161-CEL           66.66 ± 1.000        0.555 ± 0.030         0.812 ± 0.011        63.75 ± 0.900   64.90 ± 1.300   84.06 ± 2.500   64.35 ± 0.900
+      Densenet-161-FPL           66.23 ± 0.800        0.528 ± 0.045         0.818 ± 0.013        64.93 ± 1.900   65.60 ± 2.400   86.58 ± 1.400   64.78 ± 1.700
+      Densenet-161-FOL           67.43 ± 1.500        0.496 ± 0.046         0.826 ± 0.015        65.80 ± 2.200   65.85 ± 2.200   86.59 ± 1.300   65.68 ± 2.200
+      Densenet-169-CEL           66.31 ± 1.400        0.564 ± 0.032         0.805 ± 0.011        64.27 ± 1.200   64.86 ± 0.900   86.11 ± 0.400   64.24 ± 1.300
+      Densenet-169-FPL           66.00 ± 2.700        0.555 ± 0.048         0.808 ± 0.013        64.29 ± 2.000   61.66 ± 2.400   85.71 ± 1.400   63.78 ± 2.200
+      Densenet-169-FOL           65.50 ± 1.100        0.520 ± 0.048         0.817 ± 0.015        64.49 ± 2.500   62.02 ± 2.700   86.50 ± 1.200   64.33 ± 2.300
+      Densenet-201-CEL           66.26 ± 0.700        0.561 ± 0.020         0.806 ± 0.006        64.04 ± 0.900   63.77 ± 1.800   86.13 ± 0.500   64.61 ± 0.800
+      Densenet-201-FPL           66.13 ± 0.400        0.528 ± 0.030         0.816 ± 0.007        65.66 ± 1.400   64.69 ± 1.400   86.43 ± 1.000   65.69 ± 1.100
+      Densenet-201-FOL           67.05 ± 0.400        0.510 ± 0.028         0.821 ± 0.008        65.81 ± 1.500   64.97 ± 1.100   86.77 ± 0.600   65.86 ± 1.400
+
+
+
+
+123                                                                                                                                                              5215
+                                                                                                                                                               5216
+
+123
+
+
+      Table 4 Performance comparison of loss functions with Densenet models on the augmented datasets
+      Model/loss                ACC(%)               MSE                  KAPPA                Precision       Recall          SPE             F1
+
+      Densenet-121-CEL          66.25 ± 1.000        0.564 ± 0.024        0.808 ± 0.007        63.93 ± 1.100   65.72 ± 1.200   85.26 ± 0.500   64.25 ± 1.100
+      Densenet-121-FPL          66.27 ± 1.200        0.534 ± 0.037        0.817 ± 0.010        65.02 ± 1.100   66.33 ± 1.300   86.54 ± 0.900   64.97 ± 0.900
+      Densenet-121-FOL          66.07 ± 0.900        0.470 ± 0.012        0.833 ± 0.003        67.27 ± 1.200   66.46 ± 1.100   87.93 ± 0.400   66.24 ± 0.500
+      Densenet-161-CEL          67.63 ± 1.100        0.555 ± 0.023        0.814 ± 0.007        64.48 ± 0.600   66.19 ± 1.100   86.20 ± 0.800   64.67 ± 1.200
+      Densenet-161-FPL          66.29 ± 0.600        0.519 ± 0.029        0.821 ± 0.008        65.54 ± 0.900   66.60 ± 1.200   86.89 ± 0.700   65.29 ± 0.800
+      Densenet-161-FOL          67.26 ± 2.300        0.458 ± 0.057        0.837 ± 0.020        68.08 ± 2.600   67.46 ± 2.700   87.97 ± 1.200   67.42 ± 2.400
+      Densenet-169-CEL          66.31 ± 1.500        0.565 ± 0.019        0.808 ± 0.005        64.41 ± 1.100   65.43 ± 0.900   86.46 ± 0.600   64.52 ± 1.100
+      Densenet-169-FPL          66.39 ± 1.600        0.531 ± 0.024        0.818 ± 0.008        64.53 ± 1.400   66.56 ± 0.900   86.75 ± 0.600   64.84 ± 1.200
+      Densenet-169-FOL          65.81 ± 1.500        0.483 ± 0.031        0.828 ± 0.009        67.34 ± 1.100   66.74 ± 1.200   87.58 ± 1.000   66.00 ± 1.100
+      Densenet-201-CEL          66.75 ± 0.700        0.561 ± 0.039        0.810 ± 0.010        64.09 ± 1.100   65.64 ± 1.300   86.22 ± 1.300   64.45 ± 1.400
+      Densenet-201-FPL          66.30 ± 1.200        0.528 ± 0.042        0.819 ± 0.011        65.10 ± 1.700   66.73 ± 1.800   87.13 ± 1.200   65.17 ± 1.500
+      Densenet-201-FOL          66.85 ± 1.100        0.475 ± 2.800        0.832 ± 0.700        67.60 ± 1.100   67.12 ± 0.700   87.43 ± 0.700   66.82 ± 1.200
+
+
+
+
+                                                                                                                                                               W. Liu et al.
+      Table 5 Performance comparison of loss functions with VGG and Googlenet models on the original datasets
+      Model/loss              ACC(%)               MSE                   KAPPA                Precision         Recall          SPE             F1
+
+      VGG-16-CEL              67.89 ± 1.300        0.528 ± 0.038         0.822 ± 0.011        65.30 ± 1.100     65.95 ± 2.000   86.22 ± 0.700   64.81 ± 1.900
+      VGG-16-FPL              67.74 ± 0.900        0.488 ± 0.032         0.831 ± 0.010        66.49 ± 1.100     65.44 ± 3.200   87.25 ± 1.200   66.44 ± 1.300
+      VGG-16-FOL              66.95 ± 1.200        0.467 ± 0.014         0.840 ± 0.006        66.93 ± 1.000     66.09 ± 2.000   87.60 ± 0.400   66.74 ± 1.000
+      VGG-16bn-CEL            66.51 ± 0.800        0.560 ± 0.045         0.808 ± 0.011        64.88 ± 1.200     65.06 ± 1.500   86.01 ± 1.200   64.82 ± 1.500
+      VGG-16bn-FPL            67.10 ± 0.500        0.522 ± 0.034         0.821 ± 0.012        65.61 ± 1.200     64.71 ± 2.000   86.39 ± 0.800   65.53 ± 0.900
+                                                                                                                                                                A novel focal ordinal loss for assessment of knee…
+
+
+
+
+      VGG-16bn-FOL            66.46 ± 0.900        0.459 ± 0.011         0.838 ± 0.004        67.47 ± 0.700     67.49 ± 1.400   87.81 ± 0.400   66.69 ± 0.800
+      VGG-19-CEL              67.99 ± 0.900        0.530 ± 0.028         0.819 ± 0.006        65.34 ± 0.800     65.21 ± 1.800   86.39 ± 0.800   65.53 ± 1.000
+      VGG-19-FPL              67.31 ± 0.700        0.476 ± 0.014         0.836 ± 0.005        66.23 ± 1.000     66.59 ± 0.800   87.10 ± 0.800   65.94 ± 0.700
+      VGG-19-FOL              66.40 ± 0.900        0.470 ± 0.018         0.839 ± 0.005        66.50 ± 1.000     66.70 ± 0.800   87.73 ± 0.800   66.10 ± 1.000
+      VGG-19bn-CEL            65.60 ± 1.200        0.579 ± 0.061         0.800 ± 0.020        63.66 ± 1.900     63.05 ± 2.000   85.58 ± 1.500   63.65 ± 2.200
+      VGG-19bn-FPL            67.49 ± 1.000        0.525 ± 0.058         0.821 ± 0.014        65.66 ± 2.000     65.75 ± 1.700   86.07 ± 1.400   65.42 ± 2.500
+      VGG-19bn-FOL            65.69 ± 0.800        0.475 ± 0.018         0.832 ± 0.007        67.47 ± 0.800     66.16 ± 1.800   87.51 ± 0.700   66.07 ± 0.900
+      Googlenet-CEL           66.87 ± 1.100        0.548 ± 0.020         0.812 ± 0.004        65.03 ± 1.200     65.60 ± 1.100   86.30 ± 0.700   65.33 ± 1.000
+      Googlenet-FPL           66.70 ± 1.200        0.508 ± 0.030         0.822 ± 0.007        66.26 ± 1.200     66.59 ± 2.400   87.17 ± 0.800   66.03 ± 1.200
+      Googlenet-FOL           65.92 ± 0.800        0.479 ± 0.032         0.830 ± 0.009        66.82 ± 1.500     66.62 ± 1.300   87.53 ± 0.900   66.06 ± 1.000
+
+
+
+
+123                                                                                                                                                             5217
+                                                                                                                                                                 5218
+
+123
+
+      Table 6 Performance comparison of loss functions with VGG and Googlenet models on the augmented datasets
+      Model/loss             ACC(%)               MSE                  KAPPA                Precision            Recall          SPE             F1
+
+      VGG-16-CEL             67.98 ± 0.800        0.527 ± 0.035        0.822 ± 0.008        65.29 ± 1.100        65.68 ± 1.200   86.66 ± 1.100   65.38 ± 1.300
+      VGG-16-FPL             67.30 ± 0.900        0.483 ± 0.025        0.834 ± 0.006        66.51 ± 0.700        66.93 ± 0.900   87.44 ± 0.700   66.35 ± 0.700
+      VGG-16-FOL             66.59 ± 1.300        0.469 ± 0.015        0.837 ± 0.005        66.95 ± 1.000        67.12 ± 0.700   87.49 ± 0.600   66.56 ± 1.000
+      VGG-16bn-CEL           67.56 ± 0.900        0.561 ± 0.023        0.811 ± 0.005        65.21 ± 0.700        65.96 ± 0.900   86.11 ± 0.600   65.28 ± 0.800
+      VGG-16bn-FPL           66.75 ± 1.100        0.517 ± 0.014        0.823 ± 0.004        65.75 ± 0.700        66.19 ± 1.500   86.81 ± 0.400   65.48 ± 0.800
+      VGG-16bn-FOL           66.03 ± 0.900        0.473 ± 0.013        0.833 ± 0.005        66.83 ± 0.700        66.76 ± 1.400   87.72 ± 0.500   66.11 ± 0.600
+      VGG-19-CEL             68.05 ± 1.000        0.549 ± 0.041        0.816 ± 0.012        64.83 ± 1.100        65.78 ± 1.400   85.93 ± 0.700   64.79 ± 1.400
+      VGG-19-FPL             67.00 ± 1.100        0.492 ± 0.031        0.828 ± 0.006        65.54 ± 1.600        65.79 ± 2.200   87.19 ± 1.000   65.55 ± 1.300
+      VGG-19-FOL             66.44 ± 0.800        0.481 ± 0.014        0.834 ± 0.006        65.64 ± 1.200        66.17 ± 1.100   87.55 ± 0.400   65.70 ± 1.000
+      VGG-19bn-CEL           66.10 ± 1.100        0.582 ± 0.025        0.804 ± 0.004        63.19 ± 1.100        64.11 ± 1.000   85.83 ± 0.900   63.59 ± 0.900
+      VGG-19bn-FPL           66.19 ± 1.700        0.519 ± 0.046        0.821 ± 0.012        65.79 ± 1.000        65.46 ± 1.800   86.88 ± 1.100   65.19 ± 2.000
+      VGG-19bn-FOL           65.88 ± 1.100        0.479 ± 0.022        0.831 ± 0.007        67.27 ± 1.200        66.08 ± 1.700   87.35 ± 0.900   65.93 ± 1.400
+      Googlenet-CEL          66.87 ± 0.700        0.559 ± 0.022        0.812 ± 0.005        64.06 ± 1.000        65.99 ± 0.800   86.06 ± 0.900   64.54 ± 0.800
+      Googlenet-FPL          66.53 ± 1.300        0.515 ± 0.032        0.823 ± 0.008        66.00 ± 0.900        66.90 ± 1.000   86.63 ± 0.900   65.46 ± 1.300
+      Googlenet-FOL          66.19 ± 1.000        0.464 ± 0.014        0.836 ± 0.005        67.52 ± 0.900        66.91 ± 1.100   87.74 ± 0.001   66.51 ± 0.008
+
+
+
+
+                                                                                                                                                                 W. Liu et al.
+      Table 7 Performance comparison of loss functions with CBAM-Resnet models on the original datasets
+      Model/loss              ACC(%)               MSE                   KAPPA                Precision       Recall          SPE             F1
+
+      CBAM-18-CEL             65.40 ± 1.200        0.629 ± 0.035         0.788 ± 0.013        61.52 ± 2.400   64.26 ± 1.000   84.44 ± 0.900   62.12 ± 1.700
+      CBAM-18-FPL             64.49 ± 1.100        0.584 ± 0.034         0.803 ± 0.013        64.20 ± 1.700   62.94 ± 1.500   85.71 ± 0.600   63.76 ± 1.300
+      CBAM-18-FOL             64.56 ± 0.800        0.522 ± 0.024         0.815 ± 0.008        65.18 ± 1.100   64.13 ± 1.300   86.24 ± 0.800   64.57 ± 0.900
+      CBAM-34-CEL             64.82 ± 1.300        0.624 ± 0.046         0.795 ± 0.006        62.57 ± 0.300   64.64 ± 1.400   85.34 ± 0.700   62.93 ± 0.800
+      CBAM-34-FPL             64.84 ± 1.300        0.563 ± 0.032         0.800 ± 0.010        63.80 ± 1.100   62.68 ± 2.800   86.15 ± 0.900   63.72 ± 0.800
+                                                                                                                                                              A novel focal ordinal loss for assessment of knee…
+
+
+
+
+      CBAM-34-FOL             65.01 ± 0.700        0.502 ± 0.025         0.819 ± 0.008        66.01 ± 1.200   65.49 ± 1.200   87.31 ± 0.800   65.15 ± 0.800
+      CBAM-50-CEL             64.33 ± 1.200        0.625 ± 0.027         0.783 ± 0.011        62.10 ± 1.700   63.37 ± 2.000   85.68 ± 0.900   61.58 ± 1.800
+      CBAM-50-FPL             64.45 ± 1.400        0.605 ± 0.050         0.790 ± 0.013        64.16 ± 1.500   63.55 ± 2.200   86.00 ± 1.000   63.38 ± 1.900
+      CBAM-50-FOL             64.83 ± 0.800        0.488 ± 0.016         0.825 ± 0.004        65.64 ± 1.100   65.51 ± 2.500   87.58 ± 0.500   65.03 ± 0.600
+      CBAM-101-CEL            65.70 ± 1.200        0.592 ± 0.030         0.797 ± 0.009        63.31 ± 1.000   65.10 ± 0.800   85.69 ± 0.700   63.62 ± 1.100
+      CBAM-101-FPL            64.27 ± 1.000        0.602 ± 0.048         0.790 ± 0.017        62.51 ± 1.400   62.47 ± 1.700   85.52 ± 0.900   62.82 ± 1.100
+      CBAM-101-FOL            64.98 ± 0.700        0.486 ± 0.030         0.825 ± 0.009        66.28 ± 1.400   65.59 ± 1.400   87.51 ± 0.600   65.38 ± 0.700
+      CBAM-152-CEL            66.06 ± 1.000        0.652 ± 0.034         0.808 ± 0.007        63.17 ± 2.000   64.71 ± 0.900   85.59 ± 0.900   63.70 ± 1.500
+      CBAM-152-FPL            65.30 ± 1.300        0.571 ± 0.035         0.802 ± 0.011        63.66 ± 1.300   64.40 ± 1.600   85.89 ± 1.000   64.00 ± 1.400
+      CBAM-152-FOL            65.23 ± 0.800        0.483 ± 0.030         0.825 ± 0.008        66.87 ± 1.200   66.09 ± 1.200   87.04 ± 0.800   65.59 ± 0.700
+
+
+
+
+123                                                                                                                                                           5219
+                                                                                                                                                            5220
+
+123
+
+      Table 8 Performance comparison of loss functions with CBAM-Resnet models on the augmented datasets
+      Model/loss              ACC(%)              MSE                  KAPPA                Precision       Recall          SPE             F1
+
+      CBAM-18-CEL             65.78 ± 1.100       0.612 ± 0.042        0.796 ± 0.010        62.09 ± 1.800   64.49 ± 1.000   84.77 ± 1.100   62.25 ± 1.700
+      CBAM-18-FPL             64.30 ± 1.300       0.579 ± 0.048        0.801 ± 0.013        63.08 ± 2.100   64.63 ± 1.400   85.29 ± 1.000   63.14 ± 1.600
+      CBAM-18-FOL             64.56 ± 0.800       0.504 ± 0.025        0.823 ± 0.005        65.52 ± 1.300   65.54 ± 1.100   86.59 ± 0.800   64.75 ± 1.100
+      CBAM-34-CEL             65.53 ± 1.100       0.620 ± 0.050        0.792 ± 0.012        62.16 ± 1.600   65.42 ± 1.600   85.13 ± 1.500   62.43 ± 1.800
+      CBAM-34-FPL             64.15 ± 1.200       0.553 ± 0.035        0.808 ± 0.010        63.88 ± 2.100   64.59 ± 2.100   85.70 ± 1.500   63.42 ± 1.900
+      CBAM-34-FOL             65.51 ± 0.900       0.488 ± 0.014        0.827 ± 0.004        66.07 ± 1.000   66.13 ± 1.400   87.22 ± 0.800   65.52 ± 0.800
+      CBAM-50-CEL             65.47 ± 1.500       0.598 ± 0.025        0.798 ± 0.008        62.34 ± 1.600   64.04 ± 1.600   85.13 ± 0.900   62.94 ± 1.500
+      CBAM-50-FPL             65.33 ± 1.000       0.571 ± 0.029        0.805 ± 0.008        63.78 ± 0.900   64.64 ± 1.400   85.55 ± 1.200   63.86 ± 1.200
+      CBAM-50-FOL             65.40 ± 0.900       0.470 ± 0.012        0.830 ± 0.003        67.19 ± 1.000   65.26 ± 1.100   87.56 ± 0.400   66.05 ± 0.700
+      CBAM-101-CEL            65.61 ± 1.300       0.590 ± 0.043        0.799 ± 0.010        63.24 ± 1.200   64.74 ± 1.500   85.78 ± 1.200   63.56 ± 1.500
+      CBAM-101-FPL            65.14 ± 0.700       0.592 ± 0.031        0.797 ± 0.009        62.66 ± 1.700   64.08 ± 1.500   85.48 ± 0.800   63.26 ± 1.300
+      CBAM-101-FOL            64.51 ± 0.900       0.477 ± 0.013        0.825 ± 0.006        66.98 ± 0.900   65.74 ± 1.400   87.84 ± 0.400   65.43 ± 1.100
+      CBAM-152-CEL            66.30 ± 1.100       0.576 ± 0.036        0.806 ± 0.007        63.24 ± 1.700   65.55 ± 0.800   85.63 ± 1.200   63.73 ± 1.600
+      CBAM-152-FPL            65.05 ± 1.900       0.576 ± 0.029        0.802 ± 0.009        62.98 ± 1.700   64.50 ± 1.800   85.93 ± 1.000   63.12 ± 1.400
+      CBAM-152-FOL            65.51 ± 1.500       0.480 ± 0.016        0.829 ± 0.005        66.97 ± 0.900   66.23 ± 1.200   87.22 ± 0.500   65.64 ± 1.000
+
+
+
+
+                                                                                                                                                            W. Liu et al.
+A novel focal ordinal loss for assessment of knee…                                        5221
+
+
+
+
+Fig. 11 Comparison of model Grad-CAM before and after adding CBAM
+
+
+
+    As can be seen from Tables 7, 8, the models with FOL achieve the best performances except
+for ACC. On the original datasets, CBAM-Resnet with FOL showed an average improvement
+of 0.51% in ACC, 20.46% in MSE and 3.49% in KAPPA compared to the baseline models. On
+the augmented datasets, the improvements in ACC, MSE and KAPPA are 0.91%, 19.23%
+and 3.59% respectively. The models with FOL perform very well in MSE. It provides an
+improvement of 20.46%. In terms of ACC, it is slightly inferior to that with CEL. However,
+it is still better than the ones with FPL.
+    To visualize the difference between the models with CBAM and without CBAM, the heat
+map of a sample with Grade 0 from the validation set in Fig. 11 is shown. A heat map can
+reflect the “importance parts” of an image. The darker the colour of a part, the more the
+network tends to base its final prediction on that part of the image.
+    As can be seen in Fig. 11, the model without CBAM tends to make KL grade predictions
+with the intact interosseous gaps, while the model with CBAM focuses on the left and right
+interosseous gaps and ignores the right-central interosseous gaps. Thus, the model with
+CBAM identifies the hallmark features of knee osteoarthritis (e.g. narrow interosseous gaps,
+osteophytes, etc.) more easily. In addition, the model of FOL also performs better than that
+of CE.
+    In summary, FOL provides a stable improvement in most of performance measures.
+
+
+5 Conclusions and Future Work
+
+In this paper, we propose FOL to address the shortcomings of CEL and FPL in KL grading
+task for knee osteoarthritis. FOL can focus on the difficult samples by adjusting down the loss
+
+                                                                                    123
+5222                                                                                               W. Liu et al.
+
+
+weight of the samples with high prediction probability toward to the true label at each epoch
+of training. The performance of FOL is validated on the X-ray image data from OAI with
+several classical CNN models such as VGG, Resnet and Densenet. The experimental results
+show that FOL obtains significant improvement in most of performance measures, especially
+in MSE. In addition, FOL also shows similar improvement on the augmented dataset and
+CBAM-Resnet compared with CEL and FPL. In a word, FOL performs better than CEL and
+FPL in KL grading task. The results can provide a valuable reference to policymakers in
+decision making.
+   There are some limitations in our work. Some improvement directions are as follows.
+1. The improvement of FOL in ACC is not stable. We will investigate it and improve this
+   shortcoming.
+2. The hyper-parameters in this paper are refer to the default value of Chen et al. [35]. They
+   are certainly not optimal. We will tune them in the following work.
+3. Different weights lead to different results on FOL. In this paper, we refer to the weight
+   matrix setting of Chen et al. [35] as our setting. The optimal weight matrix is not tuned.
+   We will consider it as a future work.
+4. Referring to Lin et al. [34], the gamma value of focal loss is set to 2. It is not optimal on
+   all indicators. We will consider to tune the optimal gamma in the future work.
+
+Acknowledgements Authors acknowledge with gratitude the support to datasets distributed from the
+Osteoarthritis Initiative (OAI). OAI is a collaborative informatics system created by the National Institute
+of Mental Health and the National Institute of Arthritis, Musculoskeletal and Skin Diseases (NIAMS) in the
+USA to provide a worldwide resource to quicken the pace of biomarker identification, scientific investigation
+and OA drug development.
+
+
+Declarations
+
+Conflict of interest The authors declare that they have no conflict of interest.
+
+
+References
+ 1. Conaghan PG, Porcheret M, Kingsbury SR, Gammon A, Soni A, Hurley M, Rayman MP, Barlow J, Hull
+    RG, Cumming J et al (2015) Impact and therapy of osteoarthritis: the arthritis care OA nation 2012 survey.
+    Clin Rheumatol 34(9):1581–1588
+ 2. Ettinger Walter H, Afable, Richard F (1994) Physical disability from knee osteoarthritis: the role of
+    exercise as an intervention. Med Sci Sports Exercise
+ 3. Bitton R (2009) The economic burden of osteoarthritis. Am J Manag Care 15(8 Suppl):S230-5
+ 4. Akahane T, Shimizu T, Isobe K, Yoshimura Y, Fujioka F, Kato H (2007) Evaluation of postoperative
+    general quality of life for patients with osteosarcoma around the knee joint. J Pediatr Orthop B 16(4):269–
+    272
+ 5. Roemer FW, Kent Kwoh C, Hayashi D, Felson DT, Guermazi A (2018) The role of radiography and MRI
+    for eligibility assessment in DMOAD trials of knee OA. Nat Rev Rheumatol 14(6):372–380
+ 6. Zhang Y, Nevitt M, Niu J, Lewis C, Torner J, Guermazi A, Roemer F, McCulloch C, Felson DT (2011)
+    Fluctuation of knee pain and changes in bone marrow lesions, effusions, and synovitis on magnetic
+    resonance imaging. Arthritis Rheum 63(3):691–699
+ 7. Tiosano D, Hadad S, Chen Z, Nemirovsky A, Gepstein V, Militianu D, Weisman Y, Abrams SA (2011)
+    Calcium absorption, kinetics, bone density, and bone structure in patients with hereditary vitamin d-
+    resistant rickets. J Clin Endocrinol Metab 96(12):3701–3709
+ 8. Kellgren JH, Lawrence J (1957) Radiological assessment of osteo-arthrosis. Ann Rheum Dis 16(4):494
+ 9. Culvenor AG, Engen CN, Elin Øiestad B, Engebretsen L, Risberg MA (2015) Defining the presence of
+    radiographic knee osteoarthritis: a comparison between the Kellgren and Lawrence system and OARSI
+    atlas criteria. Knee Surg Sports Traumatol Arthrosc 23(12):3532–3539
+
+
+123
+A novel focal ordinal loss for assessment of knee…                                                         5223
+
+
+10. Niu Z, Zhou M, Wang L, Gao X, Hua G (2016) Ordinal regression with multiple output CNN for age
+    estimation. In: Proceedings of the IEEE conference on computer vision and pattern recognition, pp 4920–
+    4928
+11. Brahim A, Jennane R, Riad R, Janvier T, Khedher L, Toumi H, Lespessailles E (2019) A decision support
+    tool for early detection of knee osteoarthritis using x-ray imaging and machine learning: data from the
+    osteoarthritis initiative. Comput Med Imaging Graph 73:11–18
+12. Subramoniam M, Rajini V (2013) Local binary pattern approach to the classification of osteoarthritis in
+    knee x-ray images. Asian J Sci Res 6(4):805
+13. Shamir L, Ling SM, Scott WW, Bos A, Orlov N, Macura TJ, Mark Eckley D, Ferrucci L, Goldberg IG
+    (2008) Knee x-ray image analysis method for automated detection of osteoarthritis. IEEE Trans Biomed
+    Eng 56(2):407–415
+14. Minciullo L, Cootes T (2016) Fully automated shape analysis for detection of osteoarthritis from lateral
+    knee radiographs. In: 2016 23rd international conference on pattern recognition (ICPR), pp 3787–3791.
+    IEEE
+15. Saleem M, Farid MS, Saleem S, Khan MH (2020) X-ray image analysis for automated knee osteoarthritis
+    detection. SIViP 14(6):1079–1087
+16. He K, Zhang X, Ren S, Sun J (2016) Deep residual learning for image recognition. In: Proceedings of
+    the IEEE conference on computer vision and pattern recognition, pp 770–778
+17. Simonyan K, Zisserman A (2014) Very deep convolutional networks for large-scale image recognition.
+    arXiv preprint arXiv:1409.1556
+18. Szegedy C, Liu W, Jia Y, Sermanet P, Reed S, Anguelov D, Erhan D, Vanhoucke V, Rabinovich A (2015)
+    Going deeper with convolutions. In: Proceedings of the IEEE conference on computer vision and pattern
+    recognition, pp 1–9
+19. Huang G, Liu Z, Van Der Maaten L, Weinberger KQ (2017) Densely connected convolutional networks.
+    In: Proceedings of the IEEE conference on computer vision and pattern recognition, pp 4700–4708
+20. Li Q, Bing Yu, Tian X, Cui X, Zhang R, Guo Q (2020) Deep residual nets model for staging liver fibrosis
+    on plain CT images. Int J Comput Assist Radiol Surg 15(8):1399–1406
+21. Gulshan V, Peng L, Coram M, Stumpe MC, Wu D, Narayanaswamy A, Venugopalan S, Widner K,
+    Madams T, Cuadros J, et al (2016) Development and validation of a deep learning algorithm for detection
+    of diabetic retinopathy in retinal fundus photographs. JAMA 316(22):2402–2410
+22. Zhang D, Zheng Z, Li M, Liu R (2021) CSART: channel and spatial attention-guided residual learning
+    for real-time object tracking. Neurocomputing 436:260–272
+23. Qi C, Zhang J, Jia H, Mao Q, Wang L, Song H (2021) Deep face clustering using residual graph convo-
+    lutional network. Knowl-Based Syst 211:106561
+24. Kokkotis C, Moustakidis S, Papageorgiou E, Giakas G, Tsaopoulos DE (2020) Machine learning in knee
+    osteoarthritis: a review. Osteoarthr Cartilage Open 2(3):100069
+25. Antony J, McGuinness K, Moran K, O’Connor NE (2017) Automatic detection of knee joints and quan-
+    tification of knee osteoarthritis severity using convolutional neural networks. In: International conference
+    on machine learning and data mining in pattern recognition, pp 376–390. Springer
+26. Antony J, McGuinness K, O’Connor NE, Moran K (2016) Quantifying radiographic knee osteoarthritis
+    severity using deep convolutional neural networks. In: 2016 23rd international conference on pattern
+    recognition (ICPR), pp 1195–1200. IEEE
+27. Górriz M, Antony J, McGuinness K, Giró-i Nieto X, O’Connor NE (2019) Assessing knee OA severity
+    with CNN attention-based end-to-end architectures. In: International conference on medical imaging with
+    deep learning, pp 197–214. PMLR
+28. Tiulpin A, Thevenot J, Rahtu E, Lehenkari P, Saarakkala S (2018) Automatic knee osteoarthritis diagnosis
+    from plain radiographs: a deep learning-based approach. Sci Rep 8(1):1–10
+29. Nasser Y, Jennane R, Chetouani A, Lespessailles E, El Hassouni M (2020) Discriminative regularized
+    auto-encoder for early detection of knee osteoarthritis: data from the osteoarthritis initiative. IEEE Trans
+    Med Imaging 39(9):2976–2984
+30. Nguyen HH, Saarakkala S, Blaschko MB, Tiulpin A (2020) Semixup: in-and out-of-manifold regular-
+    ization for deep semi-supervised knee osteoarthritis severity grading from plain radiographs. IEEE Trans
+    Med Imaging 39(12):4346–4356
+31. Liu B, Luo J, Huang H (2020) Toward automatic quantification of knee osteoarthritis severity using
+    improved faster R-CNN. Int J Comput Assist Radiol Surg 15(3):457–466
+32. Norman B, Pedoia V, Noworolski A, Link TM, Majumdar S (2019) Applying densely connected con-
+    volutional neural networks for staging osteoarthritis severity from plain radiographs. J Digit Imaging
+    32(3):471–477
+33. Freund Y, Schapire RE (1997) A decision-theoretic generalization of on-line learning and an application
+    to boosting. J Comput Syst Sci 55(1):119–139
+
+
+
+                                                                                                   123
+5224                                                                                              W. Liu et al.
+
+
+34. Lin T-Y, Goyal P, Girshick R, He K, Dollár P (2017) Focal loss for dense object detection. In: Proceedings
+    of the IEEE international conference on computer vision, pp 2980–2988
+35. Chen P, Gao L, Shi X, Allen K, Yang L (2019) Fully automatic knee osteoarthritis severity grading using
+    deep neural networks with a novel ordinal loss. Comput Med Imaging Graph 75:84–92
+36. Niu Z, Zhong G, Hui Yu (2021) A review on the attention mechanism of deep learning. Neurocomputing
+    452:48–62
+37. Bello I, Zoph B, Vaswani A, Shlens J, Le QV (2019) Attention augmented convolutional networks. In:
+    Proceedings of the IEEE/CVF international conference on computer vision, pp 3286–3295
+38. Hu J, Shen L, Albanie S, Sun G, Vedaldi A (2018) Gather-excite: exploiting feature context in convolu-
+    tional neural networks. arXiv preprint arXiv:1810.12348
+39. Wang F, Jiang M, Qian C, Yang S, Li C, Zhang H, Wang X, Tang X (2017) Residual attention network for
+    image classification. In: Proceedings of the IEEE conference on computer vision and pattern recognition,
+    pp 3156–3164
+40. Cao Y, Xu J, Lin S, Wei F, Hu H (2019) Gcnet: non-local networks meet squeeze-excitation networks
+    and beyond. In: Proceedings of the IEEE/CVF international conference on computer vision workshops
+41. He X, Chen Y (2019) Optimized input for CNN-based hyperspectral image classification using spatial
+    transformer network. IEEE Geosci Remote Sens Lett 16(12):1884–1888
+42. Fu J, Liu J, Tian H, Li Y, Bao Y, Fang Z, Lu H (2019) Dual attention network for scene segmentation. In:
+    Proceedings of the IEEE/CVF conference on computer vision and pattern recognition, pp 3146–3154
+43. Chen H, Qi Y, Yin Y, Li T, Liu X, Li X, Gong G, Wang L (2020) Mmfnet: A multi-modality mri fusion
+    network for segmentation of nasopharyngeal carcinoma. Neurocomputing 394:27–40
+44. Jin Q, Meng Z, Pham TD, Chen Q, Wei L, Su R (2019) Dunet: a deformable network for retinal vessel
+    segmentation. Knowl-Based Syst 178:149–162
+45. Zhou T, Canu S, Vera P, Ruan S (2021) Feature-enhanced generation and multi-modality fusion based
+    deep neural network for brain tumor segmentation with missing MR modalities. Neurocomputing
+46. Huang Z, Wang X, Huang L, Huang C, Wei Y, Liu W (2019) Ccnet: criss-cross attention for semantic
+    segmentation. In: Proceedings of the IEEE/CVF international conference on computer Vision, pp 603–612
+47. Lu X, Gao S, Shi L, Wei B, Liu X, Zhang J, He Y (2021) Exploiting vector attention and context prior
+    for ultrasound image segmentation. Neurocomputing 454:461–473
+48. Xie S, Girshick R, Dollár P, Tu Z, He K (2017) Aggregated residual transformations for deep neural
+    networks. In: Proceedings of the IEEE conference on computer vision and pattern recognition, pp 1492–
+    1500
+49. Tang P, Chen Z, Hong M, Yan R, Peng X, Xiao J, Xi W, Zhou J, Zhou L, Wang Y (2021) DA-DSUnet:
+    dual attention-based dense SU-net for automatic head-and-neck tumor segmentation in MRI images.
+    Neurocomputing 435:103–113
+50. Ngo L, Cha J, Han J-H (2019) Deep neural network regression for automated retinal layer segmentation
+    in optical coherence tomography images. IEEE Trans Image Process 29:303–312
+51. Xiao Yu, YuHua L, Gao Q (2021) Pipeline image diagnosis algorithm based on neural immune ensemble
+    learning. Int J Press Vessels Pip 189:104249
+52. Xiao Yu, Zhou Z, Gao Q, Li D, Ríha K (2018) Infrared image segmentation using growing immune field
+    and clone threshold. Infrared Phys Technol 88:184–193
+53. Woo S, Park J, Lee J-Y, So KI (2018) Cbam: Convolutional block attention module. In: Proceedings of
+    the European conference on computer vision (ECCV), pp 3–19
+54. Zhang B, Tan J, Cho K, Chang G, Deniz CM (2020) Attention-based CNN for kl grade classification: Data
+    from the osteoarthritis initiative. In: 2020 IEEE 17th international symposium on biomedical imaging
+    (ISBI), pp 731–735. IEEE
+55. Hu J, Shen L, Sun G (2018) Squeeze-and-excitation networks. In: Proceedings of the IEEE conference
+    on computer vision and pattern recognition, pp 7132–7141
+56. Hampton T (2004) Osteoarthritis initiative. JAMA 291(16):1951–1951
+
+
+Publisher’s Note Springer Nature remains neutral with regard to jurisdictional claims in published maps and
+institutional affiliations.
+
+
+
+
+123
+

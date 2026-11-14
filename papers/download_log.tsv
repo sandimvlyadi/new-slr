@@ -1,0 +1,38 @@
+M005	ok	https://arxiv.org/pdf/2406.09980
+M015	ok	https://www.nature.com/articles/s41746-026-02826-9_reference.pdf
+M039	FAILED	https://europepmc.org/api/fulltextRepo?pprId=&type=FILE&fileName=13281478.pdf | https://www.ncbi.nlm.nih.gov/pmc/articles/13281478/pdf/
+M041	FAILED	
+M042	ok	https://etasr.com/index.php/ETASR/article/download/17478/6474
+M044	ok	https://www.frontiersin.org/journals/medicine/articles/10.3389/fmed.2026.1925244/pdf
+M052	FAILED	
+M071	ok	https://www.mdpi.com/2227-7390/14/6/963/pdf
+M095	ok	https://doi.org/10.22266/ijies2026.0228.53
+M100	ok	https://www.mdpi.com/2075-4418/13/1/104/pdf?version=1672363040
+M110	FAILED	https://hal.science/hal-05559811/document
+M117	ok	https://link.springer.com/content/pdf/10.1186/s43055-026-01837-6.pdf
+M130	ok	https://arxiv.org/pdf/2401.00159
+M141	ok	https://arxiv.org/pdf/2412.07526
+M150	ok	https://ieeexplore.ieee.org/ielx7/6287639/10005208/10126092.pdf
+M155	ok	https://www.frontiersin.org/journals/medicine/articles/10.3389/fmed.2026.1809768/pdf
+M157	FAILED	https://pmc.ncbi.nlm.nih.gov/articles/PMC13230456/pdf/10278_2025_Article_1636.pdf | https://europepmc.org/api/fulltextRepo?pprId=&type=FILE&fileName=13230456.pdf | https://www.ncbi.nlm.nih.gov/pmc/art
+M160	ok	https://www.mdpi.com/2075-4418/16/4/539/pdf
+M162	FAILED	
+M165	ok	https://www.nature.com/articles/s41598-022-23081-4.pdf
+M173	FAILED	https://europepmc.org/api/fulltextRepo?pprId=&type=FILE&fileName=13067489.pdf | https://www.ncbi.nlm.nih.gov/pmc/articles/13067489/pdf/ | https://pmc.ncbi.nlm.nih.gov/articles/PMC13067489/pdf/12880_20
+M185	ok	https://arxiv.org/pdf/2604.23335
+M188	FAILED	https://europepmc.org/api/fulltextRepo?pprId=&type=FILE&fileName=13223414.pdf | https://www.ncbi.nlm.nih.gov/pmc/articles/13223414/pdf/
+M191	ok	https://arxiv.org/pdf/2311.05798
+M197	ok	https://arxiv.org/pdf/2407.11500
+M199	ok	https://arxiv.org/pdf/2502.01972
+M201	FAILED	https://europepmc.org/api/fulltextRepo?pprId=&type=FILE&fileName=13302151.pdf | https://www.ncbi.nlm.nih.gov/pmc/articles/13302151/pdf/
+M219	FAILED	https://europepmc.org/api/fulltextRepo?pprId=&type=FILE&fileName=13603584.pdf | https://www.ncbi.nlm.nih.gov/pmc/articles/13603584/pdf/ | https://pmc.ncbi.nlm.nih.gov/articles/PMC13603584/pdf/bioengin
+M222	ok	https://link.springer.com/content/pdf/10.1007/s40846-025-00947-2.pdf
+M225	FAILED	
+M238	ok	https://irojournals.com/iroiip/article/download/2371/2176
+M249	ok	https://www.mdpi.com/1999-4893/17/1/8/pdf?version=1703403653
+M270	FAILED	https://hal.science/hal-04453938/document
+M272	ok	https://www.mdpi.com/2075-4418/15/11/1332/pdf?version=1748248889
+M275	FAILED	
+M303	FAILED	
+M306	ok	https://arxiv.org/pdf/2401.06331
+M335	ok	https://arxiv.org/pdf/2203.01933

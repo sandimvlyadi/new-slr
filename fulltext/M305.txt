@@ -1,0 +1,296 @@
+                                                                                                                                                                Güncel Derin Öğrenme Modelleri ve Sıralı Yitim
+                                                                                                                                                               Fonksiyonu ile Diz Osteoartrit Şiddetinin Otomatik
+                                                                                                                                                                                    Tespiti
+                                                                                                                                                              Automatic Detection of Knee Osteoarthritis Severity
+                                                                                                                                                              with SOTA Deep Learning Models and Ordinal Loss
+
+                                                                                                                                                                                                                         İlknur Aktemur, İlkay Öksüz
+
+
+
+
+2023 31st Signal Processing and Communications Applications Conference (SIU) | 979-8-3503-4355-7/23/$31.00 ©2023 IEEE | DOI: 10.1109/SIU59756.2023.10223879
+                                                                                                                                                                                                                          İstanbul Teknik Üniversitesi
+                                                                                                                                                                                                                      {aktemur21, oksuzilkay}@itu.edu.tr
+
+
+
+
+                                                                                                                                                                   Özetçe —Diz Osteoartriti (OA) en yaygın görülen kemik                        73.77 % F1 score and 0.28 mean absolute error (MAE) values
+                                                                                                                                                              hastalıklarından biridir. Kıkırdakta sebep olduğu hasarlarla ağrı,              on test set obtained on ConvNeXt V2-Tiny and ConvNeXt-Base
+                                                                                                                                                              sertlik ve hareket kısıtlığına yol açar. Hastalığın teşhisi kişinin           models that we trained with the ordinal loss function.
+                                                                                                                                                              semptomlarına ve röntgen bulgularına dayanarak tıp doktorları
+                                                                                                                                                                                                                                                   Keywords—knee osteoarthritis, medical imaging, ConvNeXt,
+                                                                                                                                                              tarafından yapılır. Bu süreçte genellikle deneyime dayalı olarak
+                                                                                                                                                                                                                                                Kellgren-Lawrence
+                                                                                                                                                              tıp doktorları arasında yapılan farklı değerlendirmeler, hastalığın
+                                                                                                                                                              teşhisini zorlaştırabilir. Bu bildiride, hastalık teşhisi süreçlerini
+                                                                                                                                                              kolaylaştırmak amacıyla Kellgren-Lawrence (KL) derecelendirme                                                     I.    G İR İ Ş
+                                                                                                                                                              sistemine göre diz OA evrelerinin otomatik tespiti için derin
+                                                                                                                                                                                                                                                     Diz osteoartriti(OA), osteofit oluşumu ve diz eklemi ara-
+                                                                                                                                                              öğrenme modelleri kullanılmıştır. Önceden eğitilmiş ConvNeXt ve
+                                                                                                                                                              ConvNeXt V2 gibi güncel derin öğrenme modelleri sıralı yitim                     lığında daralma sonucunda ortaya çıkan ve yaygın olarak
+                                                                                                                                                              fonksiyonu kullanılarak yeniden eğitilmiştir. Bu yitim fonksiyonu,              gözlenen bir eklem hastalığıdır [1]. Genellikle ilerleyen yaşla
+                                                                                                                                                              OA şiddetini temsil eden KL derecelerinde olduğu gibi etiketler                 birlikte, diz ekleminin aşırı kullanımı, kilo, geçmiş yaralan-
+                                                                                                                                                              arasında bir sıralamanın olduğu problemlerde, gerçek sınıfla                     malar ve genetik faktörler gibi sebeplere bağlı olarak görül-
+                                                                                                                                                              tahmin edilen sınıf arasındaki mesafe farkını dikkate alarak bir                  mektedir [2]. Diz OA’sı ayrıca subkondral skleroz, osteofitler
+                                                                                                                                                              ceza uygular. KL ölçüsüne göre, diz OA evresini sınıflandırdığımız               ve periartiküler kist oluşumu ile de kendini gösterebilir [3].
+                                                                                                                                                              bu çalışmada, sıralı yitim fonksiyonuyla eğittiğimiz ConvNeXt V2-              Bu semptomlar, kişilerin günlük yaşam aktivitelerini sürdürme-
+                                                                                                                                                              Tiny ve ConvNeXt-Base modelleri, test kümesi üzerinde %73,91                      sini zorlaştırmakla birlikte yaşam kalitesini de önemli ölçüde
+                                                                                                                                                              doğruluk, %73,77 F1 puanı ve 0,28 ortalama mutlak hata (MAE)                     olumsuz etkiler. Bu sebeple hastalığın erken teşhisi ve tedavisi,
+                                                                                                                                                              değeri ile en yüksek performanslara ulaşmıştır.
+                                                                                                                                                                                                                                                hastalığın ilerlemesinin yavaşlatılmasında ve kişilerin yaşam
+                                                                                                                                                                Anahtar Kelimeler—diz osteoartriti, tıbbi görüntüleme, Conv-                    kalitelerinin iyileştirilmesinde büyük bir önem arz etmektedir.
+                                                                                                                                                              NeXt, Kellgren-Lawrence                                                               Bilgisayar destekli teşhis sistemlerinde diz OA’sı tespiti için
+                                                                                                                                                                                                                                                Röntgen (X-Işını), Manyetik Rezonans Görüntüleme (MRI),
+                                                                                                                                                                  Abstract—Knee Osteoarthritis (OA) is one of the most com-
+                                                                                                                                                              mon bone diseases that causes pain, stiffness, and limited mobility               Ultrason (USG) ve Bilgisayarlı Tomografi (BT) gibi tıbbi
+                                                                                                                                                              due to the damage to cartilage. The diagnosis of the disease is                   görüntüleme yöntemleri kullanılabilir; fakat genellikle diz
+                                                                                                                                                              made by medical doctors based on the individual’s symptoms                        OA’sı teşhisinde röntgen tercih edilmektedir [4]. Çünkü diğer
+                                                                                                                                                              and findings on X-ray. During this process, different evaluations                 görüntüleme yöntemlerine kıyasla hem maliyeti daha düşüktür
+                                                                                                                                                              among medical doctors usually based on experience can make                        hem de kemiklerin yapısını ve yoğunluğunu görüntüleyerek
+                                                                                                                                                              the diagnosis of the disease difficult. In this paper, deep learning              hastalık teşhisi için gerekli bilgileri sağlamaktadır. Hastalığın
+                                                                                                                                                              models were used for automatic detection of knee OA stages                        erken teşhis edilmesi ve tedavi geliştirme süreci için hastalığın
+                                                                                                                                                              according to the Kellgren-Lawrence (KL) grading system in order                   evrelerinin net olarak tanımlanmasını sağlamak üzere birkaç
+                                                                                                                                                              to facilitate the disease diagnosis process. Pre-trained SOTA deep                yöntem kullanılmaktadır ve bunlardan birisi de Kellgren-
+                                                                                                                                                              learning models including ConvNeXt and ConvNeXt V2 are fine
+                                                                                                                                                                                                                                                Lawrence (KL) sınıflandırma sistemidir [7]. Bu sınıflandırma
+                                                                                                                                                              tuned using the ordinal loss function. This loss function imposes
+                                                                                                                                                              a penalty, taking into account the distance difference between the                sisteminde, KL-0 (OA yok), KL-1 (şüpheli OA), KL-2 (hafif
+                                                                                                                                                              real class and the predicted class, in cases where there is a order               OA), KL-3 (orta derecede OA) ve KL4 (şiddetli OA) gibi
+                                                                                                                                                              between the labels, like KL grades that representing OA severity.                 hastalık evrelerini tanımlayan farklı sınıflar bulunmaktadır. Her
+                                                                                                                                                              In this study that we classified the knee OA stage according to KL                evreye ait röntgen görüntüleri ve evrelerin özellikleri Şekil 1’de
+                                                                                                                                                              grades, we obtained the best performances with 73.91% accuracy,                   gösterilmektedir.
+                                                                                                                                                              979-8-3503-4355-7/23/$31.00 ©2023 IEEE
+
+
+
+
+                                                                                                                                                                       Authorized licensed use limited to: University of Ghana. Downloaded on August 27,2026 at 03:05:04 UTC from IEEE Xplore. Restrictions apply.
+                                                                                                       TABLO I: V ER İ DAĞILIMI
+                                                                                                                            Küme
+                                                                                                    KL Evresi
+                                                                                                                 Eğitim   Doğrulama    Test
+                                                                                                      KL-0        2286        328        639
+                                                                                                      KL-1        1046        153        296
+                                                                                                      KL-2        1516        212        447
+                                                                                                      KL-3         757        106        223
+                                                                                                      KL-4         173         27         51
+                                                                                                     Toplam       5778        826        1656
+
+                                                                                 A. Veri
+                                                                                      Çalışmamızda ham diz röntgen görüntüsünden, sağ ve
+                     Şekil 1: KL Evreleri [8]
+                                                                                 sol diz için eklem bölgeleri çıkartılarak oluşturulmuş"Knee
+                                                                                 Osteoarthritis Severity Grading Dataset" isimli veri kümesini
+     Şu anda hastalığın yaygınlığı, diz OA’sının doğru bir şe-              [15] kullanmaktayız. Bu veri kümesinde, diz için ham röntgen
+kilde tespit edilmesi ve hastalığın boyutunun ölçülebilmesi                     görüntüleri Open Archives Initiative(OAI) aracılığıyla elde
+konusunda acil bir ihtiyaç doğurmaktadır. Son zamanlarda,                       edilmiştir ve diz eklem bölgelerinin tespiti için YOLOv2
+yapay zeka destekli bilgisayar uygulamalarının gelişmesiyle bu                  kullanılmıştır [16]. OAI, osteoartrit araştırmalarına odaklanan
+ihtiyaca yönelik çalışmalar da yapılmaktadır. Bu çalışmalarla                  bir araştırma programıdır ve bu amaçla araştırmacılar tara-
+hastalığın evresi ile ilgili, doktorların yaşadıkları fikir ayrı-              fından, 45 ile 79 yaş arası osteoartrit riski taşıyan bireylerin
+lıklarını azaltabilmek ve hastalığın teşhisini hızlandırabilmek                takibi için bir topluluk oluşturulmuştur [17]. Kullandığımız
+amaçlanmıştır. Diz OA’sının evrelerini KL derecesine göre                       veri kümesinde, tüm diz röntgen görüntüleri 7 : 1 : 2 oranında
+otomatik olarak sınıflandırmak için yapılan çalışmaların tarihi                 eğitim, doğrulama ve test kümelerine ayrılmıştır. Sınıflar arası
+eskiye dayanmaktadır. 2009 yılında KL derecesinin tespiti için                   veri dağılımı Tablo I’de gösterilmiştir.
+yapılan bir çalışmada [9] Chebyshev istatistikleri ve GLCM
+işlevleriyle manuel olarak oluşturulmuş özellikleri kullanan                  B. Veri Ön-İşleme
+K-en yakın komşu (K-nearest neighbors-KNN) algoritmasını
+önermişlerdir. Son 20 yılda veri sayının artması ve donanımsal                      Veri kümesinde bulunan görüntülerin kalitesini iyileştir-
+özelliklerin gelişmesiyle KL derecesinin belirlenmesi için,                     mek, görüntü üzerindeki anlamlı özelliklerin öne çıkarılmasını
+Evrişimsel Sinir Ağları (CNN) da kullanılmaya başlanmıştır.                  sağlamak ve modellerinin daha iyi sonuçlar üretmesine yar-
+Örneğin [10]’da ilk kez görüntü özelliklerinin otomatik olarak                  dımcı olmak için, veriler üzerinde birtakım veri ön işleme tek-
+çıkarıldığı bir CNN modeli kullanılmış ve bu modelin eğitimi                  nikleri uygulanmıştır. Bu kapsamda, eğitim kümesinde bulunan
+için ortalama kare hatası (mean squared error-MSE) kullanarak                    verilerin çeşitliliği arttırmak için veri arttırma tekniklerinden
+diz OA evrelerinin sınıflandırılmasını aslında bir regresyon                     faydalandık. Eğitim görüntüleri her dönemde (epoch) farklı
+problemi olarak ele almışlardır. [11]’de diz OA şiddetini                      açılarda döndürülmüş, farklı eksenlere göre yansıması alınmış,
+otomatik olarak sınıflandırmak için Derin Siyam Evrişimsel                      farklı doygunluk, kontrast ve parlaklık değerleriyle modele
+Sinir Ağı önerilmiştir. Diz eklemlerinin sağ ve sol bölümlerinin              verilmektedir. Daha sonra pikseller 0 ile 1 arasında normalize
+kırpılmasıyla elde edilen veriler, bu ağa verilerek daha ayrıntılı              edilmekte ve her görüntü için piksel değerlerinden ortalama
+eklem özelliklerinin çıkarımı sağlanmıştır. Genel olarak CNN                   piksel değerlerinin çıkarılması ve standart sapmalarına bö-
+kullanılarak oluşturulan yöntemler OA şiddetinin değerlen-                    lünmesi yoluyla piksel standartlaştırılması sağlanmaktadır. Bu
+dirmesinde tıp doktarları seviyesine(İkinci dereceden Kappa                     tekniklerle model eğitiminin daha hızlı ve stabil hale gelmesi
+değerleri: 0,56 [12], 0,66 [13], 0.67 [14]) erişebilmektedir.                  amaçlanmıştır.
+Aynı zamanda teşhis süreçlerinde doktorların kendi araların-
+daki uyumunu değerlendirme amacıyla yapılan çalışmalarda,                      C. ConvNeXt Modelleri
+Kappa ölçütüne göre erişilen değerler, diz OA’sı şiddetini
+                                                                                     ImageNet büyük ölçekli görsel tanıma yarışması [18] 1000
+sınıflandırma probleminin zorluğunu da ortaya koymaktadır.
+                                                                                 farklı nesne kategorisini içeren binlerce görüntü verisiyle,
+    Önceki çalışmalarda diz OA’sı varlığı ve şiddetinin tes-                  birçok yeni algoritma ve mimarinin ortaya çıkmasını sağlamış,
+pit edilmesi, yakın KL sınıflarının röntgen görüntülerindeki                     bilgisayar görüsü ve derin öğrenme araştırmalarının ilerleme-
+benzerliklerinden ötürü istenen seviyelere ulaşamamıştır. Bu                   sinde etkili olmuştur. Diz OA’sı evrelerinin otomatik tespitini
+bildiride, diz OA’sının teşhisinde, KL sınıflarının tahmini için,               yaptığımız bu çalışmada, ImageNet-1k veri kümesi kullanıla-
+ConvNeXt [5] ve ConvNeXt V2 [6] gibi güncel mimarileri                           rak eğitilmiş ve doğruluk değerleriyle dikkat çekmeyi başarmış
+sıralı yitim fonksiyonuyla birlikte kullanarak bu problem için                   ConvNeXt ve ConvNeXt V2 gibi güncel görüntü sınıflandırma
+daha yüksek performans gösteren modeller öneriyoruz.                             mimarilerini kullanmaktayız. Bu güncel modellerin mimari-
+                                                                                 sine ve öğrenilmiş ağırlıklarına dayalı olarak diz OA evrele-
+                                                                                 rini tanımlamak üzere, diz röntgeni görüntülerini kullanarak
+                         II.   YÖNTEMLER                                         özelleştirdiğimiz modelleri tekrardan eğitiyoruz. ConvNeXt
+                                                                                 mimarisi, farklı eğitim prosedürleri ve yenilikçi mimarisiyle
+    Bu bölümde, çalışmada kullanılan veri kümesinden, veri-                     ResNet mimarisinin gelişmiş halidir. Eğitim prosedürleri ve
+ler üzerinde gerçekleştirilen ön-işleme adımlarından, diz OA                   mimarideki değişiklikler konusunda güncel Vision Transfor-
+evrelerini belirlemek için kullanılan güncel modellerden ve bu                   mer modellerinden Swin Transformer’da kullanılan yöntem-
+modellere entegre edilen yitim fonksiyonundan bahsedilmek-                       lerden ilham alınmıştır. Bir giriş görüntüsüne (4,4) boyutunda
+tedir.                                                                           konvolüsyonel filtrelerinin (4,4) adım sayısıyla uygulanmasıyla
+
+
+
+
+        Authorized licensed use limited to: University of Ghana. Downloaded on August 27,2026 at 03:05:04 UTC from IEEE Xplore. Restrictions apply.
+                                                                                  loss) fonksiyonunu güncel modellerimize uyguluyoruz.
+                                                                                                                         n−1
+                                                                                                                         X
+                                                                                                            L(ŷ, y) =         wi,m .pi                (2)
+                                                                                                                         k=0
+
+                                                                                  Uyguladığımız sıralı yitim fonksiyonunun formülü Denklem
+                                                                                  (2)’de verilmiştir. Burada W , gerçek KL sınıfına göre ceza
+                                                                                  ağırlıklarının tanımlandığı n ∗ n boyutunda bir kare matrisi
+                                                                                  temsil etmektedir. wi,m ∈ W , m sınıfını i sınıfı olarak
+                                                                                  tahmin etmenin ceza ağırlığını, pi ise i sınıfı için Softmax
+                                                                                  katmanından elde edilen olasılık değerini göstermektedir. KL
+                                                                                  derecesi sınıflandırma görevi için n = 5 tir ve i, m ∈
+                                                                                  {0, 1, .., n−1}. Şekil 2’de ceza ağırlıklarını içeren W matrisini
+                                                                                  ve Softmax katmanından çıkan olasılık değerlerini kullanarak,
+                                                                                  yitim değerinin sıralı yitim fonksiyonuyla hesaplanma süreci
+                                                                                  gösterilmiştir.
+
+
+                                                                                                         III.   D ENEY S ONUÇLARI
+                 Şekil 2: Sıralı Yitim Fonksiyonu
+                                                                                       Modellerin sonuçlarını değerlendirmek için doğruluk, F1
+                                                                                  puanı ve ortalama mutlak hata (MAE) metrikleri kullanılmıştır.
+havuzlama katmanının kaldırılması, daha az normalleştirme                        Sınıflar arasında dengesiz veri dağılımı söz konusu olduğun-
+katmanı bulundurması ve BatchNorm2d katmanının yerine                             dan, makro-F1 puanları performans ölçütü olarak kullanıl-
+batch boyutundan bağımsız çalışabilen LayerNorm2d katmanı-                      mıştır. Test verisi üzerindeki yanlış tahminlerin uzak sınıflar
+nın kullanılması ConvNeXt mimarilerinin performans arttıran                       arasında olması yakın sınıflar arasında olmasından daha ciddi
+yenilikçi özelliklerinden birkaçıdır. ConvNeXt V2 mimarisi                        bir durumdur. Modeli bu açıdan değerlendirmek için doğruluk
+ise, ConvNeXt mimarilerinde özellik çıkarım gücünü arttırmak                      ve F1-puanlarının yanında MAE de performans ölçütü olarak
+için maskeli otomatik kodlayıcı(masked autoencoder) yapıla-                       kullanılmaktadır. En iyi model, test setindeki performansa
+rının eklenmesiyle oluşmuştur.                                                  bağlı olarak seçilmiştir. Tablo II’de diz eklemlerinde çapraz
+                                                                                  entropi(ÇE) ve sıralı yitim fonksiyonları ile eğitilmiş modelle-
+                                                                                  rin sınıflandırma performansları verilmiştir. Modellerin her biri
+D. Sıralı Yitim Fonksiyonu                                                        aynı hiperparametre değerleriyle eğitilmiştir. Diz OA evrelerini
+                                                                                  KL derecelendirme sistemine bağlı olarak sınıflandırmak için
+   İkiden fazla sınıfın bulunduğu görüntü sınıflandırma prob-                   eğitilen modellerden en iyi performansı ConvNeXt mimari-
+lemlerinde yaygın olarak çapraz entropi (cross entropy loss)                      sindeki modeller vermektedir. Model performansı bakımından
+fonksiyonu kullanılmaktadır.                                                      EfficientNet ve ResNeXt mimarileri ConvNeXt modellerinin
+                                                                                  arkasından gelmektedir. Çapraz entropi ve sıralı yitim fonksi-
+                                   n−1
+                                   X                                              yonu ile eğitilen modeller karşılaştırıldığında performans üs-
+                   L(ŷ, y) = −          y k log(ŷ (k) )                (1)      tünlüğü, sıralı yitim fonksiyonuyla eğitilen modellere aittir. Bu
+                                   k=0                                            modellerde çoğunlukla daha yüksek doğruluk ve F1 puanları-
+                                                                                  nın yanında daha düşük MAE değerleri elde edilmiştir. ResNet
+Çapraz entropi, Denklem(1)’de verilen formül ile hesaplanır.                      ve DenseNet modellerinde doğruluk değerinde küçük düşüş
+Burada n, sınıf sayısını temsil etmektedir. Eğer k doğru sınıf                  yaşanmıştır. Fakat yine aynı modellerde MAE metriğinde
+ise, y (k) 1 değerini, yanlış sınıf ise 0 değerini alır. ŷ (k) ise,           gözlenen ciddi düşüşler, yanlış sınıflandırmaların uzak sınıflar
+k sınıfı için tahmin edilen olasılık değerini temsil etmektedir.                 arasında olmadığını, daha yakın sınıflar arasında olduğunu ve
+Bu durumda, gerçek sınıf için tahmin edilen olasılık değeri ne                   modelin performansının daha iyiye gittiğini kanıtlamaktadır
+kadar büyük olursa, yitim o kadar az olur ve bu hesaplamada
+diğer sınıflar için tahmin edilen olasılık değerleri dikkate
+alınmaz. Böylece yanlış sınıflandırmaların hepsi aynı şekilde
+cezalandırılır. Fakat etiketler sıralı olduğundan, gerçek sınıf
+ile tahmin edilen sınıf arasındaki uzaklık da yitim fonksiyonu
+tarafından dikkate alınmalıdır. Örneğin, gerçek etiketi KL-0
+olan bir görüntüyü modelin KL-4 olarak tahmin etmesiyle,
+KL-1 olarak tahmin etmesi aynı yitim değeriyle ifade edilme-
+melidir. Çapraz entropi kaybı, hatalı tahminlerde tüm sınıflara
+eşit şekilde bir yitim değeri atar ve sınıflar arası yakınlığı dik-
+kate almaz. Diz OA’sı şiddetinin sınıflandırılması probleminde
+sınıfların sıralı yapısını göz önünde bulundurarak, modellerin
+gerçek sınıflar ve tahmin edilen sınıflar arasındaki mesafeyi
+de dikkate alması ve yapılan hataya göre bir ceza değeri                         Şekil 3: ConvNeXt V2-Tiny-Sıralı Modeli Karmaşıklık Matrisi
+oluşturarak eğitilmesi için [16] ’da önerilen sıralı yitim (ordinal
+
+
+
+
+         Authorized licensed use limited to: University of Ghana. Downloaded on August 27,2026 at 03:05:04 UTC from IEEE Xplore. Restrictions apply.
+TABLO II: S INIFLANDIRICI M ODELLER İN P ERFORMANS                               delleri, ResNet ve DenseNet gibi popüler CNN modellerine
+K AR ŞILA ŞTIRMASI                                                              göre sonuçlarda önemli boyutlarda üstünlük sağlamaktadır.
+                                                                                  Ayrıca sıralı yitim fonksiyonu çapraz entropi kaybıyla kı-
+                           Modeller          Doğruluk    F1       MAE            yaslandığında, daha yüksek F1 puanları, daha düşük MAE
+                       ResNet-152-ÇE          %69,87     %67,30    0,37           değerleri elde edilmesini sağlamış ve güncel modeller dahil
+       ResNet
+                      ResNet-152-Sıralı       %69,38     %69,58    0,35
+                      DenseNet-201-ÇE         %69,44     %69,15    0,37           olmak üzere model performanslarını arttırmıştır. Bu çalışmanın
+      DenseNet
+                     DenseNet-201-Sıralı      %69,20     %70,13    0,34           temel sınırlaması, verilerin tek bir veri kümesinden toplanmış
+                     EfficientNet-B0-ÇE       %68,23     %67,18    0,38           olması ve bu nedenle sonuçların genelleştirilmesinde kısıtlı-
+                    EfficientNet-B0-Sıralı    %69,14     %69,61    0,35
+     EfficientNet                                                                 lıkların olmasıdır. Gelecekteki çalışmalarımızda geliştirdiğimiz
+                     EfficientNet-B7-ÇE       %69,27     %68,23    0,36
+                    EfficientNet-B7-Sıralı    %71,14     %71,25    0,32           modellerin genellenebilirliğini klinikten elde edilmiş veriler
+                     ConvNeXt V1-B-ÇE         %72,22     %71,84    0,30
+    ConvNeXt V1
+                      ConvNeXt-B-Sıralı       %73,12     %72,97    0,28
+                                                                                  de dahil olmak üzere, birden çok veri kümesinde incelemeyi
+                     ConvNeXt V2-T-ÇE         %73,24     %73,16    0,30           hedeflemekteyiz.
+                    ConvNeXt V2-T-Sıralı     %73,91      %73,77    0,29
+    ConvNeXt V2
+                     ConvNeXt V2-N-ÇE         %72,46     %71,98    0,31
+                    ConvNeXt V2-N-Sıralı      %73,36     %73,51    0,30                                          K AYNAKLAR
+                       ResNeXt50-ÇE           %69,14     %66,28    0,37
+      ResNeXt                                                                     [1]  Oka, H. et al. Fully automatic quantifcation of knee osteoarthritis severity
+                      ResNeXt50-Sıralı        %71,24     %70,04    0,31
+                                                                                       on plain radiographs. Osteoarthr. Cartil. 16, 1300–1306 (2008).
+    Sıralı yitim ile eğitilen modellerin tamamında, artan F1                     [2] Arden, N. & Nevitt, M. C. Osteoarthritis: epidemiology. Best practice &
+                                                                                       research Clinical rheumatology 20, 3–25 (2006).
+puanı, modelin sınıflandırma becerisinin arttığını göstermekte-
+dir. Şekil 3’te, sıralı yitim fonksiyonu ile eğitilen ConvNeXt                  [3] A. Guccione et al., “The effects of specific medical conditions on the
+                                                                                       functional limitations of elders in the Framingham Study,” American
+V2- Tiny modelinin test kümesi üzerindeki sınıflandırma so-                            journal of public health, vol. 84, pp. 351–8, Apr. 1994.
+nucu karmaşıklık matrisi ile gösterilmiştir. Modeldeki hataların                [4] D. Hayashi, F.W. Roemer, A. Guermazi, Imaging for osteoarthritis,
+genellikle birbirine yakın sınıflar arasında meydana geldiği                          Annals of Physical and Rehabilitation Medicine, Volume 59, Issue 3,
+gözlemlenmektedir. En az örneğin olduğu ve problem açısın-                           2016, Pages 161-169, ISSN 1877-0657.
+dan en kritik olan KL-4 sınıfına ait doğru tahminlerin sayısı                    [5] Kellgren JH, Lawrence JS. Radiological assessment of rheumatoid arth-
+modelin başarısını ortaya koymaktadır. Şekil 4’te cerrahi bir                        ritis. Ann Rheum Dis 1957;16(4):485–493.
+müdahale sonucu içerisine vida yerleştirilen bir diz eklemine                    [6] Liu, Z., Mao, H., Wu, C., Feichtenhofer, C., Darrell, T., Xie, S. (2022).
+ait röntgen görüntüsünün, ResNet-152 ve ConvNeXt- Base                                 A ConvNet for the 2020s.
+modelleri tarafından sınıfladırma esnasında kararını etkileyen                    [7] Woo, S., Debnath, S., Hu, R., Chen, X., Liu, Z., Kweon, I. S., & Xie, S.
+                                                                                       (2023). ConvNeXt V2: Co-designing and Scaling ConvNets with Masked
+kısımları gösterilmiştir. ResNet-152 modelinde diz içerisine                          Autoencoders.
+yerleştirilmiş vidanın bulunduğu bölge, modelin yanlış tahmin                 [8] Antony, J., McGuinness, K., Moran, K., & O’Connor, N. (2017, July).
+yapmasına sebep olmuştur. ConvNeXt-Base modeli, görüntü                               Automatic Detection of Knee Joints and Quantification of Knee Osteo-
+içerisinde beklenmeyen bu nesneye ait bölgeyi dikkate al-                              arthritis Severity Using Convolutional Neural Networks.
+mamış ve eklemler arası boşluğa odaklanarak KL-2 evresini,                     [9] Shamir, L., Ling, S.M., Scott Jr., W.W., Bos, A., Orlov, N., Macura,
+başarılı bir şekilde tespit edebilmiştir. Grad-CAM tekniği ile                     T.J., Eckley, D.M., Ferrucci, L., Goldberg, I.G., 2009. Knee X-ray image
+oluşturulmuş bu dikkat haritaları yardımıyla ConvNeXt-Base                           analysis method for automated detection of osteoarthritis. IEEE Trans.
+                                                                                       Biomed. Eng. 56 (2), 407–415.
+modelinin ResNet-152 modeline karşı başarısı bir kez daha
+                                                                                  [10] Antony, J., McGuinness, K., O’Connor, N.E., Moran, K., 2016. Qu-
+görülmektedir.                                                                         antifying radiographic knee osteoarthritis severity using deep convoluti-
+                                                                                       onal neural networks. International Conference on Pattern Recognition,
+                                                                                       1195–1200.
+                              IV.    S ONUÇ                                       [11] Tiulpin, A., Thevenot, J., Rahtu, E., Lehenkari, P., Saarakkala, S., 2018.
+                                                                                       Automatic knee osteoarthritis diagnosis from plain radiographs: a deep
+    Diz OA’sının son zamanlarda gittikçe yaygınlaşması, bu                            learning-based approach. Sci. Rep. 8 (1), 1727.
+hastalığın doğru ve erken teşhisi ihtiyacını da beraberinde                    [12] Gossec, L. et al. Comparative evaluation of three semi-quantitative ra-
+getirmiştir. Bu çalışmada, hastalığın teşhisini hızlandırmak                       diographic grading techniques for knee osteoarthritis in terms of validity
+ve evrelerini doğru tanımlayarak erken tanıyı kolaylaştırmak                         and reproducibility in 1759 X-rays: Report of the OARSI–OMERACT
+için performansı iyileştirilmiş modeller sunuyoruz. Modelle-                         task force. Osteoarthr. Cartil. 16, 742–748 (2008).
+rimizde, diz OA’sının şiddetini diz eklemi röntgen görüntü-                      [13] Sheehy, L. et al. Validity and sensitivity to change of three scales for
+                                                                                       the radiographic assessment of knee osteoarthritis using images from
+lerini kullanarak otomatik olarak tespit edebilmek için önce-                          the Multicenter Osteoarthritis Study (MOST). Osteoarthr. Cartil. 23,
+den eğitilmiş güncel derin öğrenme modellerini, sıralı yitim                        1491–1498 (2015).
+fonksiyonu kullanarak tekrardan eğitiyoruz. ConvNeXt mo-                         [14] Culvenor, A. G., Engen, C. N., Øiestad, B. E., Engebretsen, L. ,
+                                                                                       Risberg, M. A. Defning the presence of radiographic knee osteoarthritis:
+                                                                                       A comparison between the Kellgren and Lawrence system and OARSI
+                                                                                       atlas criteria. Knee Surg. Sports Traumatol. Arthrosc. 23, 3532–3539
+                                                                                       (2015)
+                                                                                  [15] Chen, Pingjun (2018), “Knee Osteoarthritis Severity Grading Dataset”,
+                                                                                       Mendeley Data, V1, doi: 10.17632/56rmx5bjcr.1
+                                                                                  [16] Chen P, Gao L, Shi X, Allen K, Yang L. Fully automatic knee
+                                                                                       osteoarthritis severity grading using deep neural networks with a novel
+                                                                                       ordinal loss. Comput Med Imaging Graph. 2019 Jul;75:84-92.
+                                                                                  [17] Nevitt, M., Felson, D., Lester, G., 2006. The Osteoarthritis Initiative:
+                                                                                       Protocol for the Cohort Study
+Şekil 4: Grad-Cam Tekniği ile Dikkat Haritası Karşılaştırması                 [18] Russakovsky, O., Deng, J., Su, H. et al. (2015). ImageNet Large Scale
+                                                                                       Visual Recognition Challenge. Int J Comput Vis. 115, 211–252.
+
+
+
+
+         Authorized licensed use limited to: University of Ghana. Downloaded on August 27,2026 at 03:05:04 UTC from IEEE Xplore. Restrictions apply.
+

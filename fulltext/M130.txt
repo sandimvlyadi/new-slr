@@ -1,0 +1,1179 @@
+arXiv:2401.00159v1 [eess.IV] 30 Dec 2023
+                                             Automatic hip osteoarthritis grading with
+                                              uncertainty estimation from computed
+                                             tomography using digitally-reconstructed
+                                                           radiographs
+                                           Masachika Masuda1*, Mazen Soufi1*, Yoshito Otake1 , Keisuke
+                                             Uemura2 , Sotaro Kono2 , Kazuma Takashima2 , Hidetoshi
+                                            Hamada3 , Yi Gu1 , Masaki Takao4 , Seiji Okada2 , Nobuhiko
+                                                         Sugano3 and Yoshinobu Sato1*
+                                            1* Division of Information Science, Graduate School of Science
+
+                                               and Technology, Nara Institute of Science and Technology,
+                                                                 Ikoma, Nara, Japan.
+                                             2 Department of Orthopaedics, Graduate School of Medicine,
+
+                                                        Osaka University, Suita, Osaka, Japan.
+                                             3 Department of Orthopaedic Medical Engineering, Graduate
+
+                                              School of Medicine, Osaka University, Suita, Osaka, Japan.
+                                             4 Department of Bone and Joint Surgery, Graduate School of
+
+                                                   Medicine, Ehime University, Toon, Ehime, Japan.
+
+
+                                                       *Corresponding author(s). E-mail(s):
+                                                masuda.masachika.mp2@is.naist.jp; msoufi@is.naist.jp;
+                                                                 yoshi@is.naist.jp;
+
+
+                                                                           Abstract
+                                             Purpose: Progression of hip osteoarthritis (hip OA) leads to pain
+                                             and disability, likely leading to surgical treatment such as hip arthro-
+                                             plasty at the terminal stage. The severity of hip OA is often classified
+                                             using the Crowe and Kellgren-Lawrence (KL) classifications. However,
+                                             as the classification is subjective, we aimed to develop an automated
+                                             approach to classify the disease severity based on the two grades
+                                             using digitally-reconstructed radiographs (DRRs) from CT images.
+
+
+
+
+                                                                                1
+2     Automatic Hip OA Grading from CT
+
+     Methods: Automatic grading of the hip OA severity was performed
+     using deep learning-based models. The models were trained to predict
+     the disease grade using two grading schemes, i.e., predicting the Crowe
+     and KL grades separately, and predicting a new ordinal label combin-
+     ing both grades and representing the disease progression of hip OA.
+     The models were trained in classification and regression settings. In
+     addition, the model uncertainty was estimated and validated as a pre-
+     dictor of classification accuracy. The models were trained and validated
+     on a database of 197 hip OA patients, and externally validated on 52
+     patients. The model accuracy was evaluated using exact class accuracy
+     (ECA), one-neighbor class accuracy (ONCA), and balanced accuracy.
+     Results: The deep learning models produced a comparable accu-
+     racy of approximately 0.65 (ECA) and 0.95 (ONCA) in the clas-
+     sification and regression settings. The model uncertainty was sig-
+     nificantly larger in cases with large classification errors (P<6e-3).
+     Conclusion: In this study, an automatic approach for grading hip
+     OA severity from CT images was developed. The models have
+     shown comparable performance with high ONCA, which facilitates
+     automated grading in large-scale CT databases and indicates the
+     potential for further disease progression analysis. Classification accu-
+     racy was correlated with the model uncertainty, which would allow
+     for the prediction of classification errors. The code will be made
+     publicly available at https://github.com/NAIST-ICB/HipOA-Grading.
+
+     Keywords: Hip Osteoarthritis, Crowe Grading, Kellgren and Lawrence
+     Grading, VisionTransformer, VGG, DenseNet, Uncertainty
+
+
+
+
+1 Introduction
+Hip osteoarthritis (hip OA) is an increasingly prevalent disease [1]. The dis-
+ease can be caused by multiple factors, including weight or trauma, or due
+to the acetabulum or femoral head dysplasia, such as developmental dyspla-
+sia of the hip (DDH). As OA progresses, it leads to pain and deterioration in
+daily life activities, making it a target for surgical treatment, including total
+hip arthroplasty. This necessitates a method to evaluate the progression and
+morphology of OA.
+    The disease is manifested as a joint space narrowing and a deformation of
+the femoral head, with possible dislocation in its severe stages. Its diagnosis is
+usually based on X-ray radiographs and requires the expertise of orthopedic
+surgeons or radiologists to grade the hip deformity and disease progression.
+To grade hip OA, Crowe grading, i.e., the degree of femoral head dislocation
+from the acetabulum, and Kellgren-Lawrence (KL) grading, i.e., the degree
+of abrasion of the cartilage in the gap between the acetabulum and femoral
+head, are usually used. Figure 1 shows the different stages of disease severity
+with corresponding Crowe and KL stages in CT-based digitally-reconstructed
+radiographs (DRRs). Major challenges in the current hip OA diagnosis are
+                                    Automatic Hip OA Grading from CT            3
+
+subjectivity and high dependency on the surgeon, which may introduce inter-
+and intra-observer variability [2, 3]. Therefore, automated grading methods
+can help facilitate the diagnosis, improve reproducibility, and analyze large-
+scale databases. In particular, several studies have applied grading to X-ray
+images [4, 5]. The reason for using CT images instead of X-ray images in our
+study is our interest in performing the disease progression analysis of a large-
+scale database of pre-operative CT images (more than 2000 cases). Since KL
+grading cannot be directly applied to 3D in studies using clinical CT [6], we
+extracted the 2D DRRs images for hip OA grading, as proposed in previous
+researches [6, 7].
+    Deep learning models, such as ResNet [8], VGG [9], and DenseNet [10],
+have been successfully applied for medical image classification tasks, including
+KL grading of knee osteoarthritis (Knee OA) [11, 12], and hip OA [5, 7].
+However, hip OA diagnosis was simplified into a binary classification, (normal
+vs. diseased) problem. Recently, transformer models have been widely used
+in medical image analysis tasks [13]. A recent study has reported that the
+novel VisionTransformer (ViT) model [14] is capable of capturing five levels
+of severity changes in knee OA [15]. However, ViT has not been validated in
+hip OA grading, and the automated Crowe grading has not been considered
+in previous studies.
+    This research aims to develop an automated grading approach that consid-
+ers the disease progression stages simultaneously represented by Crowe and KL
+grading. Generally, deep learning models are dealt with as black boxes due to
+the huge number of parameters and complicated architectures. Explaining the
+model performance and confidence in final outputs is desirable in diagnosis.
+Given the possibility of misclassification by the automated approach, espe-
+cially in large-scale databases with wide disease variations, a tool for assessing
+the model uncertainty is also investigated in this study.
+
+
+
+
+Figure 1: Disease grading used in the paper. DRR images representing the
+variations accompanying hip OA disease progression are depicted. The pro-
+gression grades were constructed as combinations of Crowe and Kellgren and
+Lawrence (KL) gradings. Higher severity grades are accompanied by narrower
+space between the femoral head and acetabulum or sub-dislocation or disloca-
+tion of the femoral head from the acetabulum. The reason why this definition
+of disease classes was used will be explained in Section 4.1.
+4     Automatic Hip OA Grading from CT
+
+    The novelty and contributions of our research are as follows;
+• Development of an automated approach for grading hip OA based on Crowe
+  and KL grading representing the disease progression rather than a binary
+  classification model.
+• Investigating the potential of three deep learning models in grading hip OA
+  in regression and classification settings.
+• Estimating the model uncertainty and investigating its relationship with the
+  classification accuracy.
+
+2 Related works
+Several studies have investigated the application of convolutional neural net-
+works (CNNs) in hip OA classification. Gebre et al. trained ResNet18 on CT
+image-based DRRs for hip OA classification, obtaining an accuracy of 82.2%[7].
+Ureten et al. showed that the VGG16 trained only on X-ray images could
+classify hip OA with an accuracy of 90.2% [4]. Schacky et al. reported the clas-
+sification of five hip OA features using a multi-task DenseNet [5]. However,
+in these methods, hip OA classification was treated as a binary classifica-
+tion, which would not allow for assessing the disease severity. Instead, our
+study addresses hip OA as a multi-class classification representing the disease
+progression stages shown in Fig. 1.
+     One drawback of convolutional layers in CNNs is the inability to represent
+long-range dependencies in the images [16]. Recently, a convolution-free deep
+learning model, i.e., VisionTransformer (ViT) [14], was proposed for image
+classification tasks. This model employs the attention mechanism [16], which
+enables capturing global image features. Konwer et al. proposed a classification
+approach of knee OA into 5 severity levels using ViT [15]. However, to our
+knowledge, the potential of ViT models on hip OA classification has not been
+investigated yet. Furthermore, the model uncertainty has not been investigated
+in OA classification. Given the large-scale models and wide disease variations,
+estimating the model uncertainty would help understand the stability of the
+model against perturbations in the model weights. Model uncertainty was also
+correlated with the prediction accuracy in image segmentation problems [17].
+Therefore, we investigated the potential of the model uncertainty in the hip
+OA classification problem and its relationship with classification accuracy.
+
+3 Methods
+3.1 Overall workflow
+Figure 2 shows an overview of the proposed method for the grading of hip OA
+based on CT images. The femoral head centers (FHCs) were automatically
+detected from the CT image. FHC landmark was used to crop a region of inter-
+est (ROI), including the hip joint. A DRR image was obtained by projecting
+the cropped image in the anterior-posterior (AP) direction. A grading model
+                                  Automatic Hip OA Grading from CT           5
+
+
+
+
+Figure 2: Overview of the proposed method. Hip OA severity grade was
+automatically predicted based on the DRR image of the hip joint region auto-
+matically extracted from the CT image.
+
+
+was used to predict the hip OA severity grade based on the DRR image, and
+the model uncertainty was also estimated.
+
+3.2 DRR image generation
+In this study, unilateral DRR images of the hip joint were used. The CT images
+were assumed to include the pelvis-to-knee or whole lower limb regions. To
+limit the analysis to the hip joint region, the FHCs were detected from the CT
+image using a landmark detection approach. A pre-trained landmark detection
+model based on 3D CNN with U-Net architecture [18] was used to predict
+the right and left FHC landmarks. More details about the landmark detection
+can be found in [19]. A 150 mm3 cubic region centered on the FHC landmark
+was extracted. A projection of the extracted region in the AP direction was
+computed. The pixel values were normalized within the range [0, 1].
+
+3.3 Automated hip OA grading
+In this study, three model architectures were investigated for hip OA grading.
+The models included CNN-based architectures, i.e., VGG [9] and Densenet
+[10], and transformer-based architecture, i.e., VisionTransformer [14]. The
+architectures were VGG16, DenseNet161 and VisionTransformer Base16 for
+the VGG, DenseNet and ViT models, respectively. The number of model
+parameters was 138M, 28M and 86M, respectively. At the training, each model
+was trained in classification and regression settings. The models were trained
+to predict the Crowe and KL grades in a combined or separated scheme (See
+Section 3.4). For the combined classification, the dimension of the final layer
+was changed from 1000 to 7. For the separated classification, two heads of
+6     Automatic Hip OA Grading from CT
+
+fully-connected layers were added, and the dimension of the final layer was set
+to 4 to fit the severity levels in each grade. A softmax function was applied
+to the output predictions. For the combined and separated regression, fully-
+connected layers were added. The dimension of the final layer was set to 1.
+The output value was rounded to the closest integer and was used as the final
+prediction.
+
+3.4 Grade labeling
+In order to assess the impact of the labeling scheme, i.e., the prediction of
+both grades combined into a single label versus separated, two designs of
+the classification head were attempted. For the combined prediction, models
+with a single classification head predicting one of the seven classes in Fig. 1
+was implemented. For the separated prediction, models with two classification
+heads were implemented. Particularly, Crowe and KL grades were predicted
+separately each with a value between 1 and 4 as
+
+                     Crowe(x ) = argmax(pcCrowe (x ; θ, θ̇))
+                                  c∈1,2,3,4
+                                                                            (1)
+                           KL(x ) = argmax(pcKL (x ; θ, θ̈))
+                                     c∈1,2,3,4
+where pc represents the output softmax probability of the grading head, x
+is the input DRR image, θ denotes the parameters of the shared feature
+extractor, and θ̇, θ̈ are the parameters of the Crowe and KL grading heads,
+respectively. The output grades by each head were determined as the class c
+that yielded the highest probability.
+
+    The two-head network was optimized by minimizing the loss function
+
+                              L = αLCrowe + βLKL                             (2)
+where LCrowe and LCrowe are the losses by each head, and α and β are scal-
+ing factors for Crowe and KL grading heads, respectively. The factors were
+adjusted based on an ablation experiment. Particularly, setting both factors
+to 1 led to a bias in the Crowe head towards the class c = 1 with the large
+number of cases. Therefore, β was fixed to 1, and multiple values of α for a
+larger penalty on Crowe classification loss were attempted. The values yielding
+the largest accuracy were selected for the 15-pattern experiment. Specifically,
+α = 2 was used for the classification setting of the three models, and α = 7, 35
+and 35 for the regression of the ViT, VGG, and DenseNet models, respectively.
+If the model in the separated setting outputs a combination that does not exist
+in Fig. 1, the case would be considered a false prediction at the comparison
+with the combined setting.
+
+3.5 Uncertainty estimation
+Given the huge numbers of model parameters (See Section 3.3), the stability
+of the models against perturbations in the model weights, i.e., epistemic
+                                      Automatic Hip OA Grading from CT          7
+
+uncertainty, was estimated. Monte-Carlo Dropout (MCdropout) [20], a simple
+yet efficient approach based on multiple dropout samples at inference time,
+was used. The MCdropout was implemented by inserting dropout layers into
+the grading models and activating it at inference time. The position of the
+dropout layer and its rate were determined experimentally. For ViT model,
+the default dropout layers with a dropout rate 0.1 were used [14]. In VGG,
+a dropout layer was inserted after the final activation (ReLU) layer at each
+resolution, and the rate was 0.3 for classification and 0.1 for regression. In
+DenseNet, dropout layers were added after each transition layer (convolution
++ pooling), with a rate of 0.2 for both classification and regression. The
+ablation experiment of the dropout rates is shown in the Appendix A Fig. 11.
+
+   The uncertainty was given as the variance estimated by
+
+                                  T
+                               1X
+                  Variance =         (Softmax(f (x; θi )) − ȳ)2              (3)
+                               T i=1
+
+where x is the input DRR image, T is the number of dropout samples, ȳ is the
+average of the outputs obtained by dropout sampling, and θi is the parameter
+set corresponding to the sample i. In this study, T was set to 50.
+
+3.6 Evaluation metrics
+    Grading accuracy. The grading accuracy was assessed with exact class
+accuracy (ECA) and one-neighbor class accuracy (ONCA). ECA was computed
+as the ratio of the true predictions to the number of DRR images. The ONCA
+was computed by considering false predictions lying within one-class neigh-
+bors to the true classes as true predictions. A model performance that is more
+practical and objective, taking into account class imbalances, was assessed for
+datasets completely independent of the training. Specifically, balanced accu-
+racy, defined as the average of class-wise true positive rates, was also reported
+for both exact class and one-neighbor class predictions.
+    Regression error. In regression, the standard error of the regression (SE)
+was used to evaluate the model performance. The error was calculated as
+
+
+                                         N
+                                  1 X
+                             SE =       ∥yˆi − yi ∥                           (4)
+                                  N i=1
+
+where N is the number of DRR images, yˆi is the predicted class, and yi is the
+ground-truth class of each image.
+
+3.7 Statistical analysis
+The mean and standard deviation (SD) of the evaluation metrics and uncer-
+tainty were reported. To assess the statistical significance, Student’s t-test and
+8    Automatic Hip OA Grading from CT
+
+the Mann-Whitney U-test were used for paired and unpaired measurements,
+respectively, with a significance level α = 0.05. The adjustment for multiple
+comparisons between p-values was performed using Bonferroni correction.
+
+
+
+4 Experiments
+4.1 Datasets
+In this study, an internal database of 394 unilateral DRR images, generated
+from CT images of the hip region of 197 hip OA patients, were used for training
+and testing of the grading models in cross-validation experiment. The data was
+collected from Osaka University Hospital. The patients included 169 females
+and 28 males aged 61±13.5 years (mean ± standard deviation). The ratio of
+the primary and secondary hip OA patients was 22.3% and 77.7%, respec-
+tively. An external database including 104 DRRs of 52 patients was used for
+testing. The images were collected from the same institution and included 40
+females and 12 males aged 59.0±11.1 years.
+    Ground-truth hip OA grades. Table 1 summarizes the image character-
+istics and disease grades. Each DRR was assigned Crowe and KL grades by an
+orthopedic surgeon with six years of experience. KL 1 has ambiguous OA char-
+acteristics that are hard to distinguish from KL 0 [7]. Moreover, only a small
+number of healthy hips without OA with KL 0 were observed in our datasets.
+Therefore, KL 0 and 1 were merged into a single grade (KL 1). Crowe and
+KL grades were combined into one class, encoding one of seven combinations.
+Crowe and KL grades, which are related to joint narrowing and dislocation,
+respectively, are independent indicators. Compared to other ethnic groups,
+Japanese people have significantly shallower acetabular (hip joint) depth, and
+higher incidence of secondary OA caused by DDH [21]. The development of
+hip dysplasia into dislocation has been reported [22]. In order to investigate
+the capability of the deep learning model to learn the progression from joint
+narrowing into dislocation, an ordinal label representing the progression based
+on Crowe and KL grades was attempted (See Figure 1). Cases with no joint
+stenosis but high dislocation (Crowe 2, KL 1), even though possible, were not
+present in our database, and thus were not represented.
+
+4.2 Experimental setup
+    Grading models. The models were trained and tested in 4-fold cross-
+validation experiments. In each fold, DRRs were randomly separated
+patient-wise into training, validation, and testing partitions. In the training,
+each model was initialized with weights pre-trained on ImageNet [23], and
+were fine-tuned on the internal hip OA dataset. The 4-fold cross-validations
+experiments were repeated 15 times to account for the random selections
+of the patients in the three partitions. The models were further tested on
+the external dataset with the disease grade distribution shown in Table 1.
+                                      Automatic Hip OA Grading from CT           9
+
+      Table 1: Details of the image characteristics and disease grades.
+                                 Image characteristics
+
+       Image size of DRR (pixel)                    150 × 150
+
+                   Patient characteristics of the study population
+
+       Dataset                      Internal training/testing External testing
+       Number of cases, (hips)      197 (394)                 52 (104)
+       Female, N(%)                 169 (85.8)                40 (76.9)
+       Male, N(%)                   28 (14.2)                 12 (23.1)
+       Mean age (SD)                61 (±13.5)                59 (±11.1)
+       Primary, N(%)                44 (22.3)                 –
+       Secondary, N(%)              153 (77.7)                –
+       Institution                          Osaka University Hospital
+       Number of classes                                 7
+
+                           Distribution of the disease grade
+
+       Class                                   Number of hips (%)
+       1 (Crowe 1, KL 1)            112 (28)                  26 (25)
+       2 (Crowe 1, KL 2)            59 (15)                   15 (14)
+       3 (Crowe 1, KL 3)            47 (12)                   14 (13)
+       4 (Crowe 1, KL 4)            141 (36)                  22 (21)
+       5 (Crowe 2, KL 4)            18 (5)                    9 (9)
+       6 (Crowe 3, KL 4)            12 (3)                    8 (8)
+       7 (Crowe 4, KL 4)            5 (1)                     10 (10)
+
+
+Specifically, a model trained on the entire internal dataset was used to predict
+the DRRs in the external testing dataset, and the predictions were evaluated
+independently.
+    Hyper-parameter settings. The hyper-parameters of the grading mod-
+els are shown in Table 2. Classification and regression settings were used for
+each model, with 200 training epochs for classification and 300 epochs for
+regression. In each fold, the model with the highest accuracy on the validation
+partition was tested on the testing partition. The loss function was the focal
+loss [24] in the classification setting and the mean absolute error in the regres-
+sion setting. Both functions were minimized using Adam [25] optimizer. The
+learning rate was adjusted dynamically using a Cosine Annealing scheduler.
+    Data augmentation. Data augmentation was applied during training
+and inference using Albumentations (ver.1.1.0) [26]. The transformation
+parameters were set as follows: rotation (limit=15◦ ), blur (blur limit=(1,9)),
+contrast change (brightness limit=(-0.2,0.4), contrast limit=(-0.2,0.4)),
+masking (min holes=5, max holes=10) and intensity normalization
+(mean=[0.485,0.456,0.406], std=[0.229,0.224,0.225]) were used during training.
+    Computation environment. In this study, the experiments were imple-
+mented in Python using PyTorch framework (ver.0.12.0) [27], and model
+architectures were imported from Torchvision library (ver.1.11.0) [28]. The
+experiments were run on a linux-based GPU-cluster with nodes including the
+NVIDIA GPUs RTX2080ti (11GB), RTX3090 (24GB) and RTX4090 (48GB).
+10        Automatic Hip OA Grading from CT
+
+                         Table 2: Hyper-parameter settings in training.
+                              Model                Grading         Epochs     Base LR        Dropout rate
+
+                            ViT B16          Classification          200      5 × 10−5              0.1
+                                              Regression             300      5 × 10−5              0.1
+                             VGG16           Classification          200      5 × 10−5              0.3
+                                              Regression             300      8 × 10−5              0.1
+                         DenseNet161         Classification          200      5 × 10−5              0.2
+                                              Regression             300      8 × 10−5              0.2
+
+
+
+
+Table 3: Summary of the exact class accuracy (ECA) and one-neighbor class
+accuracy (ONCA) obtained by the three models with separated and combined
+grading settings on the internal dataset. The largest values between combined
+and separated settings are shown in bold, and the largest one in each row is
+additionally underlined.
+                                                   Exact class accuracy (Mean±SD)
+
+Number of samples                            1 (w/o dropout)                                              50 (w/ dropout)
+
+      Model            Grading        Combined            Separated           P-value    Combined              Separated           P-value
+                                                          Crowe, KL                                            Crowe, KL
+
+     ViT B16         Classification   0.650±.029           0.638±.022           n.s.    0.649±.023              0.639±.023          n.s.
+                                                     0.926±.009, 0.713±.020      –                        0.926±.009, 0.713±.024     –
+                      Regression      0.653±.016          0.658±.014            n.s.     0.656±.015            0.660±.010           n.s.
+                                                     0.919±.008, 0.739±.013      –                        0.918±.007, 0.741±.011     –
+     VGG16           Classification   0.637±.020          0.643±.016            n.s.     0.640±.017            0.642±.021           n.s.
+                                                     0.924±.006, 0.719±.019      –                        0.923±.007, 0.719±.018     –
+                      Regression      0.625±.029          0.657±.016            n.s.     0.606±.028            0.656±.014            *
+                                                     0.917±.005, 0.737±.014      –                        0.917±.005, 0.738±.013     –
+  DenseNet161        Classification   0.634±.016          0.652±.015             *       0.623±.022            0.632±.020           n.s.
+                                                     0.922±.006, 0.730±.016      –                        0.919±.008, 0.712±.019     –
+                      Regression      0.618±.015          0.663±.016             *       0.587±.023            0.602±.019           n.s.
+                                                     0.922±.007, 0.740±.014      –                        0.896±.013, 0.700±.011     –
+
+
+                                            One-neighbor class accuracy (Mean±SD)
+
+Number of samples                            1 (w/o dropout)                                              50 (w/ dropout)
+
+      Model            Grading        Combined               Separated        P-value    Combined               Separated          P-value
+
+     ViT B16         Classification   0.958±.021          0.964±.028            n.s.    0.955±.021             0.956±.015           n.s.
+                      Regression      0.961±.010          0.964±.012            n.s.    0.962±.010             0.967±.012           n.s.
+     VGG16           Classification   0.948±.008          0.982±.005             *      0.950±.007             0.982±.005            *
+                      Regression      0.972±.004          0.969±.009            n.s.    0.971±.011             0.969±.008           n.s.
+  DenseNet161        Classification   0.953±.009          0.965±.009            n.s.    0.947±.005             0.937±.013            *
+                      Regression      0.946±.009          0.961±.010             *      0.932±.007             0.927±.017            *
+
+ * Student’s t-test between means of combined and separated settings (Bonferroni correction; P<2e-3).
+
+
+
+
+5 Results
+5.1 Grading accuracy
+    Internal dataset. Table 3 shows the overall accuracy of the three mod-
+els for 1 sample (w/o dropout) and 50 samples (w/ dropout) experiments in
+the combined and separated label predictions. Figure 3 shows the p-values of
+the differences between the models at the different configurations. The high-
+est ECA was obtained under the separated and regression settings using ViT
+(0.660±0.010) and DenseNet (0.663±0.016) models, while the ONCAs were
+>0.90 in all models. In the combined setting with 50 samples, ViT’s regres-
+sion significantly outperformed the other methods in ECA (0.656±0.015; See
+                                                             Automatic Hip OA Grading from CT                                              11
+
+Table 4: Summary of accuracy and balanced accuracy for the exact class and
+one-neighbor class obtained by the three models with combined and separated
+grading settings on the external dataset. The largest values between combined
+and separated settings are shown in bold, and the largest one in each row for
+each metric is additionally underlined.
+                                                                 Exact class
+
+                                                           Accuracy                                        Balanced accuracy
+
+Number of samples                        1 (w/o dropout)              50 (w/ dropout)           1 (w/o dropout)          50 (w/ dropout)
+
+     Model            Grading         Combined    Separated      Combined      Separated     Combined   Separated      Combined   Separated
+                                                  Crowe, KL                    Crowe, KL                Crowe, KL                 Crowe, KL
+
+    ViT B16         Classification     0.519         0.529        0.481          0.558        0.498        0.437        0.479        0.467
+                                                  0.817, 0.712                0.827, 0.731              0.503, 0.570              0.528, 0.592
+                     Regression        0.567         0.567        0.538          0.538        0.474        0.475        0.437        0.454
+                                                  0.817, 0.731                0.827, 0.692              0.505, 0.599              0.533, 0.542
+     VGG16          Classification     0.529         0.588        0.538          0.587        0.428        0.460        0.435        0.487
+                                                  0.788, 0.760                0.788, 0.788              0.435, 0.669              0.435, 0.710
+                     Regression        0.500         0.519        0.538          0.529        0.395        0.419        0.436        0.429
+                                                  0.798, 0.721                0.798, 0.731              0.445, 0.571              0.445, 0.589
+  DenseNet161       Classification     0.481         0.558        0.481          0.471        0.373        0.500        0.353        0.355
+                                                  0.837, 0.721                 0.750,702                0.545, 0.613              0.275, 0.618
+                     Regression        0.558         0.606        0.548          0.548        0.476        0.522        0.442        0.453
+                                                  0.808, 0.798                0.788, 0.740              0.516, 0.684              0.441, 0.613
+
+                                                             One-neighbor class
+
+                                                            Accuracy                                       Balanced accuracy
+
+Number of samples                         1 (w/o dropout)              50 (w/ dropout)          1 (w/o dropout)          50 (w/ dropout)
+
+      Model             Grading        Combined     Separated     Combined      Separated    Combined    Separated     Combined    Separated
+
+     ViT B16         Classification      0.904         0.923          0.913       0.942        0.878       0.898         0.892       0.923
+                      Regression         0.913         0.894          0.904       0.894        0.888       0.860         0.866       0.866
+     VGG16           Classification      0.885         0.942          0.894       0.942        0.838       0.939         0.853       0.939
+                      Regression         0.965         0.923          0.923       0.923        0.795       0.890         0.891       0.890
+   DenseNet161       Classification      0.885         0.942          0.798       0.808        0.847       0.931         0.694       0.713
+                      Regression         0.952         0.942          0.798       0.808        0.941       0.931         0.758       0.745
+
+
+
+
+Figure 3 (a)). In the separated setting, while ViT’s regression showed the high-
+est ECA, there was no significant difference from that of VGG’s regression
+(0.656±0.014), suggesting that both are similarly superior to other methods
+(See Figure 3 (b)). In comparing combined and separated settings, VGG’s
+regression showed a statistically significant improvement in the separated set-
+ting, while ViT did not. Crowe grading has shown larger ECA than KL in
+all settings, where the largest Crowe and KL accuracy was shown using ViT
+model in the classification and regression settings, respectively. The results
+of t-tests for conditions other than those mentioned in Fig. 3 are shown in
+Appendix B Fig. 12. The confusion matrices in Fig. 4 correspond to the repeti-
+tions that yielded the median accuracy under the classification and combined
+settings with 50 samples. The ECA of low-severity cases was high, whereas
+it was lower for high-severity grades (Crowe≥2, KL 4). ONCA was higher in
+regression than in classification settings in high-severity cases.
+    Figure 5 shows the regression errors (difference between true and predicted
+classes in regression and combined settings) and their distributions by the
+grading models. ViT produced the smallest error, which was 0.383 (0.670 IQR:
+inter-quartile range). The three models had comparable IQRs. Statistically
+significant differences were obtained between ViT and the other models (Mann-
+Whitney’s U-test, Bonferroni correction, P<0.02).
+   12                                                              Automatic Hip OA Grading from CT
+
+                                                                                                                                                                ( & $                                                                 H   
+                                                                                                                                                                                                                                                                                                                                                                                                                             ( & $                                                        H   
+                                             ' H Q V H 1 H W B & O V B 6   B & R P                                                      H        H        H        H        H                                                                                              ' H Q V H 1 H W B & O V B 6   B 6 H S                                                      H        H        H        H        H   
+                                                                                                                                                         n.s.           n.s.           n.s.                                                                                                                                                                                                                            n.s.                          n.s.
+                                                                                                                                                                                                                                      H                                                                                                                                                                                                                                             H   
+                                            ' H Q V H 1 H W B 5 H J B 6   B & R P     H                                                            H        H        H        H                                                                                           ' H Q V H 1 H W B 5 H J B 6   B 6 H S     H                                                          H        H        H        H   
+                                                                                                                                                                          n.s.
+
+
+
+
+ ( [ S H U L P H Q W D O  V H W W L Q J                                                                                                                                                                                                                       ( [ S H U L P H Q W D O  V H W W L Q J
+                                                    9 * * B & O V B 6   B & R P     H        H                                                              H        H        H                       H                                                                      9 * * B & O V B 6   B 6 H S     H        H                                                           H        H        H               H   
+
+
+                                                                                                                                                                                                                                                    3  Y D O X H                                                                                                                                                                                                                                       3  Y D O X H
+                                                                                                                           n.s.                                                          n.s.           n.s.                                                                                                                                                                           n.s.                                           n.s.           n.s.           n.s.
+
+                                                   9 * * B 5 H J B 6   B & R P     H        H        H                                                               H        H                       H                                                                    9 * * B 5 H J B 6   B 6 H S     H        H        H                                                              H        H              H   
+                                                                                                                           n.s.           n.s.                                                                                                                                                                                                                                                                        n.s.                            n.s.           n.s.
+
+                                                       9 L 7 B & O V B 6   B & R P     H        H        H        H                                                            H                                                                                                     9 L 7 B & O V B 6   B 6 H S     H        H        H        H                                                              H   
+                                                                                                                           n.s.                           n.s.                                           n.s.                         H                                                                                                                                          n.s.                           n.s.            n.s.                               n.s.             H   
+
+                                                      9 L 7 B 5 H J B 6   B & R P     H        H        H        H        H                                                                                                                                                         9 L 7 B 5 H J B 6   B 6 H S     H        H        H        H        H   
+                                                                                                                                                          n.s.                           n.s.                                                                                                                                                                                                                         n.s.            n.s.           n.s.
+                                                                                                                                                                                                                                      H                                                                                                                                                                                                                                             H   
+                                                                      ' H Q V  H 1                                                                                                                                                                                                                                                                                           1 H   W B & O V B
+                                                                     ' H             H W B  & O  V B  6                                                                                                                                                                                                                                                                    1 H  W B 5          6    B  6 H  S
+                                                                         Q V  H 1  H W B                    B & R  P                                                                                                                                                                                                                                                      9 *          H J   B 6   
+                                                                               9 *        5 H  J B   6                                                                                                                                                                                                                                                                          * B   & O  V B 6     B 6  H S
+                                                                                     * B    & O  V B       B  &  R P                                                                                                                                                                                                                                                     9 *  * B    5 H             B  6 H  S
+                                                                             9 *   * B                6    B  & R                                                                                                                                                                                                                                                          9 L 7         J B  6    B  6 H
+                                                                                          5 H   J B   6             P                                                                                                                                                                                                                                                               B &  O V B  6   B       S
+                                                                                 9 L 7   B &  O V B         B  & R P                                                                                                                                                                                                                                                       9 L 7  B 5  H J   B 6         6 H  S
+                                                                                                      6    B                                                                                                                                                                                                                                         ' H                                            B 6
+                                                                                9 L 7  B 5   H J                & R  P                                                                                                                                                                                                                                      Q V                  ' H  Q V
+                                                                                                                                                                                                                                                                                                                                                                                                            H S
+                                                                                                   B 6     B &  R P                                                                                                                                                                                                                                            H                         H
+                                                                                                                                              ( [ S H U L P H Q W D O  V H W W L Q J                                                                                                                                                                                                                       ( [ S H U L P H Q W D O  V H W W L Q J
+
+                                                                     (a) Combined, 50 samples                                                                                                                                                                                                                                                             (b) Separated, 50 samples
+                                                                                                                                                                  ( & $                                                                                                                                                                                                                                      ( & $
+                                                                                                                            ' H Q V H 1 H W B & O V               H                           H                                                                                                                                                              ' H Q V H 1 H W B & O V               H                           H   
+                                                                                                                                                                  n.s.                                                                                                                                                                                                                                         n.s.
+
+                                                                                                                           ' H Q V H 1 H W B 5 H J                H                           H                                                                                                                                                             ' H Q V H 1 H W B 5 H J                H                           H   
+
+
+
+
+                                                                                ( [ S H U L P H Q W D O  V H W W L Q J                                                                                                                                                                                                      ( [ S H U L P H Q W D O  V H W W L Q J
+                                                                                                                                    9 * * B & O V                 H                           H                                                                                                                                                                      9 * * B & O V                 H                           H   
+
+                                                                                                                                                                                                                  3  Y D O X H                                                                                                                                                                                                                                3  Y D O X H
+                                                                                                                                                                  n.s.                                                                                                                                                                                                                                         n.s.
+
+                                                                                                                                   9 * * B 5 H J                  H                           H                                                                                                                                                                    9 * * B 5 H J                   H                           H   
+                                                                                                                                                                  n.s.                                                                                                                                                                                                                                         n.s.
+
+                                                                                                                                       9 L 7 B & O V              H                           H                                                                                                                                                                         9 L 7 B & O V              H                           H   
+                                                                                                                                                                  n.s.                                                                                                                                                                                                                                         n.s.
+
+                                                                                                                                     9 L 7 B 5 H J                H                           H                                                                                                                                                                       9 L 7 B 5 H J                H                           H   
+                                                                                                                                                                  n.s.                                                                                                                                                                                                                                         n.s.
+
+
+                                                                                  (c)                                                 Combined                                                                                                                                                                                 (d)                                                 Separated
+                                                                                                                                   1 vs 50 samples                                                                                                                                                                                                                              1 vs 50 samples
+
+   Figure 3: P-values of the differences between the ECA of the three models
+   and the prediction methods under the combined and separated label as well as
+   1 and 50 samples settings. ✓ in (a, b) indicates that the vertical experimental
+   settings had higher accuracy than the horizontal setting; for (c, d), sample 1
+   setting had higher accuracy than the samples 50 setting with a statistically
+   significant difference (Student’s t-test with Bonferroni correction, P<3e-3 for
+   (a, b), P<1e-3 for (c, d)). ✗ in (a, b) indicates that the vertical settings yielded
+   lower accuracy; for (c, d), sample 1 yielded lower accuracy with a statisti-
+   cally significant difference, while n.s. indicates no significant difference was
+   observed. Reg: regression, Cls: classification, S50: 50 samples (w/ dropout),
+   Com: combined, Sep: separated.
+
+
+       Figure 6 shows the relationship between the true and predicted classes
+   by the ViT model in the regression and combined settings at the 15 cross-
+   validation experiments. A positive strong correlation (Pearson correlation
+                                 Automatic Hip OA Grading from CT          13
+
+
+
+
+Figure 4: Confusion matrices of the ViT grading model in classification (left)
+and regression (right) settings. The confusion matrices correspond to the mod-
+els yielding median ECA in both settings.
+
+
+
+
+Figure 5: Distributions of the regression errors in each model under the
+combined setting. The table shows mean regression errors with inter-quartile
+ranges (IQR) (Mann-Whitney’s U-test; Bonferroni correction P<0.02).
+
+
+coefficient=0.920) was observed, indicating that the model could, to a large
+extent, adequately learn the continuous progression of the disease.
+   Figure 7 shows representative cases for successful and failure cases in the
+regression and combined settings of the ViT model. Figure 7(a) shows a normal
+hip that was correctly classified as (Crowe 1, KL 1). In contrast, Figure 7(b)
+14     Automatic Hip OA Grading from CT
+
+
+
+
+Figure 6: Relationship between the true and predicted classes by the ViT
+model in the regression and combined settings in the experiment corresponding
+with the median ECA.
+
+
+
+
+Figure 7: Representative cases about the performance of ViT. (a) Successful
+case, (b) Failure case.
+
+
+shows a high severity hip (Crowe 4, KL 4) that was classified as (Crowe 2, KL
+4).
+    External dataset. Table 4 shows the results of the external testing dataset
+(See Table 1). The accuracy was overall lower than that of the internal dataset.
+This was caused by the difference in the distribution of grades in the two
+datasets. Specifically, the external dataset’s proportion of severe cases falling
+into classes 5, 6, and 7 is, on average, about 6% larger than the internal one.
+That made it more apparent that the model could not capture the charac-
+teristics of severe cases well due to a lack of training data. Therefore, for
+the external dataset, balanced accuracy, a metric more suitable for handling
+class imbalances, was employed. The highest exact class balanced accuracy
+was obtained from DenseNet with 0.522 under 1 sample and separated set-
+ting. However, when the dropout sample was set to 50, the accuracy dropped
+remarkably. This shows possible dependency in DenseNet’s performance on
+                                  Automatic Hip OA Grading from CT           15
+
+
+
+
+Figure 8: Analysis of the estimated uncertainty for the predictions of the three
+models in terms of classification accuracy (Mann-Whitney U-Test; Bonferroni
+correction P<6e-3).
+
+
+the implemented dropout layer configuration [29]. In all experiments, the bal-
+anced accuracy of KL was higher than that of Crowe, which emphasized the
+dependency in the overall performance on the small number of severe Crowe
+classes.
+
+5.2 Uncertainty analysis
+Figure 8 shows the uncertainty (variance of softmax probabilities shown in Eq.
+3) of the three models in the classification and combined settings. Notably,
+cases corresponding to the exact class accuracy (blue) had relatively lower
+uncertainty, thus showing high model confidence. On the other hand, mis-
+classified cases with large errors (green) had higher uncertainty. Statistically
+significant differences between the groups of large-error cases and correctly
+classified (exact class accuracy) ones were obtained (Mann-Whitney’s U-test;
+Bonferroni correction, P<6e-3). ViT produced the lowest uncertainty levels
+among the three models.
+
+5.3 Learned representations
+To analyze the relationship between the learned representations by the ViT
+model and disease progression, a Uniform Manifold Approximation and Pro-
+jection (UMAP) [30] analysis was applied to the ViT feature vectors obtained
+in the classification and combined settings from each DRR. The feature vectors
+were obtained from the fully-connected layer before the output layer. Figure
+9 shows 2D projections of the feature vectors in the UMAP space obtained
+from the model that produced the median ECA. For instance, the scatter plot
+of Fold 2 shows sequentially distributed dots (each of which represents a DRR
+image) w.r.t disease severity, from purple (normal) to yellow (severe). A simi-
+lar pattern can be observed in Folds 1 and 3 plots, and the separation between
+16     Automatic Hip OA Grading from CT
+
+
+
+
+Figure 9: Analysis of the relationship between learned representations by the
+ViT model and the disease progression. Left: Feature map visualization of
+the four folds. Right: Enlarged feature map with representative cases from
+Fold 2 with their uncertainty in the upper right boxplot. Solid lines indicate
+successful cases, and dashed lines indicate failure ones.
+
+
+low and high classes is apparent in Fold 4. This indicates the model’s capability
+to capture the representative variations accompanying the disease progression.
+    In Fig. 9, DRR images of representative cases were shown in the colored
+frames (solid lines for successful cases and dashed lines for failed ones under
+the combined setting). The successful examples clearly showed increased stages
+of the disease progression, where in case G (low severity) the femoral head
+was covered by the acetabulum, while in case D, the femoral head was clearly
+dislocated. However, in the failure examples, the model mistakenly classified
+case A as having a lower severity (Crowe 1, KL 4), despite its high severity
+(Crowe 4, KL 4). Case F (Crowe 1, KL 4) was predicted as a less severe class
+(Crowe 1, KL 2). When consulting with the orthopedic surgeon who annotated
+the dataset, he confirmed that the original GT annotation was incorrect in this
+case, and outweighed the model prediction of lower severity (Crowe 1, KL 2).
+The upper right plot in Fig. 9 shows the uncertainty distribution corresponding
+to the scatter plots. Misclassified cases had a higher uncertainty than the
+correctly classified ones.
+
+6 Discussion
+In this study, an automated grading approach representing the disease progres-
+sion of hip OA was proposed. The study is the first to validate multiple deep
+learning models under different settings, including combined and separated
+labeling based on Crowe and KL grades. The study has shown high ONCA
+                                  Automatic Hip OA Grading from CT           17
+
+(>0.90) in all models, which facilitates automated grading in large-scale CT
+databases and indicates the potential for further disease progression analysis.
+Given that conventional X-ray imaging is the gold-standard for diagnosis of
+hip OA [4, 5], we will consider the validation of our method to conventional
+X-ray images in our future work. Subtle differences were observed between the
+1 and 50 samples in the external dataset, with a common trend of degraded
+performance in the severe Crowe classes. For example, the model trained in
+regression and combined settings showed high accuracy in classifying normal
+to mild stages, as shown in Fig. 7(a). However, the model showed lower accu-
+racy in classifying severe cases, as shown in Fig. 7(b). A similar trend was
+observed from Fig. 6. Additionally, the study revealed that cases with classifi-
+cation errors had a higher uncertainty than the correctly classified ones. This
+indicates the possibility of using model uncertainty as a surrogate for hip OA
+classification accuracy and error detection.
+    Separated setting is theoretically capable of handling cases such as Crowe
+2, KL 1. However, in the combined setting, even if the model could learn the
+features of Crowe 4 and KL 1 grades, it would predict it as one from within
+the trained labels. This shows the benefit of the separated prediction scheme
+in learning all possible combinations.
+    In the regression models using the combined and separated settings,
+DenseNet showed significantly lower accuracy when the number of dropout
+samples was set to 50, possibly caused by insufficient configuration, i.e.,
+impeded feature-reuse in the layers after the dropout layer [29]. From Fig. 3
+(c, d), it can be confirmed that ViT and VGG showed no significant difference
+between 1 sample and 50 samples.
+    As shown in Table 5, the balanced accuracy used in the external dataset is
+approximately 10% lower than the unbalanced accuracy for both the exact and
+one-neighbor classes. The balanced accuracy was less affected by the accuracy
+of the majority classes 1 and 4. In other words, this result shows limited
+accuracy in the severe classes, which have a smaller number of cases in the
+internal dataset.
+    In previous studies, hip OA was classified with an accuracy of 80–90%
+[5, 7]; however, hip OA was treated as a binary classification problem, which
+may not represent the disease progression captured by our study. Indeed, the
+UMAP analysis in Fig. 9 showed that ViT model can capture the variability
+associated with the disease progression. We consider that the combined class
+of Crowe and KL grade successfully represented the disease progression.
+    As a limitation, our grading models showed lower accuracy in classifying
+high-severity cases. It is noteworthy that those cases are usually easy to grade
+by human experts due to the clear signs of deformed joints. One reason for
+the lower accuracy in those cases could be a small number and large varia-
+tions of severe cases in this study (N(Class 5,6,7) = 35(9%)). This tendency
+was confirmed in the external testing dataset. The internal dataset used for
+training the final model was small in scale, limiting the performance on the
+external dataset. To solve this problem, we plan to largely increase the cases
+18     Automatic Hip OA Grading from CT
+
+from those classes. We have more than 2000 CT scans of hip OA that have not
+been graded, and we are considering applying the automatic grading devel-
+oped in this study to that data. The cases with high severity and uncertainty
+will be detected by our method and will be assigned ground-truth labels by
+the medical experts. This will help to efficiently expand the training data and
+improve the grading accuracy of severe cases. Furthermore, the study was
+validated on CT images collected from a single institution. Future work will
+include experiments using datasets obtained by the CT scanners of different
+manufacturers and models. Another limitation is that we have graded the
+data into seven classes according to the Crowe and KL distributions in our
+database. However, there is a possibility of cases diagnosed with large Crowe
+and low KL grades, which did not exist in the current database. This could
+be addressed by extending the assigned classes to cover more possible grade
+combinations. In addition, this study combined KL grades 0 and 1 into a
+single class due to the difficulty in distinguishing between healthy hip joints
+and early-stage OA [7]. The automated classification of the two classes would
+further help in the early detection of hip OA, thus potentially allowing for the
+proposal of appropriate treatment strategies to prevent progression.
+
+
+
+7 Conclusion
+In this study, we proposed an automated method grading hip OA in DRRs
+derived from CT images. The study investigated the usability of three deep
+learning models for predicting Crowe and KL grades under several labeling
+and inference settings. The models showed particularly high ONCA, which
+facilitates automated grading in large-scale CT databases and indicates the
+potential for further disease progression analysis. Furthermore, the study has
+shown the potential of model uncertainty as a surrogate of hip OA classification
+accuracy.
+Acknowledgments. This work was funded by MEXT/JSPS KAKENHI
+(19H01176, 20H04550, 21K16655, 21K18080).
+
+Declarations
+Conflict of interest Nothing to declare.
+Ethics approval Ethical approval was obtained from the Institutional Review
+Boards (IRBs) of the institutions participating in this study (IRB approval
+numbers: 21115 for Osaka University Hospital and 2020-M-7 for Nara Institute
+of Science and Technology.)
+
+References
+ [1] Damian G Hoy, Emma Smith, Marita Cross, Lidia Sanchez-Riera,
+     Rachelle Buchbinder, Fiona M Blyth, Peter Brooks, Anthony D Woolf,
+                                Automatic Hip OA Grading from CT            19
+
+   Richard H Osborne, Marlene Fransen, Tim Driscoll, Theo Vos, Jed D
+   Blore, Chris Murray, Nicole Johns, Mohsen Naghavi, Emily Carnahan,
+   and Lyn M March. The global burden of musculoskeletal conditions for
+   2010: an overview of methods. Annals of the rheumatic diseases, 73(6):
+   982–989, 2014. doi: https://doi.org/10.1136/annrheumdis-2013-204344.
+
+[2] Klaus P Günther and Yi Sun. Reliability of radiographic assessment in
+    hip and knee osteoarthritis. Osteoarthritis and Cartilage, 7(2):239–246,
+    1999. doi: https://doi.org/10.1053/joca.1998.0152.
+
+[3] Jurgen Damen, Dieuwke Schiphof, S Ten Wolde, HA Cats, SMA Bierma-
+    Zeinstra, and EHG Oei. Inter-observer reliability for radiographic
+    assessment of early osteoarthritis features: the check (cohort hip and
+    cohort knee) study. Osteoarthritis and Cartilage, 22(7):969–974, 2014.
+    doi: https://doi.org/10.1016/j.joca.2014.05.007.
+
+[4] Kemal Üreten, Tayfun Arslan, Korcan Emre Gültekin, Ayşe
+    Nur Demirgöz Demir, Hafsa Feyza Özer, and Yasemin Bilgili. Detec-
+    tion of hip osteoarthritis by using plain pelvic radiographs with
+    deep learning methods. Skeletal Radiology, 49:1369–1374, 2020. doi:
+    https://doi.org/10.1007/s00256-020-03433-9.
+
+[5] Claudio E von Schacky, Jae Ho Sohn, Felix Liu, Eugene Ozhinsky,
+    Pia M Jungmann, Lorenzo Nardo, Magdalena Posadzy, Sarah C Foreman,
+    Michael C Nevitt, Thomas M Link, and Valentina Pedoia. Development
+    and validation of a multitask deep learning model for severity grading
+    of hip osteoarthritis features on radiographs. Radiology, 295(1):136–145,
+    2020. doi: https://doi.org/10.1148/radiol.2020190925.
+
+[6] TD Turmezei, A Fotiadou, DJ Lomas, MA Hopper, and KES Poole. A
+    new ct grading system for hip osteoarthritis. Osteoarthritis and cartilage,
+    22(10):1360–1366, 2014. doi: https://doi.org/10.1016/j.joca.2014.03.008.
+
+[7] RK Gebre, J Hirvasniemi, RA van der Heijden, I Lantto, S Saarakkala,
+    J Leppilahti, and T Jämsä. Detecting hip osteoarthritis on clinical ct: a
+    deep learning application based on 2-d summation images derived from
+    ct. Osteoporosis International, 33(2):355–365, 2022. doi: https://doi.org/
+    10.1007/s00198-021-06130-y.
+
+[8] Kaiming He, Xiangyu Zhang, Shaoqing Ren, and Jian Sun. Deep residual
+    learning for image recognition. In Proceedings of the IEEE conference
+    on computer vision and pattern recognition, pages 770–778, 2016. doi:
+    https://doi.org/10.1109/CVPR.2016.90.
+
+[9] Karen Simonyan and Andrew Zisserman. Very deep convolutional net-
+    works for large-scale image recognition. arXiv preprint arXiv:1409.1556,
+    2014. doi: https://doi.org/10.48550/arXiv.1409.1556.
+20     Automatic Hip OA Grading from CT
+
+[10] Gao Huang, Zhuang Liu, Laurens Van Der Maaten, and Kilian Q Wein-
+     berger. Densely connected convolutional networks. In Proceedings of
+     the IEEE conference on computer vision and pattern recognition, pages
+     4700–4708, 2017. doi: https://doi.org/10.1109/CVPR.2017.243.
+
+[11] GB Joseph, CE McCulloch, MC Nevitt, TM Link, and JH Sohn. Machine
+     learning to predict incident radiographic knee osteoarthritis over 8 years
+     using combined mr imaging features, demographics, and clinical factors:
+     data from the osteoarthritis initiative. Osteoarthritis and Cartilage, 30
+     (2):270–279, 2022. doi: https://doi.org/10.1016/j.joca.2021.11.007.
+
+[12] Bochen Guan, Fang Liu, Arya Haj Mizaian, Shadpour Demehri, Alexey
+     Samsonov, Ali Guermazi, and Richard Kijowski. Deep learning approach
+     to predict pain progression in knee osteoarthritis. Skeletal radiology, pages
+     1–11, 2022. doi: https://doi.org/10.1007/s00256-021-03773-0.
+
+[13] Kelei He, Chen Gan, Zhuoyuan Li, Islem Rekik, Zihao Yin, Wen Ji, Yang
+     Gao, Qian Wang, Junfeng Zhang, and Dinggang Shen. Transformers in
+     medical image analysis. Intelligent Medicine, 3(1):59–78, 2023. doi: https:
+     //doi.org/10.1016/j.imed.2022.07.002.
+
+[14] Alexey Dosovitskiy, Lucas Beyer, Alexander Kolesnikov, Dirk Weis-
+     senborn, Xiaohua Zhai, Thomas Unterthiner, Mostafa Dehghani,
+     Matthias Minderer, Georg Heigold, Sylvain Gelly, Jakob Uszkoreit, and
+     Neil Houlsby. An image is worth 16x16 words: Transformers for image
+     recognition at scale. ICLR, 2021. doi: https://doi.org/10.48550/arXiv.
+     2010.11929.
+
+[15] Aishik Konwer, Xuan Xu, Joseph Bae, Chao Chen, and Prateek Prasanna.
+     Temporal context matters: Enhancing single image prediction with dis-
+     ease progression representations. In Proceedings of the IEEE/CVF
+     Conference on Computer Vision and Pattern Recognition (CVPR), pages
+     18824–18835, 2022. doi: https://doi.ieeecomputersociety.org/10.1109/
+     CVPR52688.2022.01826.
+
+[16] Ashish Vaswani, Noam Shazeer, Niki Parmar, Jakob Uszkoreit, Llion
+     Jones, Aidan N. Gomez, Lukasz Kaiser, and Illia Polosukhin. Attention
+     is all you need. In Proceedings of the 31st International Conference on
+     Neural Information Processing Systems, NIPS’17, page 6000–6010, 2017.
+     doi: https://doi.org/10.48550/arXiv.1706.03762.
+
+[17] Yuta Hiasa, Yoshito Otake, Masaki Takao, Takeshi Ogawa, Nobuhiko
+     Sugano, and Yoshinobu Sato. Automated muscle segmentation from
+     clinical ct using bayesian u-net for personalized musculoskeletal model-
+     ing. IEEE transactions on medical imaging, 39(4):1030–1040, 2019. doi:
+     https://doi.org/10.1109/tmi.2019.2940555.
+                                 Automatic Hip OA Grading from CT          21
+
+[18] Özgün Çiçek, Ahmed Abdulkadir, Soeren S Lienkamp, Thomas Brox, and
+     Olaf Ronneberger. 3d u-net: learning dense volumetric segmentation from
+     sparse annotation. In Medical Image Computing and Computer-Assisted
+     Intervention–MICCAI 2016: 19th International Conference, Athens,
+     Greece, October 17-21, 2016, Proceedings, Part II 19, pages 424–432.
+     Springer, 2016.
+
+[19] K Uemura, Y Otake, K Takashima, H Hamada, T Imagama, M Takao,
+     T Sakai, Y Sato, S Okada, and N Sugano. Development and validation
+     of an open-source tool for opportunistic screening of osteoporosis from
+     hip ct images. Bone, 2023(0115):R1, 2023. doi: https://doi.org/10.1302%
+     2F2046-3758.129.BJR-2023-0115.R1.
+
+[20] Yarin Gal and Zoubin Ghahramani. Dropout as a bayesian approxima-
+     tion: Representing model uncertainty in deep learning. In international
+     conference on machine learning, pages 1050–1059, 2016. doi: https:
+     //doi.org/10.48550/arXiv.1506.02142.
+
+[21] K Inoue, P Wicart, T Kawasaki, J Huang, T Ushiyama, S Hukuda, and
+     J-P Courpied. Prevalence of hip osteoarthritis and acetabular dysplasia
+     in french and japanese adults. Rheumatology, 39(7):745–748, 2000. doi:
+     https://doi.org/10.1093/rheumatology/39.7.745.
+
+[22] Nancy A Hadley, Thomas D Brown, and Stuart L Weinstein. The effects of
+     contact pressure elevations and aseptic necrosis on the long-term outcome
+     of congenital hip dislocation. Journal of Orthopaedic Research, 8(4):504–
+     513, 1990. doi: https://doi.org/10.1002/jor.1100080406.
+
+[23] Jia Deng, Wei Dong, Richard Socher, Li-Jia Li, Kai Li, and Li Fei-
+     Fei. Imagenet: A large-scale hierarchical image database. In 2009 IEEE
+     conference on computer vision and pattern recognition, pages 248–255,
+     2009. doi: https://doi.org/10.1109/CVPR.2009.5206848.
+
+[24] Tsung-Yi Lin, Priya Goyal, Ross Girshick, Kaiming He, and Piotr Dol-
+     lar. Focal loss for dense object detection. In Proceedings of the IEEE
+     International Conference on Computer Vision (ICCV), Oct 2017. doi:
+     https://doi.org/10.1109/ICCV.2017.324.
+
+[25] Diederik P Kingma and Jimmy Ba. Adam: A method for stochastic opti-
+     mization. arXiv preprint arXiv:1412.6980, 2014. doi: https://doi.org/10.
+     48550/arXiv.1412.6980.
+
+[26] Alexander Buslaev, Vladimir I. Iglovikov, Eugene Khvedchenya, Alex
+     Parinov, Mikhail Druzhinin, and Alexandr A. Kalinin. Albumentations:
+     Fast and flexible image augmentations. Information, 11(2), 2020. doi:
+     https://doi.org/10.3390/info11020125.
+22    Automatic Hip OA Grading from CT
+
+[27] Adam Paszke, Sam Gross, Soumith Chintala, Gregory Chanan, Edward
+     Yang, Zachary DeVito, Zeming Lin, Alban Desmaison, Luca Antiga, and
+     Adam Lerer. Automatic differentiation in pytorch. In NIPS-W, 2017.
+     URL https://github.com/pytorch/pytorch.
+
+[28] TorchVision maintainers and contributors. Torchvision: Pytorch’s com-
+     puter vision library, 2016. URL https://github.com/pytorch/vision.
+
+[29] Kun Wan, Shu Yang, Boyuan Feng, Yufei Ding, and Lingwei Xie. Recon-
+     ciling feature-reuse and overfitting in densenet with specialized dropout.
+     In 2019 IEEE 31st International Conference on Tools with Artificial
+     Intelligence (ICTAI), pages 760–767. IEEE, 2019. doi: https://doi.org/
+     10.1109/ICTAI.2019.00110.
+
+[30] Leland McInnes, John Healy, and James Melville. Umap: Uniform
+     manifold approximation and projection for dimension reduction, 2018.
+                                                            Automatic Hip OA Grading from CT                                                 23
+
+Appendix A                               Dropout rate
+Figure 11 depicts the exact class and one-neighbor class accuracy of the
+three deep learning models under the ablation study using different settings.
+The DenseNet and VGG model accuracy in classification settings showed less
+dependency on the dropout rate. This is thought to be due to the smaller num-
+ber of Dropout layers compared to ViT. However, in regression, it can also be
+confirmed that VGG, like ViT, when the rate is higher, the accuracy is sig-
+nificantly reduced. The final values used in the validation experiments were
+enlisted in Table 2.
+
+              1.0
+                              Classification, Exact                              1.0
+                                                                                                  Classification, One-Neighbor
+                              ViT_B16_w MC sampling (1sample)
+                              ViT_B16_w MC sampling (50samples)
+              0.9             DenseNet161_w MC sampling (1sample)                0.9
+                              DenseNet161_w MC sampling (50samples)
+              0.8             VGG16_w MC sampling (1sample)                      0.8
+                              VGG16_w MC sampling (50samples)
+              0.7                                                                0.7
+
+              0.6                                                                0.6
+   Accuracy   0.5                                                     Accuracy   0.5
+
+              0.4                                                                0.4
+                                                                                           ViT_B16_w MC sampling (1sample)
+              0.3                                                                0.3       ViT_B16_w MC sampling (50samples)
+                                                                                           DenseNet161_w MC sampling (1sample)
+                                                                                           DenseNet161_w MC sampling (50samples)
+              0.2                                                                0.2       VGG16_w MC sampling (1sample)
+                                                                                           VGG16_w MC sampling (50samples)
+              0.1                                                                0.1
+                    0   0.1       0.2       0.3       0.4      0.5                     0        0.1         0.2      0.3         0.4   0.5
+                                 Dropout Rate                                                              Dropout Rate
+
+
+              1.0
+                               Regression, Exact                                 1.0
+                                                                                                      Regression, One-Neighbor
+                              ViT_B16_w MC sampling (1sample)
+                              ViT_B16_w MC sampling (50samples)
+              0.9             DenseNet161_w MC sampling (1sample)                0.9
+                              DenseNet161_w MC sampling (50samples)
+              0.8             VGG16_w MC sampling (1sample)                      0.8
+                              VGG16_w MC sampling (50samples)
+              0.7                                                                0.7
+
+              0.6                                                                0.6
+   Accuracy   0.5                                                     Accuracy   0.5
+
+              0.4                                                                0.4
+                                                                                           ViT_B16_w MC sampling (1sample)
+              0.3                                                                0.3       ViT_B16_w MC sampling (50samples)
+                                                                                           DenseNet161_w MC sampling (1sample)
+                                                                                           DenseNet161_w MC sampling (50samples)
+              0.2                                                                0.2       VGG16_w MC sampling (1sample)
+                                                                                           VGG16_w MC sampling (50samples)
+              0.1                                                                0.1
+                    0   0.1       0.2       0.3       0.4      0.5                     0        0.1         0.2      0.3         0.4   0.5
+                                 Dropout Rate                                                              Dropout Rate
+
+
+Figure 11: Exact class and one-neighbor class accuracy of each model at
+combined grade settings with varying dropout rates.
+   24                                                                   Automatic Hip OA Grading from CT
+
+   Appendix B                                                                                                                                                                                 Statistical tests
+   Figure 12 depicts the P-values of the statistical tests (Student’s t-test with
+   Bonferroni correction) of the comparisons between the models under different
+   settings.
+
+                                                                                                                                                   2 1 & $                                                                                  H   
+                                                                                                                                                                                                                                                                                                                                                                                                                  2 1 & $                                                                                     H   
+                                             ' H Q V H 1 H W B & O V B 6   B & R P                             H        H        H        H        H                                                                                                                             ' H Q V H 1 H W B & O V B 6   B 6 H S                           H        H        H        H        H   
+                                                                                                                                n.s.                          n.s.                                                                                                                                                                                                                 n.s.                                         n.s.
+                                                                                                                                                                                                                                            H                                                                                                                                                                                                                                                           H   
+                                            ' H Q V H 1 H W B 5 H J B 6   B & R P     H                                      H        H        H        H                                                                                                                       ' H Q V H 1 H W B 5 H J B 6   B 6 H S     H                                   H        H        H        H   
+                                                                                                                                                                                                                                                                                                                                                                     n.s.
+
+
+
+
+ ( [ S H U L P H Q W D O  V H W W L Q J                                                                                                                                                                                                                             ( [ S H U L P H Q W D O  V H W W L Q J
+                                                    9 * * B & O V B 6   B & R P     H        H                                                                              H        H        H             H                                                                      9 * * B & O V B 6   B 6 H S     H        H                                                                          H        H        H              H   
+
+
+                                                                                                                                                                                                                                                          3  Y D O X H                                                                                                                                                                                                                                                     3  Y D O X H
+                                                                                               n.s.                                                                                                      n.s.                                                                                                                                                                                                                                                             n.s.
+
+                                                   9 * * B 5 H J B 6   B & R P     H        H        H                                                                                 H        H           H                                                                    9 * * B 5 H J B 6   B 6 H S     H        H        H                                                                               H        H           H   
+                                                                                                                                                                                                           n.s.           n.s.                                                                                                                                                                                                                                               n.s.           n.s.
+
+                                                       9 L 7 B & O V B 6   B & R P     H        H        H        H                                                                             H                                                                                          9 L 7 B & O V B 6   B 6 H S     H        H        H        H                                                                           H   
+                                                                                               n.s.                                    n.s.                                              n.s.                             n.s.              H                                                                                                                  n.s.                               n.s.                                               n.s.                             n.s.              H   
+
+                                                      9 L 7 B 5 H J B 6   B & R P     H        H        H        H        H                                                                                                                                                               9 L 7 B 5 H J B 6   B 6 H S     H        H        H        H        H   
+                                                                                                                                                                                         n.s.              n.s.                                                                                                                                                                                                                                            n.s.              n.s.
+                                                                                                                                                                                                                                            H                                                                                                                                                                                                                                                           H   
+                                                                                                    O V B  6    B  & R                                                                                                                                                                                                                                                           6    B  6 H
+                                                                                                   H J   B 6              P                                                                                                                                                                                                                                    9 *       5 H J B   6             S
+                                                                                       9 *   * B  & O  V B      B &  R P                                                                                                                                                                                                                                           * B  & O  V B       B  6 H S
+                                                                                      9 *  * B             6    B  & R                                                                                                                                                                                                                                      9 *  * B             6    B  6 H  S
+                                                                                                 5 H  J B  6             P                                                                                                                                                                                                                         H W B                5 H  J B  6 
+                                                                                         9 L 7                   B  & R                                                                                                                                                                                                                                   & O   9 L 7                   B  6 H
+                                                                            V H 1 H
+                                                                                                B &
+                                                                                             V H     O V B  6   B       P                                                                                                                                                                                                                                    V B      B & O V B
+                                                                                                                                                                                                                                                                                                                                                                       H W B        6   B       S
+                                                                                        9 L 7
+                                                                                    W B &        1 H
+                                                                                              B 5  H J
+                                                                                                     W B 5
+                                                                                                         B 6
+                                                                                                                     & R  P
+                                                                                                                                                                                                                                                                                                                                              Q V
+                                                                                                                                                                                                                                                                                                                                                                9 L 7 B 5  H J   B 6
+                                                                                                                                                                                                                                                                                                                                                                                             6 H  S
+                                                                                                                 B &  R P                                                                                                                                                                                                                       H 1          Q V H 1
+                                                                                                                                                                                                                                                                                                                                                                                        B 6   H S
+                                                                         ' H  Q         ' H                                                                                                                                                                                                                                                  ' H            ' H
+                                                                                             Q
+                                                                                                                      ( [ S H U L P H Q W D O  V H W W L Q J                                                                                                                                                                                                                          ( [ S H U L P H Q W D O  V H W W L Q J
+
+                                                                                      (a) Combined, 50 samples                                                                                                                                                                                                                                             (b) Separated, 50 samples
+
+                                                                             2 1 & $                                                                                                                                2 1 & $                                                                                                                         ( & $                                                                                                                             2 1 & $
+                                             ' H Q V H 1 H W B & O V             H                         H                                                              ' H Q V H 1 H W B & O V           H            H                                                               ' H Q V H 1 H W B & O V            H                        H                                                              ' H Q V H 1 H W B & O V            H           H   
+                                                                                 n.s.                                                                                                                                                                                                                                                               n.s.                                                                                                                                   n.s.
+
+                                            ' H Q V H 1 H W B 5 H J              H                         H                                                             ' H Q V H 1 H W B 5 H J            H            H                                                              ' H Q V H 1 H W B 5 H J             H                        H                                                             ' H Q V H 1 H W B 5 H J             H           H   
+                                                                                                                                                                                                                                                                                                                                                    n.s.                                                                                                                                   n.s.
+
+
+
+
+ ( [ S H U L P H Q W D O  V H W W L Q J                                                                                                  ( [ S H U L P H Q W D O  V H W W L Q J                                                                                    ( [ S H U L P H Q W D O  V H W W L Q J                                                                                                ( [ S H U L P H Q W D O  V H W W L Q J
+                                                     9 * * B & O V               H                         H                                                                      9 * * B & O V             H            H                                                                       9 * * B & O V              H                        H                                                                      9 * * B & O V              H           H   
+
+                                                                                                                               3  Y D O X H                                                                                                              3  Y D O X H                                                                                                                          3  Y D O X H                                                                                                              3  Y D O X H
+                                                                                 n.s.                                                                                                                                   n.s.                                                                                                                        n.s.
+
+                                                   9 * * B 5 H J                 H                         H                                                                    9 * * B 5 H J               H            H                                                                     9 * * B 5 H J                H                        H                                                                    9 * * B 5 H J                H           H   
+                                                                                 n.s.                                                                                                                                   n.s.                                                                                                                                                                                                                                                               n.s.
+
+                                                        9 L 7 B & O V            H                         H                                                                         9 L 7 B & O V          H            H                                                                          9 L 7 B & O V           H                        H                                                                         9 L 7 B & O V           H           H   
+                                                                                 n.s.                                                                                                                                   n.s.                                                                                                                        n.s.                                                                                                                                   n.s.
+
+                                                      9 L 7 B 5 H J              H                         H                                                                       9 L 7 B 5 H J            H            H                                                                        9 L 7 B 5 H J             H                        H                                                                       9 L 7 B 5 H J             H           H   
+                                                                                 n.s.                                                                                                                                   n.s.                                                                                                                        n.s.                                                                                                                                   n.s.
+
+   (c)                                                   Combined                                                                           (d)                                                   Separated                                                            (e) Combined vs Separated (f) Combined vs Separated
+                                                       1 vs 50 samples                                                                                                                          1 vs 50 samples                                                               50 samples                 50 samples
+
+
+   Figure 12: P-values of the differences between the ECA of the three models
+   and the prediction methods under the combined and separated labels, as well
+   as the 1 and 50 samples settings. ✓ in (a, b) indicates that the vertical exper-
+   imental settings had higher accuracy than the horizontal setting; for (c, d, e,
+   f), sample 1 setting had higher accuracy than the samples 50 setting with a
+   statistically significant difference (Student’s t-test with Bonferroni correction,
+   corrected α=3e-3 for (a, b), α=1e-3 for (c, d, e, f). ✗ in (a, b) indicates that the
+   vertical settings yielded lower accuracy; for (c, d, e, f), sample 1 yielded lower
+   accuracy with a statistically significant difference, and n.s. when no significant
+   difference was observed. Reg: regression, Cls: classification, S1: 1 samples (w/o
+   dropout), S50: 50 samples (w/ dropout), Com: combined, Sep: separated.
+

@@ -1,0 +1,659 @@
+Multimedia Tools and Applications
+https://doi.org/10.1007/s11042-021-10557-0
+
+1181: MULTIMEDIA-BASED HEALTHCARE SYSTEMS USING
+COMPUTATIONAL INTELLIGENCE
+
+
+
+Knee osteoarthritis severity classification with ordinal
+regression module
+
+Ching Wai Yong 1 & Kareen Teo 1 & Belinda Pingguan Murphy 1 & Yan Chai Hum 2 &
+Yee Kai Tee 2 & Kaijian Xia 3 & Khin Wee Lai 1
+
+Received: 18 July 2020 / Revised: 28 December 2020 / Accepted: 13 January 2021
+
+# The Author(s), under exclusive licence to Springer Science+Business Media, LLC part of Springer Nature 2021
+
+
+
+Abstract
+Osteoarthritis (OA) is a common form of knee arthritis which causes significant disability
+and is threatening to plague patient’s quality of life. Although this chronic condition does
+not lead to fatality, still there exists no known cure for OA. Diagnosis of OA can be
+confirmed primarily based on radiographic findings. Being a progressive disease, early
+identification of OA is crucial for clinical interventions to curtail the OA degeneration.
+Kellgren-Lawrence (KL) grading system has been traditionally employed to assess the
+knee OA severity. Due to the recent advancements of deep learning in computer vision,
+more studies have employed deep neural network in automatically predicting KL grade
+from plain knee joint radiograph. However, these studies treat KL grading as a multi-class
+classification task and ignore the inherent ordinal nature within the KL grades. In this
+study, we propose an ordinal regression module for neural networks to treat KL grading
+as an ordinal regression task. Our module takes an input from neural network and
+produces 4 cut-points to partition the prediction space into 5 respective KL grades. The
+proposed model is optimized by a cumulative-link loss function. Performance of the
+model is evaluated against various notable neural networks and significant improvements
+on the knee OA KL grade prediction were demonstrated.
+
+Keywords Cumulative-link loss function . Kellgren-Lawrence grade . Knee radiograph . Ordinal
+regression module . Osteoarthritis
+
+
+* Khin Wee Lai
+  lai.khinwee@um.edu.my
+
+
+1
+    Department of Biomedical Engineering, Faculty of Engineering, University of Malaya, Jalan
+    Universiti, 50603 Kuala Lumpur, Malaysia
+2
+    Department of Mechatronics and Biomedical Engineering, Lee Kong Chian Faculty of Engineering
+    and Science, University Tunku Abdul Rahman, Jalan Sungai Long, Bandar Sungai Long,
+    43200 Kajang, Selangor, Malaysia
+3
+    Changshu Hospital of Soochow University (Changshu No.1 People’s Hospital), Changshu, Jiangsu,
+    China
+                                                                      Multimedia Tools and Applications
+
+
+1 Introduction
+
+Osteoarthritis (OA) is the most common form of arthritis, causing significant disability for patients
+worldwide [21]. Although OA does not result in death, it greatly impacts mobility, and quality of
+life [1, 9, 17]. This degenerative joint disease occurs frequently in hands, hips, and knees where
+the cartilage tissues within the joint begin to break down and the underlying bone begins to
+deform [19]. These changes develop slowly; worsen over time while causing physical discomfort.
+OA is lacking effective clinical treatments across different stages. Patients with end-stage knee
+OA are often left with total knee replacement (TKR) surgery [34], which is highly invasive and
+costly. According to the Centers for Disease Control and Prevention, about 32.5 million of United
+States adults are diagnosed with OA [1]. The annual rate of TKR surgery for individual age 45 to
+64 has doubled since the year 2000. Early diagnosis on OA is crucial for clinical interventions in
+curtailing progression and mitigating future disability [25, 29].
+    Despite the introduction of several imaging modalities such as MRI [4, 7, 18], OCT [7, 11],
+and ultrasound, radiograph continue to be the most widely applied in clinical setting to diagnose
+knee OA given that it is safe, cost-efficiency and wide accessibility [8]. In 1957, Kellgren-
+Lawrence (KL) grading system [16] was proposed for epidemiological studies on OA. KL is a
+semi-quantitative grading system which split the OA severity into 5 progression levels where
+grade 0 indicated healthy knee joint while grade 4 indicates severe knee OA. In 1961, this
+grading system was accepted by World Health Organization (WHO) as radiological definition
+for OA epidemiological studies [27, 28] and became the common grading standard for OA
+severity classification in clinical diagnosis. However, this grading system is heavily relied on
+the physician’s experience and carefulness while subject to intra-observer and inter-observer
+variability where the former ranges from 0.67 to 0.73 [6]. The low reliability of physician’s
+grading is believed due to cause misclassification of the KL grade to its nearby grade [5].
+    High prevalence of knee OA prompts an urgent need for accurate, reproducible, and reliable
+knee OA severity classification algorithm. Over the past decades, deep learning methods
+achieve state-of-the-art performances in various computer vision tasks such as cell detection
+and segmentation in histopathological images [12, 31], blood vessel segmentation [15], white
+matter lesion segmentation from brain MRI [20], breast cancer analysis on histology image
+[24], paediatric bone age assessment [14], knee joint localization from MRI [36], and so on.
+    There are several studies apply deep learning based method on plain radiograph knee OA
+analysis. Antony et al. (2016) proposed to use convolution neural network to quantify the
+severity of knee OA [2] and this project was further expand to optimize the network using
+weighted ratio of categorical cross-entropy and mean squared loss functions [3]. Tiulpin et al.
+(2019) presented a modified Siamese network to measure the KL score of plain radiographs
+[33]. These studies treating KL grades as nominal variables which do not have an intrinsic
+order. Recently, Chen et al. (2019) created a novel ordinal loss function to train deep neural
+networks in grading the severity of knee OA [5]. Ordinal variable is like nominal variable, but
+the former takes ordering into account. Although KL grading classification can be treated as
+nominal variables and executed with multi-class classification, however, we should appreciate
+and consider the ordinality essence of the KL grading as the progressive grading provides extra
+information. Chen et al. (2019) showcase that by emphasizing the ordinality and ranking
+information for model training can reduce the faraway grade misclassification such as
+misclassified a grade 4 OA as grade 1 and vice versa. This study inspires us to approach
+KL severity prediction as an ordinal regression instead of conventional multi-class
+Multimedia Tools and Applications
+
+
+classification task. A correct prediction of KL score on radiograph helps to discover early stage
+of OA (KL score 1 and 2) and allowed early clinical interventions.
+   The contributions of our work are as follows. First, we proposed an ordinal regression module
+(ORM) to the classification neural networks to perform ordinal regression. With the proposed
+module, ordinality of the KL grading can be preserved and considered. We also optimize the neural
+networks using cumulative link (CL) loss function. Second, we performed a comparison study
+against 23 neural networks from 6 notable classification neural network architectures.
+   This paper is organized as follows. Section 2 explains the data acquisition and processing.
+Section 3 illustrates the methodology of our experiment in detail. Section 4 reports the
+comparative performances of classification neural network architectures between multi-class
+classification and ordinal regression classification methods. Section 5 discuss about the
+findings while Section 6 addresses the conclusion and future work.
+
+
+2 Data acquisition and processing
+
+We acquired data from Osteoarthritis Initiative (OAI), a large-scale natural history OA database
+which contains clinical evaluation data, biospecimen repository, and multi-modality biomedical
+images. OAI is publicly accessible (https://nda.nih.gov/oai/) to enable the worldwide scientific
+community to better understand progression of OA and develop new treatments to slow
+progression or modify this disabling disease. The main reason in choosing OAI is because OAI is
+the current largest OA database, featuring 4796 participants. As our study focuses on KL gradings,
+out of the multi-sequences, we chose knee bilateral posterior-anterior fixed flexion radiographs from
+the baseline cohort to evaluate our proposed methodology.
+    These raw radiographs come in different resolutions therefore require preprocessing to
+standardize the images. A series of preprocessing was performed onto the radiographs such as
+resize the physical resolution of all radiographs to 0.14 mm/pixel and cropped the central
+region of the resized image. The cropped images shall contain the whole knee joint structure
+where femur and tibia are clearly visible as shown in Fig. 1. Each of the cropped knee joint
+images is pre-labeled with a KL grade, provided by OAI. A total of 4130 pairs of knee joints
+annotated with KL grades were harvested from the baseline cohort. These knee joints were
+further stratified into train, valid, and test datasets in a ratio of 7:1:2 with balance distribution
+across each KL grade. Test images were isolated from the model training process to avoid data
+leakage and to ultimately access the model’s performances.
+    In general, OAI obtained the KL gradings by having two expert readers independently
+accessed each radiograph, blinded to each other’s reading. Pre-specified discrepancies between
+readers were adjudicated in a consensus session with blinded viewed simultaneously and a
+third reader participating. If the score was not adjudicated for discrepancies, the scoring given
+by the senior reader, an experienced musculoskeletal radiologist will be the final.
+
+
+3 Methods
+
+3.1 Experiment setup
+
+The objective of this study was to validate the impact of our proposed ORM on KL grade
+predicting task of knee radiographs. Several state-of-the-art architectures such as VGG [30],
+                                                                       Multimedia Tools and Applications
+
+
+
+
+Fig. 1 Classification neural networks with N layers added with ORM and producing 5 output neurons with
+probability of each KL grades
+
+
+GoogLeNet [32], Resnet [10], DenseNet [13], ResNeXt [35], and Mobilenet v2 [26] were used
+to evaluate the performance of the proposed ORM. Neural networks were trained using
+PyTorch [22], an open source machine learning library. To perform a non-bias comparison
+study, we trained the network using standardized hyper-parameters. Networks were trained
+with 30 epochs using Stochastic Gradient Descent (SGD) with initial learning rate of 0.001 and
+momentum of 0.9. Besides, the knee joint images were normalized with ImageNet mean and
+standard deviation. Images were fed to the networks in a batch size of 32.
+
+3.2 Predictive techniques
+
+3.2.1 Baseline: Multi-class KL grade prediction
+
+Neural networks mentioned in Section 3.1 were all pre-trained with ImageNet and produced
+1000 outputs. To utilize the pre-trained weights and biases, we replaced the last FC layer. The
+new FC layer retains the same input size while producing 5 outputs which corresponding to the
+5 possible KL grades. The output nodes were passed into a softmax layer to generate the
+probability for each of the nodes. The node with highest probability represents the prediction
+class. Cross entropy loss was used as the optimization function. Results obtained from this
+method become the baseline for our comparison.
+
+3.2.2 Proposed methodology: Ordinal regression KL grade prediction
+
+Classifying a radiograph involves predicting an image into several classes which have a natural
+severity ordering, i.e. KL grades 0 to 4. Conventional multi-class classification task considers
+each grade as mutually exclusive output, ignoring the order/severity ranking. Therefore, we
+propose ORM, a module that can be integrated with conventional neural network to perform
+classification on ordered classes. Unlike softmax layer in traditional classification model that
+predicts the instance as 1 given the largest probability values, our ORM partitions the
+probability space of the scalar output into respective K classes with K − 1 cut-points. As refer
+to Fig. 1, new FC layer is having a single output node which is channeled into ORM to
+produce 5 output nodes corresponding to the KL grades.
+   Given f(X) as a scalar output from the model and a logistic function σ, the probability of an
+observation y belongs to class k can be calculated using a cumulative logistic link function
+proposed by [23],
+Multimedia Tools and Applications
+                                    8
+                                    <          σðc0 − f ðXÞÞ;       if k ¼ 0
+                  Pðy ¼ k Þ ¼         σðck − f ðXÞÞ−σðck−1 −f ðXÞÞ; if 0 < k < K :         ð1Þ
+                                    :
+                                            1−σðcK−1 − f ðXÞÞ;      if k ¼ K
+
+Class probabilities are highly correlated to the cut-points c, therefore optimal c can be
+determined through the model training process instead of manually defined to prevent
+unintuitive results. Apart from that, we maintained the ascending ordering of the c by clamping
+each of the values after gradient update where
+                                        c½0 < c½1 < … < c½K−1:                          ð2Þ
+
+Cross-entropy has been frequently used as the optimization function for multi-class classifi-
+cation problem. However, this optimization function treats all classes equally where it ignores
+the ordering essence within the ordinal variables. For an ordinal regression problem, closeness
+between the predicted class kp and ground truth class y needs to be considered. Taking the KL
+grading system as an example, a prediction on y = 4 as grade 1 should receive higher penalty as
+compared to grade 2 prediction. Therefore, we presented a CL loss function which is the
+negative log-likelihood of the eq. 1, inspired by [23], given as
+                          8
+                          <           −logσðc0 −f ðXÞÞ;             if k ¼ 0
+             ψCL ðy; k Þ ¼ −logðσðck −f ðXÞÞ−σðck−1 − f ðXÞÞÞ; if 0 < k < K :               ð3Þ
+                          :
+                                  −logð1−σðcK−1 −f ðXÞÞÞ;           if k ¼ K
+
+By using the proposed ORM and CL loss function, we can perform ordinal regression
+classification onto KL grade prediction task where the severity level of the KL grades is being
+considered.
+
+3.3 Evaluation metrics
+
+In this study, we validated the model’s performances using three metrics: accuracy macro
+(ACCMacro), mean absolute error (MAE), and quadratic weighted Cohen’s Kappa coefficient
+(QWK). These metrics are commonly used in comparing the classification performances
+between neural networks. On one hand, ACCMacro is a metric to measure the average of sum
+of accuracy (ACC) for each class k, formulated as
+                                                       1 K−1
+                                         ACC Macro ¼      ∑ ACC k :                        ð4Þ
+                                                       K k¼0
+
+On the other hand, MAE measures the average magnitude of the errors within a set of
+predictions. The absolute values of the differences between predicted class p and ground truth
+      b for a total of n samples are averaged by the following formula
+class p
+                                              1 n−1       
+                                                            
+                                 MAE p ; p  b ¼ n ∑ p−b   p:                             ð5Þ
+                                                     i¼0
+
+MAE is negatively oriented; thus, a lower value indicates the prediction is closer to the true
+value and results in better performance.
+    Apart from that, Cohen’s Kappa Coefficient (κ) is a statistic that measure inter-annotator
+reliability for qualitative prediction. This metric takes agreements occurring by chance into
+account. In this study, we used quadratic weighted kappa to measure the model’s performance
+                                                                   Multimedia Tools and Applications
+
+
+where it allows disagreements to be weighted differently. For example, the quadratic weights
+impose lower penalty to difference between first and second category than a difference
+between second and third category. QWK is formulated by 3 different matrices and formulated
+as
+                                           ∑ w O
+                                            p;b
+                                              p p;b
+                                                  p p;b
+                                                      p
+                                    κ ¼ 1−              :                                       ð6Þ
+                                           ∑ w E
+                                            p;b
+                                              p p;b
+                                                  p p;b
+                                                      p
+
+First a K classes contingency matrix O is constructed such that Op;bp corresponds to the number
+of images that received p grade by the model and ground truth b
+                                                              p. Second, a weights w is
+calculated based on the difference between p and b
+                                                 p:
+                                                 2
+                                               p−b
+                                                 p
+                                      w ¼            :                              ð7Þ
+                                        b ðK−1Þ2
+                                       p;p
+
+Third, the expected matrix E is calculated as the normalized outer product between model’s
+and ground truth’s histogram vector of grades.
+
+
+4 Results
+
+As mentioned in Section 3.1, we involved 6 different classification neural network architec-
+tures, i.e., VGG, GoogLeNet, ResNet, DenseNet, ResNeXt, and Mobilenet v2, resulting in a
+total of 21 variants of model to evaluate our proposed ORM (Section 3.2.2) against the
+baseline (Section 3.2.1), and results reported by Chen et al. [5]. To the best of our knowledge,
+Chen et al. (2019) is the only study that considering the ordinality of the KL grades by using
+ordinal loss function. All these models were fed with the testing datasets (~1656 images) and
+evaluation were measured in terms of MAE, ACCMacro, and QWK.
+   Table 1 depicts the MAE of the 21 variants of model for baseline, ORM and Chen et al. [5].
+For baseline approach, VGG-16bn scored the lowest MAE (0.373), followed by VGG-19
+(0.376) and DenseNet-201 (0.377) while GoogLeNet, ResNet variants, ResNeXt variants, and
+Mobilenet v2 showed higher MAE, at the range of 0.42 to 0.49. Models trained with our
+proposed approach outperformed the baseline by showing lower MAE in a one-to-one
+comparison. Among all the models trained with ORM approach, DenseNet scored the lowest
+MAE (0.330), followed by VGG-16bn (0.338) and VGG-19 (0.345). For example, the
+proposed ORM approach reduced the MAE of VGG-16bn (baseline) by about 9.38%, from
+0.373 to 0.338. Apart from that, Table 1 includes results from the study of Chen et al. [5].
+According to their study, VGG-16 performed the best with MAE of 0.356 while our approach
+achieved a slightly higher MAE, by a difference of 0.009. However, on a best-to-best model
+comparison, our DenseNet-161 was 0.026 lower than their VGG-16 in terms of MAE. Not
+only VGG architectures, most of our models achieved lower MAE as compared to the results
+reported in [5].
+   Table 2 illustrates the evaluation performances of the neural networks on ACCMacro and
+QWK for baseline and ORM approach. VGG-16bn crowned the highest ACCMacro for the
+baseline approach while DenseNet-161 performed the best among the neural networks trained
+with ORM approach. The former scored 87.78% while the latter achieved 88.09%. Using
+Multimedia Tools and Applications
+
+Table 1 Comparison of MAE by different neural networks on the knee KL grading trained on different
+approaches, Chen et al. [5] which using ordinal loss function, baseline technique with cross-entropy function,
+and our proposed ORM with CL loss function. DenseNet-161 with our proposed methodology achieves 0.330
+MAE, lowest among all architectures and approaches
+
+Architectures                       Chen et al. [5]               Baseline Technique                    ORM
+
+VGG
+ VGG-11                             –                             0.434                                 0.377
+ VGG-11bn                           –                             0.431                                 0.367
+ VGG-13                             –                             0.415                                 0.348
+ VGG-13bn                           –                             0.391                                 0.365
+ VGG-16                             0.356                         0.388                                 0.365
+ VGG-16bn                           0.376                         0.373                                 0.338
+ VGG-19                             0.360                         0.376                                 0.345
+ VGG-19bn                           0.369                         0.419                                 0.350
+GoogLeNet                           –                             0.490                                 0.482
+ResNet
+ ResNet-18                          0.423                         0.496                                 0.424
+ ResNet-34                          0.402                         0.444                                 0.389
+ ResNet-50                          0.403                         0.444                                 0.412
+ ResNet-101                         0.408                         0.422                                 0.372
+ ResNet152                          0.390                         0.461                                 0.382
+DenseNet
+ DenseNet-121                       0.381                         0.447                                 0.379
+ DenseNet-169                       0.388                         0.414                                 0.379
+ DenseNet-201                       0.389                         0.377                                 0.353
+ DenseNet-161                       –                             0.399                                 0.330
+ResNeXt
+ ResNeXt-50                         –                             0.441                                 0.386
+ ResNeXt-101                        –                             0.423                                 0.358
+Mobilenet v2                        –                             0.479                                 0.402
+
+
+DenseNet-161 as comparison medium, our ORM approach increases the ACCMacro from
+85.92% (baseline) to 88.09% with an increment of 2.17%. In terms of QWK, DenseNet-161
+trained with ORM approach had the highest score (0.8609) while the highest among the
+baseline approach was only 0.8274, produced by VGG-13bn. Using DenseNet-161 as com-
+parison medium, our ORM approach increases the QWK from 0.8204 (baseline) to 0.8609
+with an increment of 0.0405. As refer to Table 2, we can conclude our ORM approach
+outperformed baseline technique where all networks trained with the former method achieved
+higher QWK with average increment of 0.0441 range from 0.0183 to 0.0825.
+    As mentioned in Section 3.2.2, ORM took in a single scalar output and partitioned the logits
+into prediction spaces which corresponding to the KL grades by using cut-points. These cut-
+points are being optimized after gradient update at the end of each epoch as shown in Fig. 2.
+Through back-propagating, training errors were back propagated for cut-points adjustment for
+better performances.
+    By using contingency matrix as shown in Fig. 3, we can visualize how well our ORM
+approach performs as compared to baseline approach. The values within the diagonal cells of
+the contingency matrix for ORM approach are maximum as per row-wise, indicating that our
+approach ability to predict most of the KL grades correctly. Apart from that, the distributions
+of wrongly predictions were spread nearer and closer to the ground truth KL grade as
+compared to the results obtained through baseline approach and the best performing model
+in [5].
+                                                                                                             Multimedia Tools and Applications
+
+Table 2 Comparison of ACCMacro and QWK for baseline (multi-class classification with cross-entropy loss
+function) approach and our proposed ORM approach. DenseNet-161 with our proposed methodology achieves
+88.09 and 0.8609 in ACCMacro and QWK, highest among all architectures when compared with baseline
+
+                                                  Baseline Approach                                  Ordinal Regression Module
+
+Architectures                                     ACCMacro(%)                    QWK                 ACCMacro(%)                      QWK
+
+VGG
+ VGG-11                                           85.72                          0.7884               86.52                           0.8396
+ VGG-11bn                                         86.21                          0.7896               87.15                           0.8419
+ VGG-13                                           85.43                          0.8016               87.51                           0.8517
+ VGG-13bn                                         85.72                          0.8274               86.91                           0.8457
+ VGG-16                                           86.38                          0.8239               87.13                           0.8453
+ VGG-16bn                                         87.78                          0.8228               87.75                           0.8575
+ VGG-19                                           86.62                          0.8272               87.58                           0.8532
+ VGG-19bn                                         84.73                          0.8127               87.42                           0.8528
+GoogLeNet                                         84.57                          0.7393               83.72                           0.7708
+ResNet
+ ResNet-18                                        83.67                          0.7648               85.48                           0.8133
+ ResNet-34                                        85.87                          0.7704               86.45                           0.8314
+ ResNet-50                                        85.94                          0.7858               85.58                           0.8161
+ ResNet-101                                       86.52                          0.7887               86.74                           0.8378
+ ResNet152                                        82.95                          0.7871               86.62                           0.8295
+DenseNet
+ DenseNet-121                                     86.18                          0.7687               86.69                           0.8354
+ DenseNet-169                                     86.47                          0.8036               87.44                           0.8382
+ DenseNet-201                                     87.13                          0.8236               86.98                           0.8494
+ DenseNet-161                                     85.92                          0.8204               88.09                           0.8609
+ResNeXt
+ ResNeXt-50                                       86.33                          0.7636               86.06                           0.8385
+ ResNeXt-101                                      85.97                          0.8039               87.15                           0.8484
+Mobilenet v2                                      85.31                          0.7560               86.04                           0.8385
+
+
+   Samples of KL grade 4 (severe OA) knee joint radiographs predictions on DenseNet-161 of
+ORM approach are shown in Fig. 4. Two images at the left-hand side were wrongly predicted
+as KL Grade 3, one grade away from the ground truth grade while the other two images at the
+right-hand-side were correctly predicted as KL grade 4. On the other hand, Fig. 5 showing the
+
+
+                                             Cut-points Changes along with the Epoch
+                                5
+                                                                                                                            3.607
+                                                                                                    2.964
+                                3
+
+
+
+
+             Cut-Points Value
+                                                                    2.169
+                                   1.105                                                                                     0.999
+                                1                                   0.426                           0.723
+                                    0.023
+                                -1 -1.157                           -1.600                          -1.834                  -1.980
+                                -3       -1.963                      -2.967
+                                                                                                    -3.820
+                                                                                                                             -4.588
+                                -5
+                                     1      3       5     7   9      11     13     15     17   19    21      23   25   27    29
+                                                                            Epoch Number
+
+                                          Cut-points 1            Cut-points 2            Cut-points 3            Cut-points 4
+
+
+Fig. 2 The values of cut-points of Densenet-161 trained with ORM are optimized after gradients updating at the
+end of each epoch. The order of cut-points is preserved during the optimization process
+Multimedia Tools and Applications
+
+
+
+
+Fig. 3 The contingency matrix of DenseNet-161 for baseline, ORM approach and Chen et al. [16]. The gray-
+colored cells indicate the correct prediction of the KL grades
+
+
+misclassification results by DenseNet-161 on images of KL grade 0 and 1. The two images at
+the left-hand side were wrongly predicted as KL grade 1 where its ground truth are KL grade 0
+while the other two images at the right-hand side were wrongly predicted as KL grade 0 given
+its ground truth are KL grade 1.
+
+
+5 Discussion
+
+Acknowledging the ordinal essence of KL grade for a classification neural network is
+achievable and feasible through adding ORM into the architectures. By having ORM, neural
+networks learn about the ordinal relationships between the KL grades. In general, our ORM
+approach not only outperformed baseline approach, but also surpassed the results of Chen et al.
+[5], by demonstrating lower MAE and higher values for ACCMacro and QWK. It is worth to
+mention that the models of [5] were fine-tuned while our models (baseline and ORM) were
+trained with default parameter settings.
+    As mentioned earlier, the cut-points of the ORM were optimized through the model’s error
+back-propagation process. As refer to Fig. 2, the distance between the cut-points are slowly
+increase as the epoch running. By using the CL loss function that is specifically designed for
+ordinal regression, the cut-points were slowly adjusted to minimize the model’s loss and
+maximize the model’s performances. To prevent the orders of the cut-points from overrun, we
+performed clamping mechanism to ensure each cut-point remained in their corresponding
+prediction space. The clamping mechanism helps the model to obtain favorable cut-points
+faster and easier.
+    As refer to the contingency matrices in Fig. 3, ORM approach correctly identified the KL
+grades (70% and above) for all grades except Grade 1 which only achieve 38.51%. Similarly,
+
+
+
+
+Fig. 4 Predictions performed by DenseNet-161 trained with ORM approach on KL grade 4 images. The
+predictions are labelled at the bottom of each image
+                                                                       Multimedia Tools and Applications
+
+
+
+
+Fig. 5 Predictions performed by DenseNet-161 trained with ORM approach on KL grades 0 and 1 images. GT
+represents the ground truth labels while PR represents the predicted grades by DenseNet-161
+
+
+this results was observed for baseline approach and in the study of Chen et al. [5] where the
+rate of correct prediction on Grade 1 images was lower than other grades. However, our ORM
+approach managed to predict most of knee joint radiographs correctly and outperformed both
+baseline and Chen’s study in general. Our ORM modules takes ordinality into considerations
+and greatly reduces the possible faraway misclassification cases such as misclassify healthy
+knee joints (KL grade 0) as severe osteoarthritic knee joints (KL grade 3).
+   The knee joint radiographs of Fig. 4 are of KL grade 4 (most severe OA). From the two
+misclassified images, we can observe that the bone-on-bone contact at the tibia femoral joint is
+not as severe as the two correctly predicted images. Although the images are labeled with KL
+grade 4, but their degree of joint space narrowing (JSN) are differed. This might cause the
+model to misclassify the non-extreme cases as less severe OA (KL grade 3), which are only 1
+grade away from the ground truth.
+   According to the KL grading system, grade 0 is defined as healthy knee with definite
+absence of radiographic features of OA while grade 1 joints are having doubtful JSN and
+possible osteophytic lipping which also known as osteophytes. The knee joint radiographs in
+Fig. 5 shows misclassification of low KL grades images. These misclassifications are un-
+avoidable due to the radiographic features are not obvious and thus causes the classifications to
+be ambiguous. However, we must acknowledge the ability of ORM in reducing the faraway
+grade misclassification cases.
+   Like most of the scientific experiments, several limitations exist in our study. First, all the
+models were trained using standardized hyperparameters; a fine-tuned model could further
+improve the classification performance. Not only that, we can also optimize this model for
+early detections of OA by implementing weighted penalty to further reduce the false positive
+and false negative predictions especially in KL grade 0 and 1. Second, our study focused on a
+single cohort dataset: OAI baseline cohort dataset. Future work is to expand our experiments
+into longitudinal cohort analysis. Besides, we utilized the pretrained ImageNet weights without
+performing any transfer-learning mechanism. We allowed the weights and bias of all layers in
+the neural network architecture to update their values according to the distributions of the data
+points.
+
+
+6 Conclusion
+
+In this paper, we proposed to treat KL grading on plain knee joint radiographs as an ordinal
+classification task instead of conventional multi-class classification. Our ORM was designed to
+Multimedia Tools and Applications
+
+
+classify ordinality categorical variables. Neural networks trained with our approach
+outperformed those with baseline approach in terms of MAE, ACCMacro, and QWK.
+DenseNet-161 is having the best performances with lowest MAE (0.330) and highest
+ACCMacro (88.09%) and QWK (0.8609) among all architectures. Not only that, our ORM
+approach also outperformed Chen’s study in QWK for all architectures. In addition, these
+neural networks were trained with default parameter setting. We strongly believed that fine-
+tuning these models will further reduce the MAE and increase the ACCMacro and QWK.
+Indeed, this will become our future work. The proposed ORM along with the CL loss function
+is having superior potential in ordinal classification tasks and is compatible with most of the
+popular state-of-the-art classification neural network architectures. Ultimately, we aspire to
+further improve and expand this approach to other ordinality classification task.
+
+Acknowledgements This work was supported by Fundamental Research Grant Scheme (FRGS) FRGS/1/2018/
+TK04/UM/02/9, Ministry of Education, Malaysia. Data and/or research tools used in the preparation of this
+manuscript were obtained and analyzed from the controlled access datasets distributed from the Osteoarthritis
+Initiative (OAI). OAI is a collaborative informatics system created by the National Institute of Mental Health and
+the National Institute of Arthritis, Musculoskeletal and Skin Diseases (NIAMS) to provide a worldwide resource
+to quicken the pace of biomarker identification, scientific investigation and OA drug development.
+
+
+Compliance with ethical standards
+
+Conflict of interest The authors declare no conflict of interest.
+
+
+
+References
+
+ 1. United States Bone and Joint Initiative: The burden of musculoskeletal diseases in the United States
+    (BMUS), third edition, 2014. Rosemont. Available at http://www.boneandjointburden.org. Accessed 18
+    July 2020
+ 2. Antony J, McGuinness K, O’Connor NE, Moran K (2016) Quantifying radiographic knee osteoarthritis
+    severity using deep convolutional neural networks. In: 2016 23rd International Conference on Pattern
+    Recognition (ICPR), Cancun, pp 1195–1200. https://doi.org/10.1109/ICPR.2016.7899799
+ 3. Antony J, McGuinness K, Moran K, O’Connor NE (2017) Automatic detection of knee joints and
+    quantification of knee osteoarthritis severity using convolutional neural networks. In: Perner P (eds)
+    Machine learning and data mining in pattern recognition. MLDM 2017. Lecture notes in computer science,
+    vol 10358. Springer, Cham. https://doi.org/10.1007/978-3-319-62416-7_27
+ 4. Braun HJ, Gold GE (2012) Diagnosis of osteoarthritis: imaging. Bone 51(2):278–288
+ 5. Chen P, Gao L, Shi X, Allen K, Yang L (2019) Fully automatic knee osteoarthritis severity grading using
+    deep neural networks with a novel ordinal loss. Comput Med Imaging Graph 75:84–92
+ 6. Culvenor AG, Engen CN, Øiestad BE, Engebretsen L, Risberg MA (2015) Defining the presence of
+    radiographic knee osteoarthritis: a comparison between the Kellgren and Lawrence system and OARSI atlas
+    criteria. Knee Surg Sports Traumatol Arthrosc 23(12):3532–3539
+ 7. Faur CI, Abu-Awwad A, Tudoran M et al (2020) Comparative study OCT versus MRI T2 in diagnosis of
+    degenerative cartilage lesions. Research Square. https://doi.org/10.21203/rs.3.rs-29937/v1
+ 8. Górriz M, Antony J, McGuinness K, Giró-i-Nieto X, O’Connor NE (2019) Assessing knee OA severity
+    with CNN attention-based end-to-end architectures. In: International Conference on Medical Imaging with
+    Deep Learning, pp. 197–214. PMLR
+ 9. Guccione AA, Felson DT, Anderson JJ, Anthony JM, Zhang Y, Wilson PW, Kelly-Hayes M, Wolf PA,
+    Kreger BE, Kannel WB (1994) The effects of specific medical conditions on the functional limitations of
+    elders in the Framingham study. Am J Public Health 84(3):351–358
+10. He K, Zhang X, Ren S, Sun J (2016) Deep residual learning for image Recognition. In: 2016 IEEE
+    Conference on Computer Vision and Pattern Recognition (CVPR), Las Vegas, pp. 770–778. https://doi.org/
+    10.1109/CVPR.2016.90
+                                                                              Multimedia Tools and Applications
+
+11. Hirota K (2017) Development and application of optical coherence Elastography for detection of mechan-
+    ical property changes occurring in early osteoarthritis. UC Riverside. ProQuest ID:
+    Hirota_ucr_0032D_12874. Merritt ID: ark:/13030/m5hq8t98. Retrieved from https://escholarship.org/uc/
+    item/5cw964kw
+12. Höfener H, Homeyer A, Weiss N, Molin J, Lundström CF, Hahn HK (2018) Deep learning nuclei detection:
+    a simple approach can deliver state-of-the-art results. Comput Med Imaging Graph 70:43–52
+13. Huang G, Liu Z, Van Der Maaten L, Weinberger KQ (2017) Densely connected convolutional networks. In:
+    2017 IEEE Conference on Computer Vision and Pattern Recognition (CVPR), Honolulu, pp. 2261–2269.
+    https://doi.org/10.1109/CVPR.2017.243
+14. Iglovikov VI, Rakhlin A, Kalinin AA, Shvets AA (2018) Paediatric bone age assessment using deep
+    convolutional neural networks. In: Stoyanov D et al (eds) Deep learning in medical image analysis and
+    multimodal learning for clinical decision support. DLMIA 2018, ML-CDS 2018. Lecture notes in computer
+    science, vol 11045. Springer, Cham. https://doi.org/10.1007/978-3-030-00889-5_34
+15. Jiang Z, Zhang H, Wang Y, Ko SB (2018) Retinal blood vessel segmentation using fully convolutional
+    network with transfer learning. Comput Med Imaging Graph 68:1–15
+16. Kellgren J, Lawrence J (1957) Radiological assessment of osteo-arthrosis. Ann Rheum Dis 16(4):494–502
+17. Losina E, Walensky RP, Reichmann WM, Holt HL, Gerlovin H, Solomon DH, Jordan JM, Hunter DJ,
+    Suter LG, Weinstein AM (2011) Impact of obesity and knee osteoarthritis on morbidity and mortality in
+    older Americans. Ann Intern Med 154(4):217–226
+18. Luyten FP, Denti M, Filardo G, Kon E, Engebretsen L (2012) Definition and classification of early
+    osteoarthritis of the knee. Knee Surg Sports Traumatol Arthrosc 20(3):401–406
+19. Man G, Mologhianu G (2014) Osteoarthritis pathogenesis–a complex process that involves the entire joint. J
+    Med Life 7(1):37–41
+20. Manjón JV, Coupé P, Raniga P, Xia Y, Desmond P, Fripp J, Salvado O (2018) MRI white matter lesion
+    segmentation using an ensemble of neural networks and overcomplete patch-based voting. Comput Med
+    Imaging Graph 69:43–51
+21. Neogi T (2013) The epidemiology and impact of pain in osteoarthritis. Osteoarthr Cartil 21(9):1145–1153
+22. Paszke A, Gross S, Massa F, Lerer A, Bradbury J, Chanan G, Killeen T, Lin Z, Gimelshein N, Antiga L,
+    Desmaison A, Köpf A, Yang E, DeVito Z, Raison M, Tejani A, Chilamkurthy S, Steiner B, Fang L, Bai J,
+    Chintala S (2019) PyTorch: An imperative style, high-performance deep learning library. NeurIPS
+23. Pedregosa F, Bach F, Gramfort A (2017) On the consistency of ordinal regression methods. J Mach Learn
+    Res 18(1):1769–1803
+24. Rakhlin A, Shvets A, Iglovikov V, Kalinin AA (2018) Deep convolutional neural networks for breast cancer
+    histology image analysis. In: Campilho A, Karray F, ter Haar Romeny B (eds) Image analysis and recognition.
+    ICIAR 2018. Lecture notes in computer science, vol 10882. Springer, Cham. https://doi.org/10.1007/978-3-319-
+    93000-8_83
+25. Russakovsky O, Deng J, Su H, Krause J, Satheesh S, Ma S, Huang Z, Karpathy A, Khosla A, Bernstein M
+    (2015) Imagenet large scale visual recognition challenge. Int J Comput Vis 115(3):211–252
+26. Sandler M, Howard A, Zhu M, Zhmoginov A, Chen L (2018) Mobilenetv2: inverted residuals and linear
+    bottlenecks. In: 2018 IEEE/CVF Conference on Computer Vision and Pattern Recognition, Salt Lake City,
+    pp. 4510–4520. https://doi.org/10.1109/CVPR.2018.00474
+27. Sangha O (2000) Epidemiology of rheumatic diseases. Rheumatology 39(suppl_2):3–12
+28. Schiphof D, Boers M, Bierma-Zeinstra SM (2008) Differences in descriptions of Kellgren and Lawrence
+    grades of knee osteoarthritis. Ann Rheum Dis 67(7):1034–1036
+29. Shamir L, Ling SM, Scott W, Hochberg M, Ferrucci L, Goldberg IG (2009) Early detection of radiographic
+    knee osteoarthritis using computer-aided analysis. Osteoarthr Cartil 17(10):1307–1312
+30. Simonyan K, Zisserman A (2015) Very deep convolutional networks for large-scale image recognition.
+    CoRR, abs/1409.1556
+31. Su H, Xing F, Kong X, Xie Y, Zhang S, Yang L (2015) Robust cell detection and segmentation in
+    histopathological images using sparse reconstruction and stacked denoising autoencoders. In: Navab N,
+    Hornegger J, Wells W, Frangi A (eds) Medical image computing and computer-assisted intervention –
+    MICCAI 2015. Lecture notes in computer science, vol 9351. Springer, Cham. https://doi.org/10.1007/978-
+    3-319-24574-4_46
+32. Szegedy C et al (2015) Going deeper with convolutions. In: 2015 IEEE Conference on Computer Vision
+    and Pattern Recognition (CVPR), Boston,pp. 1–9. https://doi.org/10.1109/CVPR.2015.7298594
+33. Tiulpin A, Thevenot J, Rahtu E, Lehenkari P, Saarakkala S (2018) Automatic knee osteoarthritis diagnosis
+    from plain radiographs: a deep learning-based approach. Sci Rep 8(1):1–10
+34. Tiulpin A, Klein S, Bierma-Zeinstra SM, Thevenot J, Rahtu E, van Meurs J, Oei EH, Saarakkala S (2019)
+    Multimodal machine learning-based knee osteoarthritis progression prediction from plain radiographs and
+    clinical data. Sci Rep 9(1):1–11
+Multimedia Tools and Applications
+
+35. Xie S, Girshick R, Dollár P, Tu Z, He K (2017) Aggregated residual transformations for deep neural
+    networks. In: 2017 IEEE Conference on Computer Vision and Pattern Recognition (CVPR), Honolulu, pp.
+    5987–5995. https://doi.org/10.1109/CVPR.2017.634
+36. Yong CW, Hum YC, Pingguan-Murphy B, Lai KW (2018) Train convolutional neural networks without
+    well-segmented ground truth images for cartilage localization: data from the osteoarthritis initiatives. Adv
+    Sci Lett 24(3):1771–1774
+
+
+
+Publisher’s note Springer Nature remains neutral with regard to jurisdictional claims in published maps
+and institutional affiliations.
+

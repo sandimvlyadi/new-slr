@@ -1,0 +1,3 @@
+IEEE Xplore, Command Search, All Metadata, 2021-2026, semua tipe konten:
+("knee osteoarthritis" OR "hand osteoarthritis" OR "Kellgren" OR "rheumatoid arthritis" OR "joint space narrowing" OR "bone erosion") AND (radiograph* OR "x-ray" OR xray)
+Catatan: blok DL dan G1-G4 tidak dipakai di IEEE karena batas jumlah istilah; relevansi ditangani di screening (sama seperti SLR 22 studi).

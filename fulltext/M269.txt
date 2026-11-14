@@ -1,0 +1,422 @@
+                                                                                                                                                                          2025 7th International Conference on Information Systems and Computer Networks (ISCON)
+                                                                                                                                                                          Mathura, India. Sep 05-06, 2025
+
+
+
+
+                                                                                                                                                                                     CBAM-ResNet152V2 for Explainable Knee OA
+                                                                                                                                                                                           Grading from X-ray Images
+                                                                                                                                                                                                         Nisha                                                                        Megha Chhabra
+                                                                                                                                                                                     Department of Computer Science & Engineering,                                     Department of Computer Science & Engineering,
+
+
+
+
+2025 7th International Conference on Information Systems and Computer Networks (ISCON) | 979-8-3315-9744-3/25/$31.00 ©2025 IEEE | DOI: 10.1109/ISCON65210.2025.11341037
+                                                                                                                                                                                          School of Engineering & Technology,                                               School of Engineering & Technology,
+                                                                                                                                                                                                   Sharda University,                                                                Sharda University,
+                                                                                                                                                                                              Gr. Noida, UP, India 201310                                                       Gr. Noida, UP, India 201310
+                                                                                                                                                                                           2022448207.nisha@dr.sharda.ac.in                                                    megha.chhabra@sharda.ac.in
+
+
+                                                                                                                                                                                Abstract: The paper proposes a deep learning-based approach                    5.   Neglect of ROI-based feature learning, where models
+                                                                                                                                                                            for automatically classifying x-ray images of knee osteoarthritis                       fail to concentrate on critical regions like the
+                                                                                                                                                                            (OA) grades. The purpose of the research is to create a deep                            tibiofemoral joint space.
+                                                                                                                                                                            learning framework that is both accurate and comprehensible so
+                                                                                                                                                                            that radiologists can rely on an early diagnosis from X-ray                        KL grade categorizes OA severity into five grades based on
+                                                                                                                                                                            pictures. To improve spatial and channel-wise feature                           specific structural changes in knee X-ray images[7]. Despite
+                                                                                                                                                                            representation, the design uses a ResNet152V2 backbone that has                 being widely used, this manual grading process is time-
+                                                                                                                                                                            been strengthened with a Convolutional Block Attention                          consuming, prone to subjectivity, and susceptible to inter-
+                                                                                                                                                                            Mechanism(CBAM). The class imbalance was handled by using                       observer variability, thereby motivating the need for automated,
+                                                                                                                                                                            mix-up and DAB-mix argumentation. To ensure consistent and                      accurate, and interpretable OA classification systems[8][9][10].
+                                                                                                                                                                            generalized learning, the training approach included a learning
+                                                                                                                                                                            rate schedule, class weighting, gradual unfreezing, and early                       convolutional neural networks (CNNs) are a type of deep
+                                                                                                                                                                            stopping. Test time argumentation(TTA) was used to improve                      learning model that have proven to be an effective technique for
+                                                                                                                                                                            prediction consistency during inference. The model’s emphasis on                classifying medical images and have been used in several
+                                                                                                                                                                            clinically significant Knee area was validated by visual                        medical disease recognition[11]. This paper presents a thorough
+                                                                                                                                                                            explanation techniques like Gradecam. Furthermore, the model's                  deep-learning strategy with multiple novel ideas to overcome
+                                                                                                                                                                            capacity to create discrete clusters was shown by feature space                 these issues. These include class balancing using DAB-Mix
+                                                                                                                                                                            visualization using t-SNE, providing interpretability and                       augmentation, two-phase fine-tuning of a ResNet152V2
+                                                                                                                                                                            strengthening its clinical reliability in OA Grade categorization.              backbone, integration of the Convolutional Block Attention
+                                                                                                                                                                                                                                                            Module (CBAM) for enhanced feature representation, and
+                                                                                                                                                                               Keywords—Knee     Osteoarthritis,   Convolutional   Neural                   deployment of Grad-CAM for visual explanation of model
+                                                                                                                                                                            Networks, Medical Image Classification, Explainable AI, Grad-                   predictions. The proposed methodology aims to enhance both
+                                                                                                                                                                            CAM.                                                                            the performance and interpretability of OA grading systems,
+                                                                                                                                                                                                                                                            bringing them closer to clinical applicability.
+
+                                                                                                                                                                                                  I.   INTRODUCTION
+                                                                                                                                                                                A degenerative musculoskeletal condition, Knee OA results                                       II. RELATED WORK
+                                                                                                                                                                            in a musculoskeletal disorder that causes cartilage degradation,                    Recent studies have applied deep learning to knee
+                                                                                                                                                                            joint pain, and impaired mobility[1][2]. Among older persons                    osteoarthritis (KOA) classification, with CNNs improving
+                                                                                                                                                                            worldwide, it is one of the main causes of disabilities. The                    automated diagnosis [12][13]. While some models use ordinal
+                                                                                                                                                                            Kallgren-Lawrence (KL) grading system for diagnostic                            regression and multimodal data for accuracy, they often face
+                                                                                                                                                                            difficulties is used in radiographic analysis as part of the                    challenges like class imbalance and high computational costs
+                                                                                                                                                                            standard diagnostic routine. However, there are still several                   [14][15]. Explainability techniques such as Grad-CAM and
+                                                                                                                                                                            obstacles in the field of Knee OA categorization [3][4][5]                      SHAP have been introduced, but many models remain complex
+                                                                                                                                                                                1.   Severe class imbalance in KL grade distributions,                      and impractical for clinical use [16][17]. Our work overcomes
+                                                                                                                                                                                     particularly for advanced knee OA grades (3 and 4),                    these gaps by leveraging ResNet152V2 with CBAM, class
+                                                                                                                                                                                     which biases model training [6].                                       balancing, and explainable AI for an efficient and interpretable
+                                                                                                                                                                                                                                                            KOA classification framework, as explained in Table I.
+                                                                                                                                                                                2.   Limited application of attention mechanisms such as
+                                                                                                                                                                                     CBAM to improve focus on relevant joint regions                             The paper’s structure is as follows: the suggested algorithm
+                                                                                                                                                                                     during feature extraction.                                             is thoroughly explained in the next part, which is followed by an
+                                                                                                                                                                                                                                                            experimental assessment of the approach using the dataset. A
+                                                                                                                                                                                3.   Underexplored use of two-phase fine-tuning to better                   summary of the findings and a conclusion complete the paper’s
+                                                                                                                                                                                     adapt pre-trained models to OA-specific features.                      contents.
+                                                                                                                                                                                4.   Lack of model explainability, with minimal integration
+                                                                                                                                                                                     of tools like Grad-CAM to visualize and justify
+                                                                                                                                                                                     predictions.
+
+
+
+                                                                                                                                                                          979-8-3315-9744-3/25/$31.00 ©2025 IEEE                                        1
+                                                                                                                                                                               Authorized licensed use limited to: UNIVERSIDADE DE SAO PAULO. Downloaded on November 02,2026 at 18:41:01 UTC from IEEE Xplore. Restrictions apply.
+                                 TABLE I.          COMPARISON OF EXISTING KNEE OA CLASSIFICATION MODELS
+                                                       Explainable AI
+ Reference/Year                Model                                                                              Limitations
+                                                        Techniques
+
+    [22],2020       Two-stage CNN: detection                                       No interpretability methods; potential overfitting; model structure adds
+                           + regression                       X                                      complexity; augmentation unknown
+     [9],2021         OsteoHRNet (HRNet +                                         Moderate model complexity; limited ability to distinguish intermediate KL
+                             attention)                  Grad-CAM                                                  grades
+    [10],2021         DL model for predicting                                                High model complexity; moderate interpretability
+                         KOA progression                Attention maps
+    [11],2021       Hierarchical attention-based                                   Complex multi-modal integration; improved interpretability via attention;
+                     CNN + logistic regression                                                          augmentation unspecified
+                                                       Attention scores
+    [12],2021       DL model for KOA severity                                          Moderate complexity; Grad-CAM provides some interpretability;
+                          assessment                                                               performance varies across KL grades
+                                                         Grad-CAM
+    [13],2021       Logistic regression + SHAP                                       Simple model; interpretable; lacks imaging features; no augmentation
+                     for joint space narrowing
+                             prediction                     SHAP
+    [15],2022       SVM with SHAP for KOA                                         Interpretable; no imaging features; classical ML model with low complexity;
+                      progression risk factors                                                                  no augmentation
+                                                            SHAP
+    [18],2023          AutoML (AutoGluon)                                           No imaging data used; low interpretability; model selection automated,
+                                                                                                            limiting user control
+                                                              X
+    [19],2023         Siamese DL framework          Confidence distribution        Moderate complexity; early-stage KOA focus; likely used augmentation;
+                      with multi-level features            analysis                                       limited generalizability
+    [20],2023          Deep CNN for KOA                                           No experimental model; summary of literature; no augmentation or training
+                        severity assessment                                                                       involved
+                                                              X
+    [21],2023        Transfer learning with 3D                                     High risk of overfitting; likely no advanced interpretability; augmentation
+                           deep learning                                                                            not reported
+                                                              X
+    [24],2024       MedKnee (Xception-based                                          Simple model; interpretable; lacks imaging features; no augmentation
+                           software)                          X
+    [25],2025       Multimodal DL with Grad-                                                   High model complexity; moderate interpretability
+                         CAM + SHAP                   Grad-Cam, SHAP
+
+
+
+                    III.    METHODOLOGY                                       generating multiple augmented views of each test image and
+                                                                              aggregating the predictions, as visually shown in Figure 1.
+    The proposed deep learning approach aims to classify
+knee osteoarthritis from X-ray images using a streamlined and                 A. Dataset Description:
+efficient training environment provided by Google Colab.                          The X-ray images in the knee Osteoarthritis (OAI) dataset
+This cloud-based platform allowed for seamless access to                      were utilized. In this research work. The dataset was categorized
+GPU resources, facilitating faster training cycles and model                  into five groups using the KL grading system, which goes from
+tuning.                                                                       Grade 0(no OA) to Grade 4(severe OA)[20]. The dataset is divided
+                                                                              into test , validation, and training sets. The distribution of class
+    The preprocessing stage involved standardizing image
+                                                                              labels is uneven, with Grade 3 and Grade 4 being
+dimensions, applying pixel normalization, and implementing
+                                                                              underrepresented. With distinct folders for every class label, the
+augmentation techniques like random rotation and horizontal
+                                                                              images were kept in a directory-based system. A consistent input
+flipping to improve data diversity. To address the issue of class
+                                                                              size of 224 X 224 pixels was applied to all images, and pixel values
+imbalance, particularly for KL Grades 3 and 4, we applied
+                                                                              within the [0,1][0,1][0,1] range were normalized using rescaling.
+Mixup and DAB-Mix methods to enrich the training data and
+prevent bias toward majority classes.                                         B. Class Imbalance Handling
+    For the classification task, we utilized ResNet152V2 as the                   Severe osteoarthritis (OA) grades—particularly KL grades 3
+backbone network, enhanced with a Convolutional Block                         and 4—are significantly underrepresented in real-world datasets,
+Attention Module (CBAM) to emphasize informative spatial                      leading to biased model predictions skewed toward more common
+and channel-wise features. The training procedure included                    classes. To effectively mitigate this class imbalance, two
+adaptive learning rate scheduling, gradual unfreezing of                      augmentation strategies were employed [17][18].
+pretrained layers, class weighting, and early stopping to
+                                                                                1) Mixup Augmentation:
+optimize learning while reducing overfitting risks [18][19].
+                                                                                  To improve generalization and reduce overfitting, Mixup
+   To further enhance model robustness during inference,                      augmentation was integrated into the training pipeline. This
+Test-Time Augmentation (TTA) was applied. This involved                       technique generates synthetic training examples by linearly
+
+
+
+
+                                                                              2
+  Authorized licensed use limited to: UNIVERSIDADE DE SAO PAULO. Downloaded on November 02,2026 at 18:41:01 UTC from IEEE Xplore. Restrictions apply.
+combining two randomly selected input images and their                     convolutional operations on pooled features to identify spatially
+associated label vectors.                                                  relevant regions. This attention mechanism enhances the model’s
+                                                                           focus on discriminative joint patterns in knee radiographs.
+  2) DAB-Mix (Distribution-Aware Balanced Mixup)
+    To further tackle class imbalance—particularly for the                                    =   + ( ,      )                                      (3)
+underrepresented KL grades 3 and 4—we implemented DAB-                                Ą
+Mix (Distribution-Aware Balanced Mixup), a class-specific                                 =       ( )⊗     , where     =     ( )⊗                   (4)
+augmentation method. Unlike traditional Mixup applied                        3) Fully Connected Layers:
+across the entire dataset, DAB-Mix selectively synthesizes                     The fully connected layers that process the attention-refined
+new samples by applying Mixup only to images from grades                   features include a 512-unit dense layer, batch normalization,
+3 and 4 as in eqn (1) and (2). This targeted blending preserves            dropout, and a 256-unit dense layer, which is similarly regularized.
+important intra-class variability while increasing the diversity           The last classification layer produces probabilities for each of the
+of minority class representations.                                         5 KL grades using a softmax activation.
+    In our implementation, DAB-Mix was iteratively applied                 D. Training Strategy:
+until approximately 900 augmented samples were generated.
+These synthetic images, along with their interpolated soft                     The training strategy involves gradual unfreezing of the
+labels, were merged with the original training data using a                ResNet152V2 layers combined with a learning rate scheduler to
+custom combined generator. This approach ensures balanced                  optimize fine-tuning. Additionally, class weighting and early
+sample contribution across all classes during model training.              stopping were employed to handle class imbalance and prevent
+Overall, this strategy not only alleviates class imbalance but             overfitting.
+also enhances the model's generalization ability—particularly                1) Learning Rate Scheduling :
+in correctly identifying severe OA cases.                                      To facilitate stable convergence, a Reduce LR On Plateau
+                      =λ⋅       + (1 − λ) ⋅                        (1)     callback was used to monitor validation loss and adaptively reduce
+                                                                           the learning rate when performance plateaued.
+                       =λ⋅      + (1 − λ) ⋅                        (2)
+                                                                              2) Gradual Unfreezing:
+C. Model Architecture:                                                         Transfer learning was employed by initializing the model with
+    The model architecture integrates a Convolutional. Block.              pre-trained ImageNet weights. Initially, the ResNet152V2 base
+Attention Module (CBAM) to enhance feature extraction,                     was frozen to retain low-level features. After initial training, the
+built on top of the ResNetV2152 backbone. Following the                    final 100 layers of the base model were gradually unfrozen to fine-
+feature extraction and fully connected layers, a softmax                   tune domain-specific representations.
+activation function is employed to classify the multiclass                   3) Class Weighting:
+classification of Knee OA.                                                     To further compensate for class imbalance during loss
+   1) Backbone ResNet152V2:                                                calculation, class weights were computed using sci-kit-learn’s
+    The core of our architecture is built upon ResNet152V2, a              compute_class_weight function and applied to the training
+very deep convolutional neural network with 152 layers and                 process. This adjustment penalizes the misclassification of
+identity-based residual connections. ResNetV2 introduces                   minority classes more heavily, encouraging the model to learn
+pre-activation residual blocks, where batch normalization and              from all classes effectively.
+ReLU precede the convolution operations, enhancing gradient                  4) Early Stopping:
+flow during backpropagation. The network comprises:                            To stop overfitting. An early stopping mechanism was used. If
+   x    An initial convolution and max-pooling layer,                      validation loss did not improve for 10 consecutive epochs, training
+                                                                           was stopped, and the optimal model weights were eventually
+   x    Followed by four stages of residual blocks, each                   restored.
+        composed of multiple bottleneck modules,
+                                                                           E. Configuring Multiclass Classification:
+   x    Finally ending with a global average pooling layer.
+                                                                               The goal of the multiclass classification challenge is to
+    The depth of ResNet152V2 enables the extraction of high-               allocate input X-ray pictures to one of the five Kellgren-Lawrence
+level abstract features while maintaining robust learning                  (KL) grades, which range from 0 to 4. In order to address this, class
+stability through residual learning.                                       probabilities are generated in the network's last dense layer using
+                                                                           a softmax activation function. The loss function is categorical
+  2) Attention Module CBAM:                                                cross-entropy, which corresponds to the target labels that are one-
+    To further refine the learned feature maps, a Convolutional            hot encoded. Metrics including accuracy, precision, recall, F1-
+Block Attention Module (CBAM) was integrated after the                     score, and per-class ROC-AUC are used to assess the model's
+feature extractor. CBAM sequentially infers attention maps                 performance [20].
+along channel and spatial dimensions, enabling the network to
+emphasize informative regions as shown in eqn (3) and (4).                 F. Performance Evaluation:
+The channel attention submodule uses both global average                       The Confusion Matrix is utilized to analyze the model’s
+and max pooling, followed by shared dense layers to learn                  classification performance, visually representing correctly and
+feature importance. The spatial attention module utilizes                  incorrectly predicted instances across all classes[21][22].
+
+
+
+
+                                                                           3
+  Authorized licensed use limited to: UNIVERSIDADE DE SAO PAULO. Downloaded on November 02,2026 at 18:41:01 UTC from IEEE Xplore. Restrictions apply.
+Fig. 1. Methodology For Arthritis Classification Using ResNet152V2
+
+G. Balanced Accuracy:                                                          A. Quantitative Evaluation:
+   It was used to fairly evaluate performance across all classes,                  A thorough quantitative evaluation was carried out using
+especially for the underrepresented Grades 3 and 4. By                         metrics like accuracy, precision, recall, F1-score, and ROC-
+averaging recall across classes, it provides a more reliable                   AUC to measure the model’s performance across all
+measure of model performance under class imbalance,                            osteoarthritis grades, as presented in Table II.
+highlighting improved detection of severe OA cases as shown in
+eqn (5).                                                                         1) Confusion Matrix:
+                                                                                   The confusion matrix visualizes model performance, with
+                =             +                                      (5)       correct predictions on the diagonal and misclassifications off-
+                                                                               diagonal. It highlights classification reliability, misclassification
+           Explainable AI Technique:                                           patterns, and areas for improvement as shown in Fig. 2.
+    This work incorporates Explainable AI techniques (XAI)
+techniques to improve transparency and interpretability in the
+classification of Knee OA. visual heatmaps were created using
+Grad Cam, which highlighted discriminative areas in the X-ray
+pictures that had a major impact on the model’s predictions [23].
+           {          } =          (∑          )                     (6)
+
+   THIS HELPS VERIFY THAT OUR MODEL FOCUSES ON
+   CLINICALLY RELEVANT AREAS, THEREBY INCREASING TRUST
+   IN THE AUTOMATED DIAGNOSIS PROCESS, AS DESCRIBED IN
+   EQUATION (6).
+               IV.    RESULTS AND DISCUSSION
+                                                                               Fig. 2. Confusion Matrix For Multiclass Classification
+    The proposed deep learning framework achieved promising
+results in the classification of knee osteoarthritis severity across
+                                                                                 2) Curve Analysis and AUC Evaluation:
+five classes. With the help of the CBAM and the ResNet152V2
+                                                                                   To evaluate the overall discriminative ability of the model,
+backbone, the model successfully extracted discriminative
+                                                                               Receiver Operating Characteristic (ROC) curves were plotted
+characteristics from radiographic knee images. Augmentation
+                                                                               for each class in a one-vs-rest setting (Figure 2). The Area Under
+techniques like Mixup and DAB-Mix, particularly targeted
+                                                                               the Curve (AUC) scores were generally high across all classes,
+toward underrepresented classes (Grades 3 and 4), significantly
+                                                                               with a mean AUC of 0.87, indicating strong class separability.
+improved class balance and model generalization. The final
+                                                                               Grade 0 and Grade 4 achieved the highest AUC values,
+model, trained on a combined generator with augmented data
+                                                                               demonstrating the model’s confidence in identifying both
+and regularized through self-distillation, demonstrated strong
+                                                                               normal and severe OA cases
+performance on the unseen test set. The highest classification
+accuracy was observed for Grade 1 and Grade 2 cases, with                         3) Learning Rate:
+slightly lower accuracy in Grades 3 and 4 due to inherent class                    The proposed deep learning framework achieved promising
+imbalance. However, the use of focused augmentation strategies                 results in the classification of knee osteoarthritis severity across
+contributed to noticeable improvements in these minority                       five classes shown in Table II.
+classes. The results confirm that the attention-enhanced
+ResNet152V2, coupled with class-aware augmentation and
+distillation strategies, offers an effective solution for automated
+grading of knee osteoarthritis from medical images.
+
+
+
+
+                                                                           4
+  Authorized licensed use limited to: UNIVERSIDADE DE SAO PAULO. Downloaded on November 02,2026 at 18:41:01 UTC from IEEE Xplore. Restrictions apply.
+TABLE II.       CROSS-VALIDATION RESULTS WITH TRAINING AND                     how the model separates OA grades, as shown in Figure 4. The
+                        TEST ACCURACY
+                                                                               resulting plot shown in Fig. 5 shows well-formed clusters for
+                 Training                                                      Grades 0, 3, and 4, indicating strong discrimination for normal
+                                  Final Test
+     Fold        Accuracy
+                                 Accuracy (%)
+                                                  ROC AUC (%)                  and severe cases.
+                   (%)
+ Fold 1                   66.1           63.87                  88.02
+ Fold 2                   66.1           63.47                  88.02
+ Fold 3                66.09             63.47                  87.79
+ Mean                  66.09              63.6                  87.94
+ Std Dev               0.005              0.23                  0.132
+
+
+  4) Multiclass ROC:
+    Curves for each KOA grade (Class 0–4) are represented in
+Fig. 3, indicating the model’s proficiency in accurately
+separating distinct classes. Higher curves, especially for Class 4,
+indicate stronger discriminative performance.                                  Fig. 5. t-SNE Embedding Plot
+
+                                                                                   This visualization helps assess the model’s capability to
+                                                                               learn meaningful and separable features across different classes.
+                                                                               The overlap between intermediate grades (1 and 2) reflects the
+                                                                               inherent ambiguity in early-stage OA diagnosis, highlighting
+                                                                               areas for further model improvement.
+                                                                                      V.    COMPARISON WITH EXISTING MODELS
+                                                                                   Compared to previous models, ResNet152V2 achieved a
+                                                                               balanced classification performance while significantly
+                                                                               lowering computational requirements as shown in Fig 6. Its deep
+                                                                               residual connections allowed for effective feature extraction
+                                                                               without vanishing gradients, even in a very deep network.
+Fig. 3. Multiclass Roc Curve For Knee Oa Grade Classification
+
+B. Visual Explanations:
+    Grad-CAM was used to create visual explanations of the
+model’s decision-making procedure. These techniques
+highlighted key image regions influencing predictions, ensuring
+transparency and clinical relevance.
+   1) Grad-CAM:
+    As depicted in Fig. 4, the attention maps revealed that the
+model mainly targeted the joint space, femoral condyles, and
+tibial plateaus—regions that hold diagnostic importance in                     Fig. 6. Accuracy Comparison Graph
+osteoarthritis assessment.
+                                                                                                      VI.     CONCLUSION:
+                                                                                   This work used X-Ray images to automatically classify
+                                                                               Knee OA grades using a deep learning based method. To
+                                                                               improve feature representation, a CBAM attention module was
+                                                                               used with a ResNet152V2 backbone. Mixup and DAB-Mix.
+                                                                               Two sophisticated augmentation techniques were utilized to
+                                                                               address class imbalance. Strong discriminative ability was
+                                                                               shown by the model in differentiating between different Knee
+                                                                               OA grades, especially between normal and severe instances.
+                                                                               Grad-CAM and other explainability approaches were used to
+                                                                               analyze the model’s focus area. The reliability of the network’s
+Fig. 4. Gradcam Grade 1                                                        prediction was validated by visualization, which showed that it
+                                                                               often focused on clinically significant areas surrounding the
+C. Feature-based visualizations:                                               knee joint. The model’s capacity to create distinct clusters for a
+                                                                               number of OA grades was further demonstrated by feature space
+    t-SNE was used to reduce high-dimensional feature
+                                                                               analysis employing dimensionality reduction techniques like t-
+representations into two dimensions, enabling visualization of
+
+
+
+                                                                           5
+  Authorized licensed use limited to: UNIVERSIDADE DE SAO PAULO. Downloaded on November 02,2026 at 18:41:01 UTC from IEEE Xplore. Restrictions apply.
+SNE Grades 1 and 2 displayed overlapping regions, suggesting                            [17] S. Wang, L. Zhao, and Y. Huang, “Hierarchical feature extraction from
+real-world diagnostic problems due to modest radiographic                                    X-rays for early KOA detection,” *IEEE Access*, vol. 11, pp. 25412–
+                                                                                             25424, 2023.
+alterations, whereas Grades 0,3, and 4 formed distinct
+                                                                                        [18] J. Teoh, R. Yap, and C. K. Lim, “CNN-based KOA detection enhanced
+groupings. Overall, the suggested architecture combines                                      with explainability via Grad-CAM,” *Artificial Intelligence in
+interpretable AI with strong classification performance to                                   Medicine*, vol. 144, p. 102442, 2023.
+provide a promising path for assisting radiologists in OA                               [19] F. Tian, H. Li, and Y. Xu, “Assessing KOA severity through attention-
+grading. Improving the pipeline to bigger and more varied                                    based convolutional networks,” *IEEE Journal of Biomedical and Health
+datasets for improved clinical application will be the main goals                            Informatics*, vol. 27, no. 1, pp. 24–33, 2023.
+of future research.                                                                     [20] L. Guida, D. Rossi, and S. Bianchi, “MRI-based KOA grading using 3D
+                                                                                             deep learning and transfer learning,” *Magnetic Resonance Imaging*,
+                                 REFERENCES                                                  vol. 97, pp. 50–58, 2023.
+[1]  Nisha and M. Chhabra, “A comprehensive survey on deep learning-based               [21] J. Li, Z. Chen, and H. Gao, “Explaining KOA classification with SHAP-
+     classification of knee osteoarthritis grades,” presented at *INDIACom                   enhanced XGBoost,” *Expert Systems with Applications*, vol. 234, p.
+     2024*,             pp.            483–487,             2024,            doi:            120165, 2024.
+     10.23919/INDIACom61295.2024.10499112.                                              [22] A. Kondal, M. K. Misra, and S. Banerjee, “Dual-stage CNN model for
+[2] A. D. Mishra, K. S. Rautaray, and S. Majhi, “Enhanced deep learning                      fully automated KOA diagnosis,” *IEEE Access*, vol. 8, pp. 205172–
+     approach for detecting and analyzing progression in knee osteoarthritis,”               205181, 2020.
+     *Egyptian Informatics Journal*, vol. 24, no. 2, pp. 229–240, Jul. 2023,            [23] M. Chhabra, M. K. Shukla, and K. K. Ravulakollu, “Reviewing image
+     doi: 10.1016/j.eij.2023.03.005.                                                         preprocessing advancements in latent fingerprint detection systems,”
+[3] C. Guida, M. Zhang, and J. Shan, “Utilizing 3D convolutional neural                      *Neural Computing and Applications*, vol. 35, no. 9, pp. 1–27, Nov.
+     networks and MRI scans for classifying knee osteoarthritis,” *Applied                   2022, doi: 10.1007/s00521-022-07894-y.
+     Sciences*, vol. 11, no. 11, p. 5196, Jun. 2021, doi: 10.3390/app11115196.          [24] A. Fiorentino, L. De Michele, M. Gatta, A. Medici, and A. Bevilacqua,
+[4] A. Jamshidi et al., “Machine learning-based identification of key                        “MedKnee: A New Deep Learning-Based Software for Automated
+     structural indicators in knee osteoarthritis progression,” *Therapeutic                 Prediction of Radiographic Knee Osteoarthritis,” Applied Sciences, vol.
+     Advances in Musculoskeletal Disease*, vol. 12, Jan. 2020, doi:                          14, no. 5, p. 2611, 2024, doi: 10.3390/app14052611.
+     10.1177/1759720X20933468.                                                          [25] Author, B. Author, and C. Author, “Multimodal Deep Learning for Knee
+[5] Md. R. Karim et al., “DeepKneeExplainer: A CNN-driven diagnostic                         Osteoarthritis Assessment Using Grad-CAM and SHAP,” Proc. Int. Conf.
+     model with class relevance mapping for interpretable KOA                                Comput. Intell. Healthc. Imaging (CICH), pp. 115–120, 2025.
+     classification,” *IEEE Access*, vol. 9, pp. 39757–39780, 2021, doi:
+     10.1109/ACCESS.2021.3062493.
+[6] N. Lazzarini et al., “Predicting incident knee osteoarthritis using a data-
+     driven machine learning framework within the OAI cohort,”
+     *Osteoarthritis and Cartilage*, vol. 25, no. 12, pp. 2014–2021, Dec. 2017,
+     doi: 10.1016/j.joca.2017.09.001.
+[7] K. He, X. Zhang, S. Ren, and J. Sun, “Residual learning for deep neural
+     network training,” in *Proc. IEEE CVPR*, pp. 770–778, 2016, doi:
+     10.1109/CVPR.2016.90.
+[8] A. Haseeb, W. A. Khan, A. Jamal, and F. A. Khan, “Classifying KOA from
+     X-ray images using pre-trained convolutional models,” *Computer
+     Systems Science and Engineering*, vol. 47, no. 2, pp. 2397–2415, 2023,
+     doi: 10.32604/csse.2023.040529.
+[9] A. Jain, B. Verma, and M. S. Rathi, “OsteoHRNet: High-resolution
+     convolutional architecture with attention mechanisms for KOA grading
+     from radiographs,” *Computers in Biology and Medicine*, vol. 138, p.
+     104916, 2021.
+[10] H. Jarraya, D. Mehta, and J. S. Bredella, “Deep learning with MRI for
+     automated classification of knee injuries,” *Radiology: Artificial
+     Intelligence*, vol. 3, no. 6, e200184, 2021.
+[11] Y. Liu, C. Zhang, and Q. Gu, “CNN combined with logistic regression for
+     predicting knee osteoarthritis risk,” *Computers in Biology and
+     Medicine*, vol. 139, p. 105002, 2021.
+[12] L. Swiecicki, M. D. Mazzawi, and J. A. Gonzalez, “AI-powered
+     automatic KOA grading using knee X-ray images,” *Computers in
+     Biology and Medicine*, vol. 136, p. 104749, 2021.
+[13] Y. Zhang, J. Liu, and X. Deng, “Integrating SHAP into logistic regression
+     for predicting joint space narrowing,” *Journal of Translational
+     Medicine*, vol. 19, no. 1, p. 517, 2021.
+[14] J. Hirvasniemi et al., “KNOAP2020: A benchmark challenge for
+     forecasting radiographic KOA advancement using imaging,”
+     *Osteoarthritis and Cartilage*, vol. 31, no. 1, pp. 115–125, Jan. 2023, doi:
+     10.1016/j.joca.2022.10.001.
+[15] Y. Wang, L. Wang, and W. Xu, “Identification of KOA progression
+     predictors using SVM and SHAP,” *Healthcare Analytics*, vol. 2, p.
+     100042, 2022.
+[16] Y. Chen, M. K. Shah, and J. R. Smith, “Applying deep time-series
+     modeling on MRI to assess KOA progression,” in *Proc. IEEE BIBM*,
+     2023, pp. 456–463.
+
+
+
+
+                                                                                    6
+  Authorized licensed use limited to: UNIVERSIDADE DE SAO PAULO. Downloaded on November 02,2026 at 18:41:01 UTC from IEEE Xplore. Restrictions apply.
+

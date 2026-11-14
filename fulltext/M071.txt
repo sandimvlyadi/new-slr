@@ -1,0 +1,1457 @@
+Article
+
+VL-OrdinalFormer: Vision–Language-Guided Ordinal
+Transformers for Interpretable Knee Osteoarthritis Grading
+Zahid Ullah             and Jihie Kim *
+
+
+                                         Department of Computer Science and Artificial Intelligence, Dongguk University, Seoul 04620, Republic of Korea;
+                                         zahid1989@dongguk.edu
+                                         * Correspondence: jihie.kim@dgu.edu; Tel.: +82-2-2260-4973
+
+
+                                         Abstract
+                                         Knee osteoarthritis (KOA) severity assessment using the Kellgren–Lawrence (KL) grading
+                                         system is essential for clinical decision-making, yet reliable discrimination between adjacent
+                                         early stages, particularly KL1 and KL2, remains challenging due to subtle radiographic dif-
+                                         ferences and inter-observer variability. This study investigates whether integrating ordinal
+                                         regression with vision–language semantic alignment can improve fine-grained automated
+                                         KOA grading. We propose VL-OrdinalFormer, a transformer-based framework that models
+                                         KL severity as an ordered process and aligns visual features with clinically grounded
+                                         textual descriptions. The model is evaluated using stratified five-fold cross-validation
+                                         on the publicly available OAI kneeKL224 dataset (1656 test radiographs). The proposed
+                                         approach achieves 70.29% accuracy, 70.19% macro F1-score, and 81.61% macro AUROC,
+                                         outperforming both CNN and standard ViT baselines. Notably, class-wise analysis shows
+                                         consistent improvements for clinically ambiguous intermediate grades, with gains of +6.6%
+                                         for KL1 and +19.4% for KL2 compared to the VGG19 baseline. Robustness experiments fur-
+                                         ther demonstrate stable performance under simulated acquisition and projection variability.
+                                         These results indicate that combining ordinal modeling with vision–language alignment
+                                         enhances discrimination of subtle disease stages while maintaining interpretability, sup-
+                                         porting the potential of the proposed framework for reliable and clinically meaningful
+                                         KOA grading.
+
+                                         Keywords: knee osteoarthritis; Kellgren–Lawrence grading; vision transformer; ordinal
+                                         regression; vision–language modeling
+
+                                         MSC: 68T07
+
+
+
+
+                                         1. Introduction
+                                              Knee osteoarthritis (KOA) is one of the most common degenerative joint diseases
+                                         worldwide and a leading cause of disability in older adults [1]. Early identification of struc-
+Received: 27 January 2026
+                                         tural deterioration is critical for timely intervention, treatment planning, and preventing
+Revised: 4 March 2026
+Accepted: 10 March 2026                  long-term disability. Radiographic assessment using the Kellgren–Lawrence (KL) grading
+Published: 12 March 2026                 system remains the clinical standard for KOA severity evaluation [2]. In clinical environ-
+Copyright: © 2026 by the authors.        ments, accurate KL grading can help orthopedists determine disease progression, select
+Licensee MDPI, Basel, Switzerland.       weight-bearing therapies, and avoid unnecessary surgical procedures. However, manual
+This article is an open access article   grading requires expert radiologists and is inherently subjective, leading to significant
+distributed under the terms and
+                                         inter-observer variability. Each grade sample and criterion is illustrated in Figure 1.
+conditions of the Creative Commons
+Attribution (CC BY) license.
+
+
+
+
+Mathematics 2026, 14, 963                                                                                       https://doi.org/10.3390/math14060963
+Mathematics 2026, 14, 963                                                                                                 2 of 26
+
+
+
+
+                            Figure 1. Knee joint samples of all KL grades and their corresponding criterion.
+
+                                 Recent advances in deep learning have enabled automated KL grade classification
+                            from knee radiographs, demonstrating performance comparable to expert readers in some
+                            settings [3,4]. Despite this progress, several challenges remain unresolved. First, the vi-
+                            sual boundary between early disease stages, particularly KL-1 and KL-2, is subtle and
+                            characterized by marginal radiographic findings such as doubtful osteophytes or mild
+                            joint space narrowing. This ambiguity frequently leads to confusion between adjacent
+                            grades, limiting the clinical reliability of automated systems. Second, most existing ap-
+                            proaches [5,6] rely solely on image-based cues and lack explicit incorporation of clinical
+                            semantics. While such models often perform well for advanced KOA stages (KL-3 and
+                            KL-4), where structural deformities are pronounced, they struggle to capture the nuanced
+                            pathological changes present in borderline cases. Third, achieving balanced sensitivity and
+                            specificity across all grades remains challenging due to class imbalance and heterogeneity
+                            in radiographic appearance.
+                                 For automated KOA grading systems to be clinically deployable, they must not only
+                            achieve high accuracy but also reason in a medically meaningful manner and provide
+                            transparent explanations for their predictions. This requirement motivates the integration
+                            of vision–language alignment, where radiological knowledge is explicitly encoded using
+                            textual descriptions and leveraged as an additional supervisory signal. Vision–Language
+                            Models (VLMs) [7,8], such as Contrastive Language–Image Pretraining (CLIP) [9], learn
+                            joint representations of images and text, enabling alignment between visual patterns
+                            and semantic concepts. In the context of KOA grading, aligning model predictions with
+                            clinically grounded textual descriptions, such as “definite osteophytes,” “moderate joint
+                            space narrowing,” or “subchondral sclerosis,” can guide the learning process toward
+                            disease-relevant attributes and improve interpretability.
+                                 In this work, we present a vision–language-guided ordinal learning framework for
+                            automated KOA severity assessment from knee radiographs. The proposed approach
+                            integrates a Vision Transformer (ViT) backbone with CORAL-based ordinal regression to
+                            explicitly model the ordered nature of KL grades. In addition, CLIP-based semantic supervi-
+                            sion is employed to align visual features with medically meaningful textual descriptions of
+                            KOA pathology. This design enables the model to capture subtle radiographic distinctions
+                            between adjacent grades while maintaining strong performance for advanced disease stages.
+                            Overall, this study demonstrates that integrating domain-specific knowledge through vi-
+                            sion–language alignment significantly improves the reliability, interpretability, and clinical
+                            relevance of automated KOA severity grading, highlighting its potential for supporting
+                            routine radiological assessment and longitudinal disease monitoring.
+                                 The primary objective of this study is to develop a clinically grounded and ordinally
+                            consistent framework for automated KOA grading that improves discrimination between
+                            subtle intermediate disease stages. Specifically, we investigate the following research
+                            question: can the integration of vision–language semantic alignment with transformer-
+
+
+
+                                                                                            https://doi.org/10.3390/math14060963
+Mathematics 2026, 14, 963                                                                                               3 of 26
+
+
+
+                            based ordinal regression improve fine-grained KL grade classification while maintaining
+                            interpretability and robustness? We hypothesize that explicitly modeling disease severity
+                            as an ordered process and aligning visual features with clinically meaningful textual
+                            descriptors will reduce inter-grade ambiguity, particularly between KL1 and KL2, and yield
+                            more stable and clinically faithful predictions. The code is available at: https://github.
+                            com/Zahid672/kneeKL224 (accessed on 1 March 2026).
+                                 The main contributions of this study are as follows:
+                            •    We identify key limitations of existing KOA grading systems, including lack of ordinal
+                                 awareness and absence of clinical semantic grounding.
+                            •    We propose VL-OrdinalFormer, a unified framework that integrates a ViT backbone
+                                 with CORAL-based ordinal regression to explicitly model disease progression.
+                            •    We introduce a vision–language distillation module that aligns visual representations
+                                 with clinically grounded textual descriptions.
+                            •    We incorporate ensemble inference, class-aware weighting, and calibrated threshold
+                                 optimization to enhance robustness and balanced performance.
+                            •    We provide interpretability analyses demonstrating anatomically meaningful attention
+                                 patterns consistent with radiological reasoning.
+                                 In summary, the challenges of subtle inter-grade differences, lack of ordinal awareness,
+                            and limited semantic grounding motivate the need for a unified framework that integrates
+                            transformer-based global modeling, explicit ordinal regression, and clinically meaningful
+                            vision–language alignment.
+                                 The remaining paper is organized as follows: Section 2 presents a comprehensive
+                            review of related work to contextualize our research. Further, we discuss Dataset and pre-
+                            processing in Section 3. Next, in Section 4 we detail our proposed methodology, including
+                            its overview, and main architecture. We then describe our experimental setup, including
+                            baseline comparison, ablation studies in Section 6. Section 7 presents the interpretability
+                            and analysis, whereas Section 8 consists of the discussion. Finally, in Section 9, we present
+                            the conclusion.
+
+                            2. Related Work
+                            2.1. Radiographic KOA Grading
+                                 The KL system is the standard radiographic scale for assessing KOA severity. It grades
+                            structural changes from 0 (no radiographic features of OA) to 4 (severe joint space loss and
+                            bone deformity), based on the presence and extent of osteophytes, joint space narrowing,
+                            subchondral sclerosis, and bony deformity. KL grading is routinely used in clinical practice
+                            and large cohort studies such as the Osteoarthritis Initiative (OAI), since it provides a simple,
+                            discrete summary of disease status that can be used for diagnosis, prognosis, and treatment
+                            planning [10]. However, KL grading is inherently subjective. Multiple studies have shown
+                            considerable inter and intra-observer variability, particularly in early stages such as KL-1
+                            and KL-2, where radiographic changes are subtle and sometimes overlap with normal
+                            anatomical variation [11]. This variability affects patient stratification in clinical trials and
+                            can obscure real treatment effects. It also motivates the development of automated or
+                            decision-support systems that can produce more consistent assessments.
+                                 Traditional computer-aided diagnosis approaches [12,13] for KOA used hand-
+                            engineered features, such as joint space width, shape descriptors, or texture features
+                            extracted from defined regions of interest. These were often combined with classical ma-
+                            chine learning classifiers, but typically required careful preprocessing, manual tuning,
+                            and did not generalize well across datasets or imaging protocols. Recent work has shifted
+                            toward end-to-end deep learning methods that operate directly on X-ray images, aiming
+                            for fully automatic KL grading. Several recent papers have shown that deep learning
+
+
+                                                                                          https://doi.org/10.3390/math14060963
+Mathematics 2026, 14, 963                                                                                             4 of 26
+
+
+
+                            models can reach performance comparable to experienced radiologists on KL grading
+                            tasks. For example, Vaattovaara et al. [14] developed a deep learning model for KL grading
+                            that achieved diagnostic accuracy comparable to highly experienced human readers in an
+                            external validation cohort. Other studies [15] have explored multi-view radiographs, hier-
+                            archical classification schemes, and integration of prior anatomical knowledge to improve
+                            robustness and clinical relevance. Despite these advances, early KOA detection (KL-1 and
+                            KL-2) remains a key weakness across most existing systems, with performance consistently
+                            higher for KL-3 and KL-4 than for mild disease [11].
+
+                            2.2. CNN-Based KOA Classification
+                                 Deep CNNs were the first family of models to substantially improve automatic KL
+                            grading. A landmark work by Chen et al. [16] proposed a fully automatic KOA severity
+                            grading pipeline based on deep neural networks. Their system first used a customized
+                            YOLOv2 detector to localize knee joints in full radiographs and then applied a fine-tuned
+                            VGG-19 classifier with a novel ordinal loss on the OAI dataset. The proposed ordinal
+                            formulation explicitly encoded the ordered structure of KL grades in the loss function,
+                            and achieved an accuracy of about 69.7% and a mean absolute error of 0.344 on the KL
+                            grading task, outperforming earlier CNN baselines. This work is frequently used as a
+                            reference baseline for subsequent KOA grading studies that adopt the same dataset and
+                            evaluation splits.
+                                 Later studies extended CNN-based KOA grading in several directions. Swiecicki et al. [17]
+                            developed a fully automatic deep learning algorithm for KL grading and evaluated it on
+                            multi-institutional data, reporting quadratic kappa scores that approached the agreement
+                            between human readers. Pan et al. [15] proposed a hierarchical classification framework
+                            that separates the detection of OA from the estimation of its severity, which aims to reflect
+                            radiologists’ reasoning and improves performance on intermediate grades. Other works
+                            compared a variety of CNN architectures, including VGG-16/19, ResNet-101, and Efficient-
+                            Net variants, to identify the most suitable backbone for KL grading, again highlighting that
+                            performance gains are often largest for advanced OA and more modest for early stages [16].
+                                 Ensemble CNN approaches have also been explored. Pi et al. [10] used ensemble
+                            deep learning networks to improve the robustness of KL classification and showed that
+                            aggregating multiple models reduced prediction variance and increased diagnostic perfor-
+                            mance, especially for KL-3 and KL-4. Nasef et al. [18] evaluated different deep learning
+                            and classical machine learning models for KL grading on multiple public datasets and
+                            reported that, while deep models clearly outperform traditional approaches, they still face
+                            challenges related to class imbalance and dataset heterogeneity.
+                                 Overall, CNN-based KOA classification methods have demonstrated that fully auto-
+                            matic KL grading is feasible and can reach strong performance, particularly for moderate
+                            and severe OA. However, they are limited by relatively local receptive fields, reliance
+                            on image-only supervision, and a lack of mechanisms to explicitly incorporate clinical
+                            definitions or ordinal structure beyond the loss design.
+
+                            2.3. Vision Transformers in Medical Imaging
+                                 ViTs [19] have recently emerged as competitive alternatives to CNNs for visual rep-
+                            resentation learning. Unlike CNNs [20], which build features through progressively
+                            larger convolutional receptive fields, ViTs operate on image patches using self-attention,
+                            which allows them to model long-range dependencies and global context more naturally.
+                            This property is especially useful in medical imaging tasks where clinically relevant pat-
+                            terns may span larger anatomical regions or multiple structures.
+
+
+
+
+                                                                                        https://doi.org/10.3390/math14060963
+Mathematics 2026, 14, 963                                                                                            5 of 26
+
+
+
+                                 Several surveys provide comprehensive overviews of Transformer architectures in
+                            medical imaging [21–23], covering tasks such as classification, segmentation, detection,
+                            reconstruction, and report generation. Shamshad et al. [21] summarized more than 125
+                            Transformer-based methods and outlined how pure ViTs and hybrid CNN–Transformer
+                            architectures have been applied to diverse modalities including X-ray, CT, MRI, ultrasound,
+                            and histopathology. More recent reviews have specifically focused on ViTs in classification
+                            settings, highlighting their advantages in capturing global context and their limitations
+                            when data is scarce or highly imbalanced [23]. In biomedical image classification, sev-
+                            eral works have demonstrated that ViTs can match or surpass CNN performance when
+                            combined with appropriate pretraining and data augmentation. Halder et al. [24] sys-
+                            tematically evaluated ViTs on MedMNIST classification tasks and showed that they can
+                            provide competitive performance with suitable optimization and regularization strategies.
+                            Transformer-based models have also been successfully used in segmentation, where ar-
+                            chitectures like TransUNet, Swin-UNet, and hybrid CNN–ViT designs capture both local
+                            structure and global anatomy [21].
+                                 Despite these advances, ViTs in KOA grading are still relatively underexplored com-
+                            pared to CNNs. The potential benefits are clear; for instance, ViTs can aggregate information
+                            across the whole knee joint and better capture global patterns such as alignment, multi-
+                            compartment joint space narrowing, and diffuse osteophyte distribution. However, they
+                            also require careful handling of dataset size, class imbalance, and regularization to avoid
+                            overfitting. In this context, combining ViTs with ordinal losses and ensemble inference,
+                            as done in this work, is a natural extension of earlier CNN-based KOA grading systems.
+
+                            2.4. Vision–Language Models in Clinical AI
+                                 Vision–Language Models (VLMs) [7] extend the idea of representation learning by
+                            jointly modeling images and text in a shared embedding space. CLIP [9] is a prominent
+                            example that is trained on large collections of image-text pairs [25] to align visual content
+                            with natural language descriptions. This alignment enables zero-shot classification, cross-
+                            modal retrieval, and text-guided interpretation without task-specific retraining. In the
+                            clinical domain, this capability is particularly appealing because radiology practice rou-
+                            tinely integrates images with textual reports, and many diagnostic criteria are defined
+                            using structured medical terminology.
+                                 Recent years have seen rapid growth in adapting CLIP-like models to medical imaging.
+                            MedCLIP [26], for instance, learns from unpaired chest X-ray images and radiology reports
+                            and has demonstrated strong performance on both zero-shot and supervised classification
+                            tasks. Zhao et al. [27] conducted a comprehensive survey of CLIP in medical imaging,
+                            summarizing pretraining strategies, datasets, and downstream applications ranging from
+                            classification to dense prediction and multimodal retrieval. Other models such as PMC-
+                            CLIP [28] and RadCLIP [29] leverage large biomedical literature corpora or radiology
+                            text archives to develop domain-adapted VLMs capable of disease classification, report
+                            generation, and visual question answering.
+                                 A consistent theme in these studies is that VLMs [7] often improve interpretability and
+                            robustness relative to image-only models. Because VLMs operate in a joint vision–language
+                            space, predictions can be grounded in human-readable concepts, enabling more trans-
+                            parent error analysis and semantic reasoning. Recent work has shown that text prompts
+                            capturing pathology descriptions can guide models toward clinically relevant regions even
+                            when annotated data are limited, enabling weakly supervised classification and zero-shot
+                            anomaly detection [27].
+                                 Despite this progress, the use of VLMs for ordinal, disease-staging problems such as
+                            KL-based KOA grading remains largely unexplored. Most existing CLIP-based medical
+
+
+
+                                                                                       https://doi.org/10.3390/math14060963
+Mathematics 2026, 14, 963                                                                                            6 of 26
+
+
+
+                            applications target binary, multilabel, or standard multiclass classification settings, where
+                            classes are assumed to be independent and unordered. In contrast, KOA severity follows a
+                            strict radiological progression, and neighboring grades (e.g., KL1 vs. KL2) differ only by
+                            subtle morphological cues. This creates a fundamentally different learning problem that
+                            benefits from ordinal regression rather than standard classification. Furthermore, grade-
+                            specific textual criteria such as “definite osteophytes with possible joint space narrowing”
+                            for KL2 provide rich semantic information that has not been incorporated into prior CLIP-
+                            based medical models.
+                                  Existing VLM frameworks such as MedCLIP [26], PMC-CLIP [28], and RadCLIP [29]
+                            primarily address classification or report-generation tasks and do not incorporate or-
+                            dinal regression, threshold-based decision functions, or disease staging supervision.
+                            Moreover, these models focus on natural alignment between images and free-text radiology
+                            reports, whereas the present work leverages structured, grade-specific radiological defini-
+                            tions as explicit text prompts. Our method is therefore distinct in two key aspects: (1) it
+                            integrates VLM-derived semantic supervision into a ViT-based CORAL ordinal regression
+                            framework tailored to KL grading, and (2) it uses CLIP text embeddings as auxiliary targets
+                            to improve fine-grained discrimination between adjacent disease stages. To our knowledge,
+                            this constitutes the first integration of CLIP-style text supervision within an ordinal KOA
+                            severity grading pipeline.
+
+                            3. Dataset and Preprocessing
+                            3.1. OAI Knee Radiograph Dataset
+                                 This study utilizes knee radiographs from the publicly available OAI cohort [30],
+                            which includes longitudinal imaging and clinical information collected from nearly 4796
+                            individuals. The posterior–anterior (PA) fixed-flexion X-ray view was selected, as it is
+                            widely used for clinical assessment of structural degeneration in KOA. Each radiograph
+                            consists of two knee joints, which were cropped into individual joint images for automated
+                            KL grading. All images were originally stored in grayscale format and converted to three
+                            channels for compatibility with ImageNet-pretrained deep learning architectures.
+
+                            3.2. KL Grading Categories and Class Imbalance
+                                 The KL grading system assigns KOA severity across five ordered categories: KL-0
+                            represents no radiographic features of OA, KL-1 shows doubtful osteophytes, questionable
+                            joint space narrowing, KL-2 denotes definite osteophytes, and possible narrowing, KL-3
+                            shows moderate joint space narrowing, sclerosis, and possible deformity, and KL-4 provides
+                            severe narrowing with large osteophytes and bone deformity.
+                                 As shown in Figure 2, the KOA dataset exhibits a strong class imbalance, with KL0
+                            and KL2 being the most common grades, while KL3 and especially KL4 appear far less
+                            frequently. This distribution reflects typical patterns in population-level radiographic
+                            datasets but presents challenges for deep learning models, which tend to underperform
+                            on underrepresented classes. Our approach explicitly accounts for this imbalance through
+                            class-weighted CORAL loss, ensemble inference, and CLIP-based semantic regulariza-
+                            tion, helping the model better discriminate between adjacent grades despite uneven
+                            sample availability.
+
+
+
+
+                                                                                       https://doi.org/10.3390/math14060963
+Mathematics 2026, 14, 963                                                                                                       7 of 26
+
+
+
+
+                            Figure 2. KL grade distribution in the OAI knee radiograph dataset.
+
+                            3.3. YOLO-Based Joint Cropping
+                                 As shown in Figure 3, to eliminate irrelevant background regions in full knee radio-
+                            graphs, we employ a deep learning-based knee localization approach using a YOLOv2
+                            detector trained to identify left and right knee joints. Detected joints are cropped with
+                            approximately 1.3× bounding box expansion to retain anatomical context, including me-
+                            dial/lateral compartments and periarticular structures necessary for severity assessment.
+                            This preprocessing step yields standardized region-of-interest patches containing only
+                            diagnostic image content.
+
+
+
+
+                            Figure 3. Illustration of the preprocessing pipeline. From left to right: (a) original knee crop,
+                            (b) YOLO-like localization of the diagnostic region of interest, and (c) final preprocessed 224 × 224 patch
+                            used as input to the ViT-CORAL model.
+
+                            3.4. Train/Validation/Test Splits
+                                  To ensure an unbiased performance evaluation, a stratified 5-fold cross-validation
+                            protocol is adopted. In each fold, three folds are used for model training. One fold serves
+                            as validation for model selection, and the remaining fold is used for independent testing.
+                            All splits are created at the subject level to prevent information leakage, ensuring that
+                            knee joints extracted from the same patient do not appear across training and testing sets.
+                            Final performance is reported using the ensemble and best-fold results aggregated across
+                            all folds.
+
+                            3.5. Image Preprocessing and Data Augmentation
+                               All knee joint images are resized to 224 × 224 pixels and normalized using ImageNet
+                            mean and standard deviation statistics. To improve robustness against limited high-grade
+
+
+
+                                                                                                https://doi.org/10.3390/math14060963
+Mathematics 2026, 14, 963                                                                                                8 of 26
+
+
+
+                            training samples, data augmentation is applied during training, consisting of Random
+                            resized cropping (scale: 0.8–1.0), random horizontal flipping, and random rotation (±10◦ ).
+                            Center cropping and deterministic normalization are used during validation and testing to
+                            ensure consistent and reproducible evaluation conditions. Table 1 summarizes the major
+                            challenges addressed during preprocessing and their corresponding mitigation strategies.
+
+                            Table 1. Overview of preprocessing strategies and their motivation.
+
+                             Challenge                        Method Applied                      Impact
+                                                              YOLO-based knee joint               Focuses on diagnostic
+                             High background clutter
+                                                              localization                        anatomy
+                                                              Class-weighted ordinal              Improves recognition of
+                             Class imbalance
+                                                              modeling                            mild OA
+                             Data variability                 On-the-fly augmentation             Enhanced generalization
+                                                                                                  Reliable performance
+                             Overfitting risk                 5-fold cross-validation
+                                                                                                  reporting
+
+
+                            4. Methodology
+                            4.1. Overview
+                                  This section presents the methodological framework of the proposed VL-OrdinalFormer
+                            as illustrated in Figure 4. We begin by establishing baseline comparisons using a VGG19
+                            and ViT backbone trained with a conventional multi-class classification objective. Next, we
+                            introduce an ordinal modeling formulation based on Vision Transformers with CORAL
+                            (ViT-CORAL), which explicitly accounts for the ordered nature of KL grades. We then incor-
+                            porate a Vision–Language Distillation Module (VLM) that leverages CLIP-based semantic
+                            supervision to align visual representations with clinically meaningful textual descriptions.
+                            Finally, we describe the overall training strategy, including the loss formulation, class-aware
+                            re-weighting, and optimization details, and conclude with an ensemble-based inference
+                            scheme combined with test time augmentation (TTA) and global threshold tuning.
+                                  The selection of backbone architectures in this study was guided by methodological
+                            clarity and relevance to prior KOA grading research. VGG19 [16] was included as a
+                            representative CNN baseline because it has been widely adopted in previous KL grading
+                            studies and enables direct comparison with established benchmarks. ViT-B/16 was selected
+                            to assess the impact of transformer-based global self-attention under a standard multi-
+                            class classification framework. Finally, ViT-L/16 was chosen as the primary backbone to
+                            investigate whether increased representational capacity, when combined with CORAL-
+                            based ordinal regression and vision–language alignment, enhances discrimination of subtle
+                            intermediate KL grades. Rather than conducting an exhaustive comparison across all
+                            possible architectures, our objective was to perform a controlled progression from CNN-
+                            based classification to transformer-based ordinal and semantic modeling, thereby isolating
+                            the contribution of each methodological component.
+
+
+
+
+                                                                                           https://doi.org/10.3390/math14060963
+Mathematics 2026, 14, 963                                                                                                     9 of 26
+
+
+
+
+                            Figure 4. Schematic overview of the proposed vision–language-guided framework for automatic
+                            KOA severity prediction. The input knee X-ray image is processed through a ViT-L/16 backbone
+                            with 16 × 16 patch embedding. Feature representations from the [CLS] token are passed through a
+                            CORAL ordinal regression head to predict KL grades (0–4). An optional VLM distillation module
+                            aligns visual features with clinical text embeddings from CLIP. Finally, attention rollout visualizations
+                            highlight the anatomical regions influencing the model’s decisions.
+
+                            4.2. Baseline Methods
+                            4.2.1. VGG19 Baseline
+                                 We replicate the widely adopted experimental protocol of Chen et al. [16], which
+                            employs a fixed preprocessing pipeline consisting of knee joint localization using YOLOv2,
+                            a 1.3× region-of-interest expansion, and resizing the cropped knee region to a resolution of
+                            224 × 224 pixels. A VGG19 network pretrained on ImageNet is fine-tuned for five-class KL
+                            grade classification using a standard softmax output layer and categorical cross-entropy
+                            loss. As in the original baseline, no explicit ordinal structure is imposed on the output
+                            space, and the classifier treats KL grades as independent categories despite their natural
+                            ordering from KL0 to KL4. This baseline serves as a direct reference point for evaluating
+                            the effectiveness of ordinal modeling and vision–language integration introduced in our
+                            proposed approach.
+
+                            4.2.2. Standard Multi-Class Cross-Entropy
+                                 In addition to the CNN baseline, we evaluate a Vision Transformer (ViT–B/16)
+                            trained using a conventional five-class softmax classifier with categorical cross-entropy
+
+
+
+                                                                                               https://doi.org/10.3390/math14060963
+Mathematics 2026, 14, 963                                                                                                 10 of 26
+
+
+
+                            loss. This model similarly ignores ordinal relationships among KL grades and predicts
+                            each class independently. By comparing this baseline with ordinal and vision–language-
+                            enhanced variants, we isolate the benefits contributed by CORAL-based ordinal regression
+                            and semantic supervision.
+
+                            4.3. Proposed ViT-CORAL Model
+                            4.3.1. Transformer Backbone
+                                 We adopt Vision Transformer architectures (ViT–B/16 and ViT–L/16) pretrained on
+                            ImageNet-1K as the visual backbone. Input knee radiographs are partitioned into fixed-
+                            size patches and processed through multiple self-attention layers, enabling the model
+                            to capture long-range contextual dependencies across the joint region. The final [CLS]
+                            token embedding is used as a global image representation and passed to subsequent
+                            prediction heads.
+
+                            4.3.2. Ordinal Regression with CORAL
+                                 To explicitly model the ordered nature of KL grades, we employ the COnsistent
+                            RAnk Logits (CORAL) [31] formulation for ordinal regression. Instead of predicting K
+                            independent class probabilities (K = 5 for KL0–KL4), the model outputs K − 1 binary
+                            decision thresholds:
+                                                    P(y > k ) = σ (zk ), k = 0, 1, . . . , K − 2,             (1)
+
+                            where zk denotes the learned logits and σ(·) is the sigmoid function. During inference,
+                            the predicted KL grade is obtained by counting the number of thresholds for which
+                            P(y > k ) ≥ τ, where τ is a tunable global decision threshold. This formulation offers
+                            several advantages, such that it enforces monotonicity among decision boundaries, sec-
+                            ondly, it embeds ordinal structure directly into the learning objective, and lastly, it improves
+                            separability between clinically ambiguous adjacent grades, particularly KL1 and KL2.
+
+                            4.3.3. Class-Aware Weighting Strategy
+                                 The OAI dataset exhibits notable class imbalance, and mid-grade categories (KL1–KL2)
+                            are especially prone to confusion due to subtle morphological differences. To mitigate this
+                            issue, we introduce a class-aware weighting strategy defined as:
+
+                                                           w = [1.0, α, α, 1.0, 1.0],    α > 1,                               (2)
+
+                            which places greater emphasis on intermediate grades during training. Empirically, setting
+                            α = 1.5 yielded the most stable optimization behavior and resulted in substantial recall
+                            improvements for KL1 and KL2 without degrading performance for mild or severe grades.
+
+                            4.4. Vision–Language Distillation Module
+                                 To enhance semantic understanding and clinical relevance, we integrate a lightweight
+                            VLM based on CLIP embeddings. Each KL grade is associated with a clinically grounded
+                            textual description, for example (i) no radiographic osteoarthritis (KL0), (ii) doubtful joint
+                            space narrowing” (KL1), (iii) definite osteophytes, possible narrowing” (KL2), (iv) mul-
+                            tiple osteophytes, definite narrowing (KL3), and severe narrowing and subchondral
+                            sclerosis (KL4).
+                                 Textual descriptions are encoded using the CLIP text transformer, while visual features
+                            are extracted from the ViT–CORAL backbone. A contrastive alignment loss is then applied:
+                                                                                                   
+                                                                         exp ⟨ f img , f text ⟩/τ
+                                                       LCLIP = − log                                ,                       (3)
+                                                                       ∑ j exp ⟨ f img , f textj ⟩/τ
+
+
+
+                                                                                             https://doi.org/10.3390/math14060963
+Mathematics 2026, 14, 963                                                                                              11 of 26
+
+
+
+                            where f img and f text denote normalized image and text embeddings, respectively, and τ
+                            is a temperature parameter. This objective encourages semantically consistent alignment
+                            between visual representations and medically meaningful textual concepts, leading to
+                            improved generalization, enhanced interpretability, and better discrimination of subtle
+                            KOA severity levels.
+
+                            4.5. Training Strategy
+                            4.5.1. Loss Function
+                                 The total learning objective combines:
+
+                                                           L = LCORAL + λLCLIP + µLreg ,                                   (4)
+
+                            where LCORAL denotes the weighted binary cross-entropy loss applied to the ordinal
+                            thresholds, LCLIP enforces vision–language semantic alignment, and Lreg represents L2
+                            regularization to promote stable optimization. The weighting coefficients λ and µ are
+                            selected empirically based on validation performance.
+
+                            4.5.2. Optimization and Regularization
+                                 All models are optimized using the AdamW optimizer with an initial learning rate
+                            of 3 × 10−5 and a cosine annealing learning rate schedule. To enhance generalization, we
+                            apply standard data augmentation techniques, including normalized resizing, random
+                            horizontal flipping, and random rotations within ±10◦ . Early stopping with a patience of
+                            10 epochs, monitored on validation accuracy, is employed to prevent overfitting.
+
+                            4.6. Ensemble Inference and Threshold Tuning
+                                 To improve robustness and reduce variance, we adopt a five-fold ensemble infer-
+                            ence strategy. Models trained on different validation splits are combined at test time,
+                            and TTA is applied by averaging prediction logits across multiple spatial transformations
+                            for each fold. The final prediction is obtained via majority voting across the five folds.
+                            To further refine ordinal decision boundaries, the global threshold τ used for CORAL
+                            decoding is tuned independently on each fold’s validation set by maximizing the macro
+                            F1-score. This post-training threshold optimization improves discrimination between adja-
+                            cent grades, particularly in mid-grade transitions, and yields enhanced test performance
+                            without requiring additional model retraining.
+
+                            5. Evaluation Methodology
+                            5.1. 5-Fold Cross-Validation and Ensemble Inference
+                                 We employ a stratified five-fold cross-validation strategy to ensure that the distribution
+                            of KL grades is preserved across all data splits. For each fold, the dataset is partitioned into
+                            three subsets: (i) a training set, (ii) a validation set used for model selection and threshold
+                            optimization, and (iii) a held-out test set reserved for final performance reporting.
+                                 A separate ViT–CORAL model is trained for each fold, resulting in five independently
+                            optimized models. During inference, predictions from all models are aggregated through
+                            logit averaging:
+                                                                            1 5
+                                                                        ẑ = ∑ z(i) ,                                     (5)
+                                                                            5 i =1
+
+                            where z(i) denotes the output logits of the model trained on the i-th fold. Final class
+                            labels are obtained by applying the optimized ordinal thresholding scheme described
+                            in Section 5.3. This ensemble strategy reduces sensitivity to variations in training
+
+
+
+
+                                                                                          https://doi.org/10.3390/math14060963
+Mathematics 2026, 14, 963                                                                                                  12 of 26
+
+
+
+                            splits and improves prediction stability, leading to stronger generalization across diverse
+                            clinical sub-populations.
+
+                            5.2. Test Time Augmentation
+                                 To further enhance robustness, TTA is applied during inference. For each test radio-
+                            graph x, a set of augmented variants x j N
+                                                                     j =1
+                                                                          is generated using the following transformations,
+                            original view, horizontal flip, +10 rotation, −10◦ rotation, with N = 4 in all experiments.
+                                                               ◦
+
+                            Model logits are averaged across all augmented predictions prior to ordinal thresholding.
+                            This strategy mitigates prediction variance caused by minor anatomical misalignments,
+                            detector localization noise, and subtle pose variations.
+
+                            5.3. Threshold Optimization for Ordinal Boundaries
+                                Rather than adopting a fixed decision threshold (τ = 0.5) for CORAL decoding, we
+                            optimize the threshold value on the validation set to maximize the macro F1-score:
+
+                                                             τ ∗ = arg max F1macro (τ ).                                       (6)
+                                                                           τ ∈[0,1]
+
+
+                                 This adaptive calibration sharpens discrimination between adjacent ordinal grades
+                            and reduces bias toward majority classes, particularly for underrepresented mid-grade
+                            categories such as KL1 and KL2. The optimized threshold τ ∗ is subsequently applied
+                            consistently to all test samples without requiring model retraining.
+
+                            5.4. Evaluation Metrics
+                                 Given the ordinal nature and class imbalance inherent in KL grading, we re-
+                            port a comprehensive set of performance metrics to provide a balanced and clinically
+                            meaningful evaluation.
+
+                            5.4.1. Accuracy
+                                 Overall classification accuracy is defined as the proportion of correctly predicted samples:
+
+                                                                              1 N
+                                                                              N i∑
+                                                            Accuracy =              1{ŷi = yi }.                              (7)
+                                                                                 =1
+
+                            5.4.2. Macro- and Weighted-Averaged Precision, Recall, and F1-Score
+                                 To account for class imbalance, both macro- and weighted-averaged metrics are re-
+                            ported. Macro metrics assign equal importance to each class, whereas weighted metrics
+                            reflect true class frequencies:
+
+                                                                                                K
+                                                             1 K                                    Nc
+                                                             K c∑
+                                                 F1macro =         F1c ,          F1weighted = ∑       F1c .                   (8)
+                                                                =1                             c =1
+                                                                                                    N
+
+                            5.4.3. AUROC (One-vs-Rest)
+                                 The area under the receiver operating characteristic curve (AUROC) is computed for
+                            each class using a one-vs-rest strategy and averaged across all classes:
+
+                                                                                 1 K
+                                                                                 K c∑
+                                                          AUROCmacro =                 AUROCc .                                (9)
+                                                                                    =1
+
+                                 This metric evaluates class separability independent of class imbalance.
+
+
+
+
+                                                                                              https://doi.org/10.3390/math14060963
+Mathematics 2026, 14, 963                                                                                            13 of 26
+
+
+
+                            5.5. Confusion Matrix Analysis
+                                 Confusion matrices are used to visualize pairwise misclassification patterns between
+                            KL grades. As illustrated in Figure 5, most errors occur between adjacent ordinal categories,
+                            reflecting the intrinsic difficulty of distinguishing subtle transitions such as KL1–KL2 and
+                            KL2–KL3. Notably, the proposed ViT–CORAL with vision–language guidance and ensem-
+                            ble inference substantially reduces severe misclassifications (e.g., KL4 → KL0), preserves
+                            diagnostic sensitivity for early-stage KOA, and produces error patterns consistent with
+                            clinically reasonable uncertainty. These findings reinforce the interpretability, robustness,
+                            and clinical relevance of the proposed framework.
+
+
+
+
+                            Figure 5. Confusion matrix of VL-OrdinalFormer KL-grade predictions.
+
+                            6. Experimental Results
+                                 To validate whether the proposed vision–language-guided ordinal framework effec-
+                            tively addresses the challenges identified earlier, we conduct a comprehensive experimental
+                            evaluation across multiple baselines and ablation settings. All final results are reported
+                            on the official held-out OAI test set, which consists of 1656 knee radiographs spanning
+                            five KL grades (KL0–KL4). Table 2 presents a comparative analysis of our proposed model
+                            with previous state-of-the-art models. It is important to note that results reported from
+                            prior publications may involve differences in preprocessing strategies, training schedules,
+                            data splits, and evaluation protocols. Therefore, these comparisons are provided primarily
+                            for contextual reference. Direct and controlled performance comparisons are conducted
+                            using locally reproduced baselines under identical experimental conditions, as summarized
+                            in Table 3.
+
+
+
+
+                                                                                        https://doi.org/10.3390/math14060963
+Mathematics 2026, 14, 963                                                                                                14 of 26
+
+
+
+                             Table 2. Comparison of baseline models with the proposed method on KL grade classification.
+                             The proposed model demonstrates improved performance relative to previously reported methods
+                             under the available metrics. The best performance is indicated in bold.
+
+                            Accuracy    Precisionmacro     Recallmacro     F1macro    Specificitymacro     AUROCmacro
+ Model
+                              (%)            (%)              (%)            (%)            (%)               (%)
+ Deep Siamese CNN [32]       66.71             –                –             –               –                   –
+ ResNet101 [33]              69.00           67.00              –           65.00             –                   –
+ MobileNetV2 [33]            67.00           69.00              –           67.00             –                   –
+ VGG-19 [16]                 69.60             –                –             –               –                   –
+ DenseNet121 [16]            68.20             –                –             –               –                   –
+ InceptionV3 [16]            68.40             –                –             –               –                   –
+ Proposed                    70.29           69.80            71.56         70.19           92.18               81.61
+
+
+                             Table 3. Comparison with baseline supervised methods. The best performance is indicated in bold.
+
+                                                                                                    Accuracy      Macro-F1
+                                     Method               Architecture               Loss
+                                                                                                      (%)           (%)
+                                Chen et al. [16]            VGG19            Adjusted Ordinal         69.7            –
+                              Reproduced Baseline           VGG19             PD-2 Ordinal            65.6           48.9
+                              Reproduced Baseline             ViT             Cross Entropy           68.59         69.42
+                                                        ViT + CORAL +
+                                     Proposed                                       CORAL             70.29         70.19
+                                                        Ensemble + TTA
+
+                             6.1. Baseline Comparison with Previous Work
+                                  Table 3 presents a direct comparison between reproduced CNN- and transformer-
+                             based baselines and the proposed ViT–CORAL framework. In addition to the VGG19
+                             ordinal baseline, we also reproduce a plain ViT trained with cross-entropy loss, which
+                             achieves an accuracy of 68.59% and a macro F1-score of 69.42%. This result confirms that
+                             global self-attention alone provides a noticeable improvement over conventional CNN
+                             architectures, but remains limited when disease severity is treated as a set of independent
+                             classes. In contrast, the proposed ViT–CORAL with ensemble inference and TTA achieves
+                             70.29% accuracy and a 70.19% macro F1-score, corresponding to a +1.7% absolute accuracy
+                             gain and a +0.8% macro F1 improvement over the reproduced ViT baseline, and a +5.5%
+                             absolute accuracy improvement over the reproduced VGG19 ordinal model. These results
+                             demonstrate that explicitly modeling the ordinal structure of KL grades provides comple-
+                             mentary benefits beyond those obtained from transformer architectures alone.
+                                  Overall, the proposed VL-OrdinalFormer consistently outperforms both CNN and
+                             transformer-based baselines by addressing three key limitations of prior approaches: lack of
+                             ordinal awareness, absence of clinical semantic guidance, and sensitivity to data imbalance.
+                             Unlike standard ViT classifiers trained with cross-entropy, our CORAL-based formula-
+                             tion embeds the natural ordering of disease severity directly into the learning process,
+                             reducing implausible grade transitions and improving discrimination between adjacent
+                             grades. Moreover, vision–language alignment via CLIP introduces clinically meaningful
+                             supervision by associating visual patterns with radiological concepts such as osteophytes,
+                             joint-space narrowing, and subchondral sclerosis. This semantic grounding is particularly
+                             beneficial for early and borderline cases (KL1–KL2), where visual differences are subtle
+                             and often misclassified by image-only models. Finally, ensemble inference combined with
+                             TTA and threshold optimization stabilizes predictions and mitigates overfitting, leading to
+                             balanced improvements across all KL grades. As a result, the proposed framework achieves
+                             superior accuracy, macro F1-score, and AUROC while maintaining ordinally consistent
+                             and clinically interpretable predictions.
+
+
+
+                                                                                            https://doi.org/10.3390/math14060963
+Mathematics 2026, 14, 963                                                                                               15 of 26
+
+
+
+                            6.2. Ablation Studies
+                                  To quantify the contribution of each component, we conduct a systematic ablation
+                            study by incrementally introducing the proposed design elements, i.e., CORAL-based ordi-
+                            nal regression, class-aware weighting emphasizing KL1–KL2, CLIP-based vision–language
+                            distillation, ensemble inference across folds, and TTA and threshold optimization.
+                                  As summarized in Table 4, each component contributes to consistent performance
+                            gains. While ordinal regression establishes a strong foundation, the largest improve-
+                            ments arise from ensemble averaging and calibrated ordinal decoding. This confirms the
+                            complementary nature of the proposed components and their collective contribution to
+                            robust performance.
+
+                            Table 4. Ablation study of proposed model components. The best performance is indicated in bold.
+
+                                                            Accuracy     F1 (Macro)
+                                   Configuration                                                      Notes
+                                                              (%)            (%)
+                                   ViT-CORAL
+                                                              65.15         68.60               Baseline ordinal
+                                   (no weights)
+                                + Class weighting             66.4           63.6              KL1/KL2 boosted
+                                + VLM Distillation             67.2          65.0             Semantic alignment
+                                + TTA + Tau tuned             67.8           67.0            Calibrated thresholds
+                             +5-fold Ensemble (final)         70.29         69.80        Best-performing configuration
+
+                            6.3. Class-Wise Improvement Analysis
+                                 Table 5 reports class-wise F1-scores for the reproduced VGG19 baseline, the repro-
+                            duced plain ViT baseline trained with cross-entropy loss, and the proposed ViT–CORAL
+                            model. Moving from a CNN to a transformer backbone already yields consistent gains
+                            across most grades, particularly for KL2 and KL3, confirming the benefit of global con-
+                            text modeling in knee radiograph analysis. However, the plain ViT baseline still ex-
+                            hibits noticeable confusion in the early and mid-grade categories, where subtle structural
+                            changes dominate.
+
+                            Table 5. Class-wise F1-score comparison (%). The best performance is indicated in bold.
+
+                             Method                 KL0          KL1             KL2            KL3             KL4
+                             VGG19 baseline         79.7         29.6            48.0           73.1            80.0
+                             ViT baseline           76.03        35.09           64.47          77.46           86.79
+                             Proposed               80.26        36.23           67.24          82.27           84.96
+
+
+                                  In contrast, the proposed VL-OrdinalFormer achieves further and more consistent
+                            improvements across clinically challenging grades. Compared with the VGG19 baseline,
+                            it yields improvements of +6.6% for KL1, +19.4% for KL2, +9.2% for KL3, and +4.9% for
+                            KL4, directly targeting the primary source of diagnostic ambiguity in early and moderate
+                            KOA assessment. When compared against the plain ViT baseline, additional gains are
+                            observed for KL0 (+4.2%), KL1 (+1.1%), KL2 (+2.8%), and KL3 (+4.8%), demonstrating
+                            that ordinal modeling provides complementary benefits beyond transformer-based feature
+                            extraction alone.
+                                  Importantly, performance for KL0 remains stable or improves, indicating that en-
+                            hanced sensitivity to mid-grade disease does not come at the expense of normal or ad-
+                            vanced cases. Most remaining errors are confined within a ±1 grade margin, reflecting
+                            ordinally consistent and clinically reasonable misclassifications. Figure 5 further illustrates
+                            the improved prediction distribution across adjacent ordinal boundaries, with reduced
+                            long-range grade jumps compared to both CNN and softmax-based transformer baselines.
+
+
+                                                                                           https://doi.org/10.3390/math14060963
+Mathematics 2026, 14, 963                                                                                          16 of 26
+
+
+
+                            6.4. Statistical Significance Analysis
+                                 To rigorously assess whether the observed performance improvements are statistically
+                            meaningful, we conducted paired statistical analyses using fold-level results obtained
+                            from stratified five-fold cross-validation (n = 5 independent folds). Each fold yields one
+                            independent estimate of macro F1-score and accuracy for every compared model, forming
+                            paired samples for hypothesis testing.
+                                 We have performed two primary comparisons: (i) the reproduced VGG19 ordinal
+                            baseline versus the final VL-OrdinalFormer ensemble model, and (ii) the softmax-based ViT
+                            baseline versus the CORAL-based ViT model with vision–language guidance. For each fold,
+                            we compared the paired macro F1-scores. Before applying parametric tests, we evaluated
+                            the normality of fold-level performance differences using the Shapiro–Wilk test. As no
+                            significant deviation from normality was observed (p > 0.05), paired two-sided t-tests
+                            were applied. To further ensure robustness without relying on distributional assumptions,
+                            Wilcoxon signed-rank tests were additionally conducted, yielding consistent conclusions.
+                                 For macro F1-score, the proposed model demonstrated statistically significant im-
+                            provements over both baselines (paired t-test, p < 0.01). The corresponding Wilcoxon
+                            signed-rank tests confirmed significance (p < 0.05), indicating that the performance gains
+                            are unlikely to arise from random variation in data splits. Beyond statistical significance,
+                            we computed Cohen’s d to quantify the magnitude of improvement. The effect size for the
+                            comparison with the reproduced VGG19 baseline was in the moderate-to-large range, while
+                            the improvement over the softmax-based ViT baseline corresponded to a moderate effect
+                            size. These findings indicate that the observed gains are not only statistically significant
+                            but also practically meaningful.
+                                 To further assess performance stability, 95% confidence intervals were estimated via
+                            bootstrap resampling of the test predictions. The confidence intervals for both accuracy and
+                            macro F1-score did not overlap with those of the reproduced VGG19 baseline, demonstrat-
+                            ing clear separation between methods at the 95% confidence level. Overall, these statistical
+                            analyses confirm that the improvements achieved by the proposed VL-OrdinalFormer are
+                            consistent across folds, statistically reliable, and of meaningful practical magnitude.
+
+                            7. Interpretability and Analysis
+                                 For medical AI systems to be clinically adopted, their predictions must be transparent
+                            and supported by interpretable evidence that clinicians can understand and validate. In the
+                            context of KOA severity assessment, interpretability is particularly important because
+                            diagnostic decisions rely on subtle radiographic cues. Accordingly, we integrate two com-
+                            plementary interpretability strategies: vision–language similarity heatmaps and feature at-
+                            tribution using Gradient-weighted Class Activation Mapping (Grad-CAM). Together, these
+                            techniques provide insight into the radiographic structures that drive model predictions
+                            and support clinical trust in automated KOA grading.
+
+                            7.1. CLIP-Based Similarity Heatmaps
+                                 The proposed VLM enables explicit alignment between visual features extracted from
+                            knee radiographs and radiologically grounded textual descriptions associated with KL
+                            grades. Visual embeddings from the image encoder and textual embeddings derived
+                            from KL-specific descriptions are projected into a shared latent space learned by the CLIP
+                            framework. These textual descriptors encode clinically meaningful severity cues, such as
+                            “no osteophytes and normal joint space” for KL0, “doubtful osteophytes” for KL1, “definite
+                            osteophytes with mild joint space narrowing” for KL2, “marked joint space narrowing” for
+                            KL3, and “bone-on-bone cartilage loss” for KL4.
+
+
+
+
+                                                                                      https://doi.org/10.3390/math14060963
+Mathematics 2026, 14, 963                                                                                            17 of 26
+
+
+
+                                  Similarity-based attention heatmaps are generated by computing the correspondence
+                            between localized visual regions and the textual embedding of the predicted KOA grade.
+                            These heatmaps highlight anatomical regions that contribute most strongly to the model’s
+                            decision. For KL0 cases, activation patterns are diffuse and weak, reflecting the absence of
+                            radiographically evident pathology. In KL1 cases, attention becomes mildly concentrated
+                            around joint margins, consistent with early or doubtful osteophyte formation. KL2 cases ex-
+                            hibit clearer localization within the medial tibiofemoral compartment, indicating emerging
+                            joint space narrowing. For advanced stages (KL3 and KL4), strong and focused activation
+                            is observed along osteophyte boundaries and severely narrowed joint surfaces, capturing
+                            hallmark degenerative changes. These findings demonstrate that vision–language semantic
+                            alignment encourages anatomically meaningful reasoning and enhances the clinical inter-
+                            pretability of the model’s predictions, particularly for early and borderline disease stages.
+
+                            7.2. Semantic Alignment Margin Analysis
+                                 To quantitatively evaluate the contribution of vision–language alignment, we compute
+                            the cosine similarity margin between the predicted KL-grade text embedding and the near-
+                            est competing grade embedding. Correctly classified samples exhibit significantly larger
+                            similarity margins compared to misclassified samples, indicating stronger semantic align-
+                            ment between visual features and clinically grounded textual descriptors. This quantitative
+                            evidence supports the role of CLIP-based supervision in improving fine-grained discrimi-
+                            nation between adjacent KL grades.
+
+                            7.3. Grad-CAM Visualization of Radiographic Features
+                                  To further analyze the internal decision-making behavior of the proposed ViT, we
+                            employ Grad-CAM with an attention-rollout strategy applied to the final prediction logits.
+                            This approach highlights image regions that contribute most strongly to the predicted KL
+                            grade, enabling visual inspection of whether the model relies on clinically meaningful
+                            radiographic cues.
+                                  For each KL grade, representative knee radiographs are selected and transformer
+                            attention maps are aggregated across layers and heads, projected back to the original
+                            224 × 224 image space, and overlaid on the input radiographs. As illustrated in Figure 6,
+                            the resulting heatmaps consistently emphasize anatomically relevant structures, including
+                            the tibiofemoral joint space, marginal osteophytes, cortical irregularities, and subchondral
+                            bone contours, while largely ignoring background regions. For correctly classified KL3
+                            and KL4 cases, activations are strongly concentrated along regions exhibiting pronounced
+                            joint space narrowing and bone remodeling, reflecting hallmark features of advanced KOA.
+                            In KL2 cases, Grad-CAM responses typically localize to regions of emerging medial joint
+                            space narrowing, which differentiates them from KL1 samples that display weaker and
+                            more diffuse activation patterns. Analysis of misclassified examples provides additional
+                            insight, when KL2 images are predicted as KL1, the corresponding heatmaps often empha-
+                            size superficial cartilage regions while failing to capture subtle medial collapse, suggesting
+                            opportunities for further refinement in fine-grained lesion representation.
+                                  Overall, these visual explanations demonstrate that the proposed ViT-L/16 CORAL
+                            model bases its predictions on clinically meaningful radiographic biomarkers rather than
+                            spurious background artifacts. The alignment between Grad-CAM activations and es-
+                            tablished diagnostic criteria supports the interpretability and clinical credibility of the
+                            proposed framework, enabling clinicians to qualitatively assess model reasoning alongside
+                            predicted KOA severity.
+
+
+
+
+                                                                                        https://doi.org/10.3390/math14060963
+Mathematics 2026, 14, 963                                                                                              18 of 26
+
+
+
+
+                            Figure 6. Qualitative interpretability of the proposed ViT-L/16 CORAL model on representative OAI
+                            knee radiographs. The first and third row show the original knee images for KL grades 0–4, and the
+                            second and fourth row show the corresponding Grad-CAM. The highlighted regions concentrate
+                            around the tibiofemoral joint space and marginal osteophytes, indicating that the model focuses on
+                            clinically relevant structures when estimating KOA severity.
+
+                            7.4. Quantitative Ordinal Consistency Analysis
+                                 To complement qualitative interpretability visualizations, we quantitatively analyze
+                            the ordinal error distribution of the proposed model using the confusion matrix in Figure 5.
+                            We compute the proportion of misclassifications that remain within a clinically plausible
+                            adjacent range, i.e., predictions within ±1 KL grade from the ground truth. Across the
+                            OAI test set (n = 1656), the model produces 492 misclassifications in total. Among these,
+                            406 errors (82.5%) fall within a single adjacent KL grade (e.g., KL1↔KL2 or KL2↔KL3),
+                            indicating that most mistakes correspond to borderline cases where even expert agreement
+                            is known to be challenging. In contrast, non-adjacent errors (|∆| ≥ 2) account for only 86
+                            cases (17.5%). Importantly, long-range misclassifications are extremely rare: only 1 case
+                            (0.2% of all errors; 0.06% of all test samples) exhibits a jump of three grades (|∆| ≥ 3),
+                            and no extreme KL4→KL0 failures are observed. This behavior is consistent with the
+                            progressive nature of KL staging and supports the clinical plausibility of the proposed
+                            ordinal modeling.
+
+                            7.5. Robustness to Acquisition and Projection Variability
+                                 To evaluate the robustness of the proposed model beyond the primary OAI cohort, we
+                            conducted a controlled stress-test analysis by simulating domain shifts commonly observed
+                            across imaging systems and acquisition protocols. Specifically, we introduced geometric per-
+                            turbations (rotations up to ±20◦ ) to approximate flexion and projection variability, contrast
+                            and gamma adjustments to simulate manufacturer-dependent post-processing differences,
+                            additive Gaussian noise, Gaussian blur to mimic resolution degradation, and combined
+                            perturbations representing more challenging acquisition conditions.
+
+
+
+
+                                                                                          https://doi.org/10.3390/math14060963
+Mathematics 2026, 14, 963                                                                                               19 of 26
+
+
+
+                                  As shown in Table 6, the 5-fold ensemble model demonstrated strong stability under
+                            realistic perturbations. Under ±20◦ rotation, Macro-F1 decreased only from 0.6992 to 0.6851
+                            (∆F1 = −1.4%), indicating limited sensitivity to projection variability. Contrast and gamma
+                            shifts resulted in performance reductions within approximately 1–2%. Moderate noise
+                            produced negligible impact (less than 1% drop). Although stronger blur and combined
+                            perturbations led to larger degradation, performance remained above 0.61 Macro-F1 even
+                            under the most challenging setting.
+
+                            Table 6. Robustness analysis of the proposed 5-fold ensemble model under simulated acquisition
+                            and projection variability on the OAI test set. ∆F1 indicates change relative to the clean setting.
+
+                             Setting                     Accuracy                  Macro-F1                     ∆F1
+                             Clean                         0.7035                    0.6992                      –
+                             Rotation ±15◦                 0.6896                    0.6877                  −0.0115
+                             Rotation ±20◦                 0.6836                    0.6851                  −0.0141
+                             Gamma 0.8                     0.6890                    0.6795                  −0.0197
+                             Gamma 1.2                     0.6938                    0.6884                  −0.0108
+                             Contrast 0.8                  0.6902                    0.6803                  −0.0189
+                             Contrast 1.2                  0.7023                    0.6990                  −0.0001
+                             Noise (σ = 0.03)              0.7023                    0.6960                  −0.0032
+                             Noise (σ = 0.05)              0.6987                    0.6927                  −0.0065
+                             Blur (moderate)               0.6763                    0.6716                  −0.0276
+                             Blur (strong)                 0.6624                    0.6548                  −0.0444
+                             Combined (mild)               0.6938                    0.6866                  −0.0126
+                             Combined (hard)               0.6292                    0.6114                  −0.0878
+
+
+                                 These findings suggest that the proposed Vision–Language Ordinal Transformer
+                            framework exhibits meaningful robustness to acquisition and projection variability.
+                            Nevertheless, future work will include multi-center external validation to further assess
+                            cross-institutional generalization.
+
+                            8. Discussion
+                                 The experimental results demonstrate consistent improvements across accuracy, macro
+                            F1-score, and class-wise performance, particularly for clinically ambiguous intermediate
+                            grades. In this section, we interpret these findings in the context of ordinal modeling,
+                            semantic alignment, robustness, and clinical applicability.
+
+                            8.1. Impact of Vision–Language Alignment on Ordinal Classification
+                                  KOA severity assessment is inherently ordinal, as radiographic abnormalities evolve
+                            gradually from KL0 to KL4. Conventional multi-class classifiers [34] typically treat grade
+                            labels as independent categories, which often results in ambiguous decision boundaries
+                            between adjacent grades, particularly KL1 and KL2. The proposed vision–language-guided
+                            framework addresses this limitation by introducing semantic supervision derived from
+                            clinically grounded textual descriptions. By associating visual patterns with interpretable
+                            descriptors such as joint space narrowing, osteophyte formation, and subchondral sclerosis,
+                            the model learns representations that more closely reflect expert-defined grading criteria.
+                            This semantic alignment effectively narrows the gap between image appearance and clinical
+                            interpretation, leading to reduced confusion between neighboring grades. The observed
+                            gains in macro recall and F1-score for KL1 and KL2 provide quantitative evidence that
+                            vision–language guidance enhances sensitivity to subtle radiographic biomarkers.
+
+
+
+                                                                                           https://doi.org/10.3390/math14060963
+Mathematics 2026, 14, 963                                                                                            20 of 26
+
+
+
+                            8.2. Generalization and Robustness Across Variations
+                                 Knee radiographs exhibit substantial variability due to differences in acquisition pro-
+                            tocols, patient anatomy, exposure conditions, and positioning. Image-only models are
+                            prone to overfitting spurious textures or intensity patterns that may not correspond to true
+                            pathological changes. In contrast, vision–language-guided learning introduces semantic
+                            constraints that encourage the model to focus on anatomically and clinically meaning-
+                            ful structures. Moreover, the use of CORAL-based ordinal regression enforces smooth
+                            transitions between severity levels, avoiding abrupt decision boundaries and promoting
+                            stable predictions under distribution shifts. The consistent performance observed across
+                            five-fold cross-validation, along with balanced classification metrics, indicates that the
+                            proposed framework achieves improved robustness and generalization across heteroge-
+                            neous data. While this study focused on KL grade classification in KOA, the proposed
+                            ViT–CORAL pipeline is generalizable to other medical tasks with ordinal label structures.
+                            Examples include diabetic retinopathy staging, liver fibrosis grading, and cancer progres-
+                            sion scores. Future work may explore adapting this approach to other modalities where
+                            ordinal reasoning is critical for clinical decision-making.
+
+                            8.3. Comparison with Radiologist Variability
+                                  Previous clinical studies have reported notable inter-observer variability in KL grading,
+                            particularly for borderline cases such as KL1 and KL2, where Cohen’s kappa values often
+                            range from fair to moderate. In this context, perfectly deterministic classification is neither
+                            feasible nor clinically expected. Instead, the goal of automated systems should be to
+                            achieve performance comparable to expert consistency while maintaining transparency.
+                            The proposed approach demonstrates performance approaching reported levels of expert
+                            agreement, especially when ensemble inference, TTA, and threshold optimization are
+                            applied. Importantly, interpretability analyses show that the model consistently attends to
+                            anatomical regions and radiographic cues commonly used by radiologists, supporting the
+                            clinical plausibility of its predictions.
+                                  Overall, these findings suggest that vision–language-guided ordinal learning rep-
+                            resents a meaningful advancement for automated KOA assessment. By jointly leverag-
+                            ing medical text semantics, ordinal disease structure, and radiographic imaging cues,
+                            the proposed framework reduces diagnostic ambiguity and enhances interpretability.
+                            This combination positions the method as a reliable and scalable tool for supporting radio-
+                            logical workflows and longitudinal KOA monitoring in real-world clinical settings.
+
+                            8.4. Incorporating Full Radiology Reports for Enhanced Semantic Alignment
+                                  An interesting direction for further refinement of the semantic alignment module is
+                            the incorporation of full radiology reports instead of structured grade-specific prompts.
+                            While structured prompts provide controlled supervision explicitly aligned with KL defini-
+                            tions and preserve ordinal consistency within the CORAL framework, free-text radiology
+                            reports may capture richer patient-specific nuances, including descriptive assessments of
+                            joint space narrowing, osteophytes, sclerosis, and additional contextual findings.
+                                  In the present study, structured prompts were intentionally employed to ensure sta-
+                            ble and monotonic semantic grounding across severity levels, as the OAI dataset does
+                            not provide standardized report-level annotations corresponding to each radiograph.
+                            Moreover, free-text reports often contain heterogeneous and potentially noisy informa-
+                            tion unrelated to radiographic severity, which could introduce semantic ambiguity and
+                            weaken ordinal consistency.
+                                  Nevertheless, integrating report-level supervision represents a promising future direc-
+                            tion. Advanced vision–language architectures could leverage report embeddings through
+
+
+
+                                                                                        https://doi.org/10.3390/math14060963
+Mathematics 2026, 14, 963                                                                                           21 of 26
+
+
+
+                            cross-attention mechanisms, multimodal contrastive learning, or large pre-trained lan-
+                            guage models to enrich semantic representations while preserving ordinal interpretability.
+                            Such extensions may further enhance patient-specific modeling and cross-domain general-
+                            ization, particularly in multi-center clinical settings.
+
+                            8.5. Implementation Details
+                                 All experiments were implemented in PyTorch 2.7.1+cu118 using the official ViT
+                            models provided by torchvision. Training and evaluation were conducted on an NVIDIA
+                            RTX 3090 GPU, with a system equipped with 64 GB of RAM. The proposed ordinal classifier
+                            is built upon a ViT-L/16 backbone pretrained on ImageNet-1K and adapted for five-
+                            grade KL severity prediction using a CORAL-based output formulation. An overview
+                            of the complete training and evaluation pipeline is provided in Algorithm 1, while key
+                            hyperparameters are summarized in Table 7.
+
+                            Algorithm 1 Training pipeline of the proposed ViT-L/16 CORAL framework
+                            Require: Dataset D = {( xi , yi )}, KL grades yi ∈ {0..4}, number of folds K, batch size B,
+                                learning rate η, class weights wcls , distillation weight λ
+                            Ensure: Trained fold models { Mk }kK=1
+                             1: Pre-processing
+                             2: Resize all images to 224 × 224 and normalize (ImageNet statistics).
+                             3: Define clinical text prompts tc and obtain CLIP text embeddings zc .
+                             4: Cross-validation and training
+                             5: Stratify-split D into K patient-level folds.
+                             6: for k = 1 to K do
+                             7:     Construct Dktrain , Dkval , Dktest .
+                             8:     Load ViT-L/16 backbone (ImageNet weights) and replace classifier with CORAL
+                                head.
+                             9:     Initialize optimizer (e.g., AdamW) and learning-rate scheduler.
+                            10:     for each epoch do
+                            11:         for each mini-batch {( xb , yb )}bB=1 ⊂ Dktrain do
+                            12:             Apply data augmentation to xb .
+                            13:             Extract CLS feature hb ← ViT_L16( xb ).
+                            14:             Compute CORAL logits ob ← f CORAL (hb ).
+                            15:             Convert yb to ordinal labels yord    b .
+                            16:             Lcoral ← BCEWL(ob , yord     b , w cls )
+                            17:             if VLM distillation is enabled then
+                            18:                 Compute cosine scores sb,c and teacher distribution pVLM
+                                                                                                     b
+                                                                           img
+                            19:               Derive student distribution pb     from ob
+                                                                         img
+                            20:               L ← Lcoral + λ KL( pVLM
+                                                                  b   ∥ pb )
+                            21:          else
+                            22:              L ← Lcoral
+                            23:          end if
+                            24:          Update network parameters θ using ∇θ L
+                            25:       end for
+                            26:       Evaluate on Dkval and monitor MAE / F1(macro) for early stopping
+                            27:    end for
+                            28:    Save best-performing model as Mk
+                            29: end for
+
+
+
+
+                                                                                       https://doi.org/10.3390/math14060963
+Mathematics 2026, 14, 963                                                                                                  22 of 26
+
+
+
+                            Table 7. Training and model hyperparameters for the ViT-L/16 + CORAL KL grading experiments.
+
+                             Component                         Setting
+                             Backbone architecture             ViT-L/16 (ImageNet-1K pre-trained)
+                             Output formulation                CORAL ordinal regression, K − 1 = 4 logits
+                             Number of classes                 K = 5 (KL0-KL4)
+                             Input resolution                  224 × 224 pixels, RGB
+                             Batch size                        8 images per GPU
+                             Optimizer                         AdamW
+                             Initial learning rate             3 × 10−5
+                             Weight decay                      0.05
+                             LR scheduler                      Cosine annealing (Tmax = 80 epochs)
+                             Maximum epochs per fold           80
+                             Early stopping patience           10 epochs (validation accuracy)
+                             Loss function                     BCE-with-logits over thresholds (CORAL)
+                             Threshold pos_weight              Data-driven, wk = Nneg /Npos per threshold
+                             Per-class sample weights          [1.0, 1.5, 1.5, 1.0, 1.0] for KL0-KL4
+                             Number of folds                   5-fold stratified cross-validation
+                                                               Resize to 224, random resized crop (0.8–1.0), horizontal flip,
+                             Train transforms
+                                                               random rotation (±10◦ ), normalization
+                             Val/test transforms               Resize to 224, center crop, normalization
+                             Test time augmentation (TTA)      Identity, horizontal flip, +10◦ and −10◦ rotations
+                             Inference decoding                Count of thresholds with σ(ℓk ) ≥ τ
+                             Tau tuning range                  τ ∈ [0.30, 0.70] (step 0.01), selected by macro-F1 on validation
+                             Random seed                       42 (Python, NumPy, PyTorch 2.7.1+cu118)
+
+
+                                  The dataset is organized into separate training, validation, and test directories, each
+                            containing class-specific subfolders corresponding to KL0–KL4. During model develop-
+                            ment, the original training and validation sets are merged, and stratified five-fold cross-
+                            validation is performed at the image level to preserve the KL grade distribution in each
+                            split. For each fold, four subsets are used for training and one subset is reserved for
+                            validation. All knee radiographs are resized to a spatial resolution of 224 × 224 pixels.
+                            During training, data augmentation includes random resized cropping, horizontal flipping,
+                            and small-angle rotations to improve robustness to variations in acquisition conditions and
+                            patient positioning. Validation and test images undergo center cropping and normalization
+                            only. All inputs are normalized using the ImageNet RGB mean and standard deviation.
+                                  The ViT-L/16 backbone is initialized with ImageNet-1K pretrained weights. The original
+                            softmax classification head is removed and replaced with a linear layer producing
+                            (K − 1) = 4 outputs, where K = 5 corresponds to the number of KL grades. These outputs
+                            represent CORAL logits associated with ordered decision thresholds. For a ground-truth la-
+                            bel y ∈ 0, 1, 2, 3, 4, CORAL targets are defined as binary indicators 1[y > k ] for k = 0, . . . , 3.
+                            Training minimizes a weighted binary cross-entropy loss across all thresholds. To address
+                            threshold-specific class imbalance, a pos_weight term is computed from the empirical
+                            label distribution, and additional per-sample class weighting is applied to emphasize the
+                            clinically challenging KL1 and KL2 categories.
+                                  For each fold, training proceeds until either the maximum number of epochs is reached
+                            or early stopping is triggered when validation accuracy fails to improve for ten consecutive
+                            epochs. The checkpoint corresponding to the best validation accuracy is saved for each fold.
+                            After completing all five folds, a second-stage threshold calibration is performed. Specifically,
+                            checkpoints from all folds are reloaded, and test time-augmented logits are collected on
+                            each fold’s validation set. These logits are concatenated across folds, and a global decision
+                            threshold τ is selected from the interval [0.30, 0.70] with a step size of 0.01 by maximizing the
+                            macro F1-score. This single calibrated threshold is then fixed for all subsequent evaluations.
+                            During testing, two evaluation settings are considered. First, the best-performing single-fold
+                            model is evaluated using TTA and the tuned threshold τ. For each test image, four augmented
+
+
+
+                                                                                             https://doi.org/10.3390/math14060963
+Mathematics 2026, 14, 963                                                                                              23 of 26
+
+
+
+                            variants (original image, horizontal flip, and rotations of +10◦ and −10◦ ) are generated. Logits
+                            are averaged across augmentations, passed through a sigmoid function, and decoded into an
+                            ordinal prediction by counting the number of thresholds exceeding τ. Performance metrics
+                            and confusion matrices are computed for this single-model setting.
+                                  Second, a five-model ensemble is evaluated to exploit complementary information
+                            learned across different training splits. For each test image, test time-augmented logits
+                            are computed independently for each fold-specific model, averaged across augmentations,
+                            and then averaged across models before applying the same threshold-based decoding
+                            rule. Ensemble predictions are used to compute accuracy, macro- and weighted-averaged
+                            precision, recall, F1-score, specificity, and macro AUROC.
+                                  As shown in Table 7 the learning rate of 3 × 10−5 and weight decay of 0.05 were
+                            selected based on established practices in ViT fine-tuning, where large-capacity models
+                            benefit from conservative learning rates and moderate regularization to ensure stable
+                            convergence. The AdamW optimizer was chosen due to its decoupled weight decay formu-
+                            lation and demonstrated robustness in transformer-based architectures. A cosine annealing
+                            learning rate schedule is employed to provide a smooth decay over training epochs, which
+                            empirically improves convergence stability on the OAI dataset. A batch size of 8 represents
+                            a practical trade-off between GPU memory constraints and reliable gradient estimation for
+                            the ViT-L/16 backbone. Early stopping with a patience of ten epochs mitigates overfitting
+                            on the relatively small validation folds while avoiding unnecessarily prolonged training.
+                            To address class imbalance and the clinical importance of intermediate disease stages, per-
+                            class sample weights of [1.0, 1.5, 1.5, 1.0, 1.0] are applied, modestly emphasizing KL1 and
+                            KL2 without introducing instability. Finally, the global threshold (τ) tuning strategy is de-
+                            signed to optimize the macro F1-score on validation data, reflecting balanced performance
+                            across all KL grades. This post hoc calibration improves ordinal boundary placement while
+                            preserving a simple and interpretable decision rule at deployment time, which is important
+                            for clinical adoption.
+
+                            8.6. Deployment Considerations in Clinical Workflows
+                                  The proposed framework employs a ViT-L/16 backbone, which is a high-capacity
+                            transformer architecture with substantial computational requirements. While this design
+                            contributes to improved feature representation and ordinal stability, practical deployment
+                            considerations are important in real-world clinical environments. Knee osteoarthritis
+                            grading is typically performed post-acquisition and does not require millisecond-level
+                            real-time inference. In our implementation, single-image inference requires less than one
+                            second on modern GPU hardware and remains feasible on CPU-based systems within
+                            clinically acceptable timeframes.
+                                  For resource-constrained settings, several optimization strategies may be adopted.
+                            Knowledge distillation can transfer semantic–ordinal representations from the ViT-L/16
+                            teacher model to a smaller student architecture (e.g., ViT-B/16 or lightweight CNN), signif-
+                            icantly reducing computational cost while preserving performance. Additionally, model
+                            pruning and quantization techniques can further decrease memory footprint and inference
+                            latency. A hybrid deployment paradigm may also be considered, wherein the high-capacity
+                            model operates on centralized servers for batch analysis, while a distilled lightweight model
+                            supports real-time or edge-based applications. These strategies enable practical integration
+                            of the proposed framework into clinical workflows without compromising scalability.
+                                  As shown in Table 8, the proposed ViT-L/16 backbone has substantially higher rep-
+                            resentational capacity compared to both the VGG19 and ViT-B/16 baselines. While this
+                            increased capacity contributes to improved discrimination of subtle radiographic features,
+                            it also entails higher computational and memory requirements. However, KL grading is
+
+
+
+                                                                                          https://doi.org/10.3390/math14060963
+Mathematics 2026, 14, 963                                                                                               24 of 26
+
+
+
+                            not a hard real-time task requiring millisecond-level inference. In practical deployment
+                            scenarios, inference can be performed on centralized hospital servers or supported through
+                            model compression strategies such as knowledge distillation or quantization.
+
+                            Table 8. Comparison of backbone architectures used in this study in terms of model capacity and
+                            computational complexity at 224 × 224 input resolution. FLOPs are approximate values reported in
+                            the literature.
+
+                             Backbone                 Parameters (M)            FLOPs (G)                Role in Study
+                             VGG19                          143.7                   19.6                CNN Baseline
+                             ViT-B/16                        86.6                   17.6             Transformer Baseline
+                             ViT-L/16                       304.3                   60.9               Proposed Model
+
+
+                            8.7. Toward a Lightweight VL-OrdinalFormer for Clinical Deployment
+                                 Although the proposed ViT-L/16 backbone provides strong representational capacity
+                            and improved discrimination of subtle radiographic changes, its computational footprint
+                            may limit deployment in resource-constrained environments. As a practical extension, we
+                            propose a lightweight variant, termed VL-OrdinalFormer-Lite, based on knowledge distil-
+                            lation from the ViT-L/16 teacher model to a smaller student architecture such as ViT-B/16.
+                                 In this framework, the student model would be trained to replicate both the
+                            CORAL ordinal logits and the vision–language alignment representations of the teacher.
+                            By transferring ordinal threshold consistency and semantic embeddings, the lightweight
+                            model can preserve fine-grained discrimination between adjacent KL grades while signifi-
+                            cantly reducing parameter count and inference cost.
+                                 Such a distillation strategy would enable real-time or edge-based clinical deployment
+                            without compromising ordinal stability or interpretability. Future work will investigate
+                            compression techniques including structured pruning, low-rank adaptation, and mixed-
+                            precision quantization to further improve efficiency while maintaining diagnostic reliability.
+
+                            9. Conclusions and Future Work
+                                  This study introduced a vision–language-guided ordinal learning framework for
+                            fully automated KOA severity assessment from radiographic images. By integrating a
+                            ViT-L/16 backbone with CORAL-based ordinal regression and CLIP-driven semantic su-
+                            pervision, the proposed method achieves consistent improvements over existing baselines.
+                            In particular, it outperforms the widely used VGG19 and ViT frameworks in terms of accu-
+                            racy and macro-level classification metrics, with notable gains for the clinically challenging
+                            KL1 and KL2 categories, where subtle morphological changes often lead to inter-observer
+                            disagreement. Complementary interpretability analyses using Grad-CAM and CLIP sim-
+                            ilarity maps further demonstrate that the model attends to clinically relevant structures,
+                            including joint space width, marginal osteophytes, and subchondral bone characteristics.
+                            The use of ensemble inference with TTA contributes to improved prediction stability and
+                            robustness against anatomical variability and acquisition-related differences, strengthening
+                            the suitability of the approach for real-world clinical settings. Together, these findings
+                            indicate that combining ordinal constraints with vision–language representations pro-
+                            vides an effective and interpretable paradigm for automated KOA grading. Future work
+                            will explore several extensions of the proposed framework. First, incorporating bilateral
+                            and multi-view radiographs may enable more comprehensive modeling of joint asym-
+                            metry and tibiofemoral alignment, which are important indicators of KOA progression.
+                            Second, aligning model outputs with structured radiology report terminology could sup-
+                            port natural-language explanations and facilitate integration into existing clinical work-
+                            flows. Finally, evaluation on large-scale, multi-center datasets will be pursued to assess
+
+
+                                                                                           https://doi.org/10.3390/math14060963
+Mathematics 2026, 14, 963                                                                                                           25 of 26
+
+
+
+                                   generalizability across diverse patient populations, imaging protocols, and clinical envi-
+                                   ronments. These directions aim to further advance automated KOA assessment toward
+                                   reliable and scalable real-world deployment.
+
+                                   Author Contributions: Z.U.: Conceptualization, Methodology, Software, Formal analysis, Inves-
+                                   tigation, Writing—original draft, Writing—review & editing. J.K.: Formal analysis, Investigation,
+                                   Supervision, Project administration. All authors have read and agreed to the published version of
+                                   the manuscript.
+
+                                   Funding: This research was supported by the "Regional Innovation System & Education (RISE)"
+                                   through the Seoul RISE Center, funded by the MOE (Ministry of Education) and the Seoul Metropoli-
+                                   tan Government, and conducted in collaboration with HuVet bio, Inc. (https://www.huvetbio.com/)
+                                   (2026-RISE-01-007-05), and the Artificial Intelligence Convergence Innovation Human Resources
+                                   Development supervised by the MSIT (Ministry of Science and ICT) and the IITP (Institute for
+                                   Information & Communications Technology Planning & Evaluation) (IITP-2026-RS-2023-00254592).
+
+                                   Institutional Review Board Statement: This study utilized publicly available, open-source X-ray
+                                   image data licensed under a Creative Commons Attribution 4.0 International license, with no new
+                                   data involving human participants collected. Ethical approval was not required as the data were
+                                   obtained from an open-source repository.
+
+                                   Informed Consent Statement: Informed consent was not required as the data were obtained from an
+                                   open-source repository.
+
+                                  Data Availability Statement: The original data presented in this study are openly available from
+                                  The Osteoarthritis Initiative (OAI) at the following link: https://nda.nih.gov/oai (accessed on
+                                  1 March 2026).
+
+                                   Conflicts of Interest: The authors declare that they have no known competing financial interests or
+                                   personal relationships that could have appeared to influence the work reported in this paper.
+
+References
+1.    Losina, E.; Daigle, M.E.; Suter, L.; Hunter, D.; Solomon, D.; Walensky, R.; Jordan, J.; Burbine, S.A.; Paltiel, A.D.; Katz, J.N.
+      Disease-modifying drugs for knee osteoarthritis: Can they be cost-effective? Osteoarthr. Cartil. 2013, 21, 655–667. [CrossRef]
+      [PubMed]
+2.    Kellgren, J.H.; Lawrence, J. Radiological assessment of osteo-arthrosis. Ann. Rheum. Dis. 1957, 16, 494–502. [CrossRef]
+3.    Farooq, M.U.; Ullah, Z.; Khan, A.; Gwak, J. DC-AAE: Dual channel adversarial autoencoder with multitask learning for KL-grade
+      classification in knee radiographs. Comput. Biol. Med. 2023, 167, 107570. [CrossRef]
+4.    Tariq, T.; Suhail, Z.; Nawaz, Z. A Review for automated classification of knee osteoarthritis using KL grading scheme for X-rays.
+      Biomed. Eng. Lett. 2025, 15, 1–35. [CrossRef]
+5.    Kwon, S.B.; Han, H.S.; Lee, M.C.; Kim, H.C.; Ku, Y.; Ro, D.H. Machine learning-based automatic classification of knee osteoarthritis
+      severity using gait data and radiographic images. IEEE Access 2020, 8, 120597–120603. [CrossRef]
+6.    Maqsood, S.; Maqsood, N.; Shahid, S.; Subhan, F.E.; Sarwar, M.A.; Yousufi, M.; Qurthobi, A.; Zafar, A.; Khan, M.A.; Damaševičius,
+      R.; et al. Knee osteoarthritis network: A hybrid transformer-based approach for enhanced detection and grading of knee
+      osteoarthritis. Eng. Appl. Artif. Intell. 2025, 159, 111751. [CrossRef]
+7.    Bordes, F.; Pang, R.Y.; Ajay, A.; Li, A.C.; Bardes, A.; Petryk, S.; Mañas, O.; Lin, Z.; Mahmoud, A.; Jayaraman, B.; et al.
+      An introduction to vision-language modeling. arXiv 2024, arXiv:2405.17247. [CrossRef]
+8.    Sohail, M.; Azad, M.M.; Kim, H.S. Knee osteoarthritis severity detection using deep inception transfer learning. Comput. Biol.
+      Med. 2025, 186, 109641. [CrossRef] [PubMed]
+9.    Radford, A.; Kim, J.W.; Hallacy, C.; Ramesh, A.; Goh, G.; Agarwal, S.; Sastry, G.; Askell, A.; Mishkin, P.; Clark, J.; et al. Learning
+      transferable visual models from natural language supervision. In Proceedings of the International Conference on Machine
+      Learning PmLR, Virtual, 18–24 July 2021; pp. 8748–8763.
+10.   Pi, S.W.; Lee, B.D.; Lee, M.S.; Lee, H.J. Ensemble deep-learning networks for automated osteoarthritis grading in knee X-ray
+      images. Sci. Rep. 2023, 13, 22887. [CrossRef]
+11.   Zhao, H.; Ou, L.; Zhang, Z.; Zhang, L.; Liu, K.; Kuang, J. The value of deep learning-based X-ray techniques in detecting and
+      classifying KL grades of knee osteoarthritis: A systematic review and meta-analysis. Eur. Radiol. 2025, 35, 327–340. [CrossRef]
+      [PubMed]
+
+
+
+                                                                                                      https://doi.org/10.3390/math14060963
+Mathematics 2026, 14, 963                                                                                                               26 of 26
+
+
+
+12.   Yunus, U.; Amin, J.; Sharif, M.; Yasmin, M.; Kadry, S.; Krishnamoorthy, S. Recognition of knee osteoarthritis (KOA) using YOLOv2
+      and classification based on convolutional neural network. Life 2022, 12, 1126. [CrossRef]
+13.   Sharma, S.; Mehra, R. Conventional machine learning and deep learning approach for multi-classification of breast cancer
+      histopathology images—A comparative insight. J. Digit. Imaging 2020, 33, 632–654. [CrossRef]
+14.   Vaattovaara, E.; Panfilov, E.; Tiulpin, A.; Niinimäki, T.; Niinimäki, J.; Saarakkala, S.; Nevalainen, M.T. Kellgren–Lawrence grading
+      of knee osteoarthritis using deep learning: Diagnostic performance with external dataset and comparison with four readers.
+      Osteoarthr. Cartil. Open 2025, 7, 100580. [CrossRef]
+15.   Pan, J.; Wu, Y.; Tang, Z.; Sun, K.; Li, M.; Sun, J.; Liu, J.; Tian, J.; Shen, B. Automatic knee osteoarthritis severity grading based on
+      X-ray images using a hierarchical classification method. Arthritis Res. Ther. 2024, 26, 203. [CrossRef]
+16.   Chen, P.; Gao, L.; Shi, X.; Allen, K.; Yang, L. Fully automatic knee osteoarthritis severity grading using deep neural networks with
+      a novel ordinal loss. Comput. Med Imaging Graph. 2019, 75, 84–92. [CrossRef] [PubMed]
+17.   Swiecicki, A.; Li, N.; O’Donnell, J.; Said, N.; Yang, J.; Mather, R.C.; Jiranek, W.A.; Mazurowski, M.A. Deep learning-based
+      algorithm for assessment of knee osteoarthritis severity in radiographs matches performance of radiologists. Comput. Biol. Med.
+      2021, 133, 104334. [CrossRef] [PubMed]
+18.   Nasef, D.; Nasef, D.; Sawiris, V.; Girgis, P.; Toma, M. Deep Learning for Automated Kellgren–Lawrence Grading in Knee
+      Osteoarthritis Severity Assessment. Surgeries 2024, 6, 3. [CrossRef]
+19.   Dosovitskiy, A. An image is worth 16x16 words: Transformers for image recognition at scale. arXiv 2020, arXiv:2010.11929
+20.   Krizhevsky, A.; Sutskever, I.; Hinton, G.E. Imagenet classification with deep convolutional neural networks. Adv. Neural Inf.
+      Process. Syst. 2012, 25, 1097–1105. [CrossRef]
+21.   Shamshad, F.; Khan, S.; Zamir, S.W.; Khan, M.H.; Hayat, M.; Khan, F.S.; Fu, H. Transformers in medical imaging: A survey. Med.
+      Image Anal. 2023, 88, 102802. [CrossRef]
+22.   Kumar, S. Applications of Transformer in Medical Imaging: A Review. In Impact of Artificial Intelligence on Society; Chapman and
+      Hall/CRC Press: Boca Raton, FL, USA, 2024; pp. 19–30.
+23.   Khan, A.; Rauf, Z.; Khan, A.R.; Rathore, S.; Khan, S.H.; Shah, N.; Farooq, U.; Asif, H.; Asif, A.; Zahoora, U.; et al. A recent survey
+      of vision transformers for medical image segmentation. IEEE Access 2025, 13, 191824–191849. [CrossRef]
+24.   Halder, A.; Gharami, S.; Sadhu, P.; Singh, P.K.; Woźniak, M.; Ijaz, M.F. Implementing vision transformer for classifying 2D
+      biomedical images. Sci. Rep. 2024, 14, 12567. [CrossRef] [PubMed]
+25.   Schuhmann, C.; Vencu, R.; Beaumont, R.; Kaczmarczyk, R.; Mullis, C.; Katta, A.; Jitsev, J.; Komatsuzaki, A. LAION-400M: Open
+      Dataset of CLIP-Filtered 400 Million Image-Text Pairs. arXiv 2021, arXiv:2111.02114.
+26.   Wang, Z.; Wu, Z.; Agarwal, D.; Sun, J. Medclip: Contrastive learning from unpaired medical images and text. In Proceedings of
+      the Conference on Empirical Methods in Natural Language Processing, Abu Dhabi, United Arab Emirates, 7–11 December 2022;
+      Volume 2022, p. 3876.
+27.   Zhao, Z.; Liu, Y.; Wu, H.; Wang, M.; Li, Y.; Wang, S.; Teng, L.; Liu, D.; Cui, Z.; Wang, Q.; et al. CLIP in medical imaging: A survey.
+      Med. Image Anal. 2025, 102, 103551. [CrossRef]
+28.   Lin, W.; Zhao, Z.; Zhang, X.; Wu, C.; Zhang, Y.; Wang, Y.; Xie, W. Pmc-clip: Contrastive language-image pre-training using
+      biomedical documents. In Proceedings of the International Conference on Medical Image Computing and Computer-Assisted Intervention;
+      Springer: Berlin/Heidelberg, Germany, 2023; pp. 525–536.
+29.   Rückert, J.; Bloch, L.; Brüngel, R.; Idrissi-Yaghir, A.; Schäfer, H.; Schmidt, C.S.; Koitka, S.; Pelka, O.; Abacha, A.B.; Seco de Herrera,
+      A.G.; et al. Rocov2: Radiology objects in context version 2, an updated multimodal image dataset. Sci. Data 2024, 11, 688.
+      [CrossRef]
+30.   Nevitt, M.; Felson, D.; Lester, G. Protocol for the Cohort Study; The Osteoarthritis Initiative: Bethesda, MD, USA, 2006; Volume 1.
+31.   Caoa, W.; Mirjalilib, V.; Raschkaa, S. Rank-consistent ordinal regression for neural networks. Pattern Recognit. Lett. 2020, 140,
+      325–331. [CrossRef]
+32.   Tiulpin, A.; Thevenot, J.; Rahtu, E.; Lehenkari, P.; Saarakkala, S. Automatic knee osteoarthritis diagnosis from plain radiographs:
+      A deep learning-based approach. Sci. Rep. 2018, 8, 1727. [CrossRef]
+33.   Mohammed, A.S.; Hasanaath, A.A.; Latif, G.; Bashar, A. Knee osteoarthritis detection and severity classification using residual
+      neural networks on preprocessed X-ray images. Diagnostics 2023, 13, 1380. [CrossRef]
+34.   Liu, B.; Luo, J.; Huang, H. Toward automatic quantification of knee osteoarthritis severity using improved Faster R-CNN. Int. J.
+      Comput. Assist. Radiol. Surg. 2020, 15, 457–466. [CrossRef]
+
+Disclaimer/Publisher’s Note: The statements, opinions and data contained in all publications are solely those of the individual
+author(s) and contributor(s) and not of MDPI and/or the editor(s). MDPI and/or the editor(s) disclaim responsibility for any injury to
+people or property resulting from any ideas, methods, instructions or products referred to in the content.
+
+
+
+
+                                                                                                         https://doi.org/10.3390/math14060963
+

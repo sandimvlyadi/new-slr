@@ -1,0 +1,552 @@
+Received 26 April 2023, accepted 11 May 2023, date of publication 16 May 2023, date of current version 23 May 2023.
+Digital Object Identifier 10.1109/ACCESS.2023.3276810
+
+
+
+
+Knee Osteoarthritis Detection and
+Classification Using X-Rays
+TAYYABA TARIQ                 1 , ZOBIA SUHAIL1 , AND ZUBAIR NAWAZ2
+1 Department of Computer Science, University of the Punjab, Lahore 54590, Pakistan
+2 Department of Data Science, University of the Punjab, Lahore 54590, Pakistan
+
+Corresponding author: Tayyaba Tariq (tayyaba.tariq@pucit.edu.pk)
+
+
+
+
+  ABSTRACT Knee osteoarthritis is a common form of arthritis, a chronic and progressive disease recognized
+  by joint space narrowing, osteophyte formation, sclerosis, and bone deformity that can be observed using
+  radiographs. Radiography is regarded as the gold standard and is the cheapest and most readily available
+  modality. X-ray images are graded using Kellgren and Lawrence’s (KL) grading scheme according to the
+  order of severity of osteoarthritis from normal to severe. Early detection can help early treatment and hence
+  slows down knee osteoarthritis degeneration. Unfortunately, most of the existing approaches either merge
+  or exclude perplexing grades to improve the performance of their models. This study aims to automatically
+  detect and classify knee osteoarthritis according to the KL grading system for radiographs. We have proposed
+  an automated deep learning-based ordinal classification approach for early diagnosis and grading knee
+  osteoarthritis using a single posteroanterior standing knee x-ray image. An Osteoarthritis Initiative(OAI)
+  based dataset of knee joint X-ray images is chosen for this study. The dataset was split into the training,
+  testing, and validation set with a 7: 2: 1 ratio. We took advantage of transfer learning and fine-tuned
+  ResNet-34, VGG-19, DenseNet 121, and DenseNet 161 and joined them in an ensemble to improve the
+  model’s overall performance. Our method has shown promising results by obtaining 98% overall accuracy
+  and 0.99 Quadratic Weighted Kappa with a 95% confidence interval. Also, accuracy per KL grade is
+  significantly improved. Furthermore, our methods outperform state-of-the-art automated methods.
+
+
+  INDEX TERMS Detection and classification, knee osteoarthritis, ordinal classification, X-rays.
+
+
+I. INTRODUCTION                                                                                 it affects people over 60 worldwide [1]. Knee osteoarthritis
+Osteoarthritis (OA) is a disease with multiple factors, mak-                                    diagnosis is usually based on symptoms, arthroscopy, X-rays,
+ing it difficult to diagnose, detect and treat [1], [2]. It is                                  and Magnetic Resonance Imaging (MRI). However, the early
+a chronic degenerative disorder characterized by cartilage                                      stages of OA are often hidden. In addition, there is a weak
+deterioration, eventually leading to bone deterioration. Knee                                   relationship between the degree of pain and dysfunction and
+osteoarthritis (KOA) is one type of osteoarthritis that affects                                 the severity level of OA represented by the image. Thus, there
+the knee joint. Physical symptoms include pain, stiffness,                                      is a need for a better diagnostic technique to detect OA in
+swelling, and limited joint movements. Risk factors are age,                                    the initial stages. OA-related bio-markers can help in this
+gender, genetics, race, obesity, injury, vitamin D deficiency,                                  situation [1].
+and lifestyle [1], [2], [3], [4]. It is a progressive disease                                      Radiographs or X-rays to assess pain and restlessness are
+and has different stages of severity. According to a recent                                     the foundation for detecting and diagnosing KOA [1], [3].
+study [5], the global KOA prevalence is 16%. As reported                                        Key features that can be observed using X-rays are Joint
+by World Health Organization (WHO), this disease is more                                        Space Narrowing (JSN), osteophytes, cyst formation, and
+prevalent in women, i.e., 18.0%, than in men, i.e., 9.6%, and                                   subchondral sclerosis. JSN refers to the loss of protective car-
+                                                                                                tilage between knee joints. Osteophyte is a bony lump formed
+   The associate editor coordinating the review of this manuscript and                          on bones or joints, while subchondral sclerosis is the abnor-
+approving it for publication was Jeon Gwanggil             .                                    mal thickening of the bone [3]. Kellgren and Lawrence’s (KL)
+                                           This work is licensed under a Creative Commons Attribution-NonCommercial-NoDerivatives 4.0 License.
+                                                       For more information, see https://creativecommons.org/licenses/by-nc-nd/4.0/
+48292                                                                                                                                             VOLUME 11, 2023
+T. Tariq et al.: Knee Osteoarthritis Detection and Classification Using X-Rays
+
+
+
+
+TABLE 1. Kellgren and Lawrence’s grading (KL) grading scheme.
+
+
+
+
+grading system is a semiquantitative method to assign grades                     and its learned weights to save computation power and
+to radiographs(x-rays) for KOA severity [6], [7]. According                      resources [13]. In this scenario, an ImageNet pre-trained
+to this system, ordinal numbers are assigned according to the                    deep learning network is only implemented as a feature
+severity level for classification. KL grades are described in                    extractor. The other method is fine-tuning this network to
+Table 1.                                                                         specialize for a particular dataset [11]. These networks are
+   For computer-aided diagnosis and classification, images                       also applied for KOA classification.
+obtained from imaging modalities are processed using image                          Many automated methods and physician’s grading systems
+processing and computer vision-based techniques. These                           are less reliable as they misclassify a KL grade to its nearby
+techniques include image enhancement, segmentation, tex-                         grade. In addition, since there are very few morphological and
+ture, and shape analysis [3], [8], [9]. Image segmentation                       feature changes in successive KL grades, it becomes difficult
+approaches are applied to detect and localize knees in an                        to differentiate different grades [14].
+image. Texture and shape features are then fed into the                             The mainstream studies treat it as a multi-class classifica-
+machine learning classifiers.                                                    tion task and ignore the inherent ordinal nature within KL
+   Recently, Deep Learning (DL) based Convolutional Neural                       grades [14]. Ordinal regression means that input values are
+Networks (CNN) have gained tremendous attention for com-                         continuous, and there is some order between the classes.
+puter vision and image analysis tasks. Several studies apply                     Image ordinal classification uses handcrafted features passed
+popular CNN architectures such as ResNet [10], VGG [11],                         to some regressor or classifier [15]. KOA severity level
+and DenseNet [12] for various classification tasks. Transfer                     prediction is also an image classification task in which
+learning can pull off the benefits of existing architecture                      each KL grade is assigned a distinct category. KL grades
+
+VOLUME 11, 2023                                                                                                                           48293
+                                                                      T. Tariq et al.: Knee Osteoarthritis Detection and Classification Using X-Rays
+
+
+
+
+maintain ordering information about the severity level of           and DenseNet. Their best-attained accuracy is 69.7%, and the
+OA [14], [16], [17].                                                Mean Absolute Error is 0.344.
+   The KL grading is subjective. This depends on the exper-            Thomas et al. [27] developed an automated CNN-based
+tise of the radiologist or radiograph reader. Inter-observer and    model for knee osteoarthritis severity grading from radio-
+Intra-observer reading reliability of quadratic Kappa can vary      graphs. They had 32116 training images, 4074 for tuning, and
+from 0.56 to 0.67 [18]. Therefore, it is challenging to build a     4090 for testing. Their reported accuracy is 0.71, and their
+consensus on the grade of a radiograph, specifically in the         obtained F1 score is 0.70 for the test set.
+earlier stages of KOA.                                                 In another work, ResNet with Convolution Block attention
+   In most studies, the initial stages of KOA have little accu-     Module (CBAM) has been implemented [20]. They used the
+racy [8], [19], [20], [21], [22] while, in some studies, the most   Osteoarthritis Initiative (OAI) X-ray dataset for training and
+difficult stages are merged for classification [23]. At the same    testing. Their obtained accuracy is 74.81%, Mean Squared
+time, some methods try combining X-ray features with other          Error (MSE) is 0.36, and Quadratic kappa score is 0.88. The
+clinical data to improve performance [24]. As a result, the         accuracy for KL grade 0 is 83.81%, KL grade 1 is 48.66%,
+earlier it can be diagnosed, the earlier it can be treated, and     KL grade 2 is 65.68%, KL grade 3 is 85.67%, and KL grade
+knee degeneration leading to total knee replacement can be          4 is 90.21%.
+avoided. We need an assisting tool to prevent the development          Another work is done [18] for classification to evaluate the
+and worsen the disease.                                             effect of additional patient information on the prediction of
+   In this study, we have attempted to resolve this gap by          the DL model for KOA severity. Two types of experiments
+improving prediction accuracies for all KL grades.                  were performed. First, only imaging information was used;
+   The Osteoarthritis Initiative (OAI) is a multi-centric, ten-     in the second experiment, image data and clinical informa-
+year, prospective observational study of KOA. They recruited        tion were input. They used a private dataset of 3464 train-
+4796 men and women, sponsored by the National Institute             ing images, 386 validation images, and 516 testing images.
+of Health (part of the Department of Health and Human               A CNN was developed with the six Squeeze and Excitation
+Services), with data from over 431,000 clinical and imaging         ResNet (SE-ResNet) modules. Their obtained AUCs with
+visits and almost 26,626,000 images in this archive [25]. Knee      only image data for KL grades 0-4 are 0.91, 0.80, 0.69, 0.86,
+X-ray images used in our study are based on this dataset [26].      and 0.96. For DL with image data and patient information
+   1) Our method works on unilateral posteroanterior knee           obtained, AUCs for KL grades 0-4 are 0.97, 0.85, 0.75, 0.86,
+       X-rays and does not require images from multiple             and 0.95. It has been reported that KL grade 2 is the most
+       angles or other clinical data.                               complex and confusing to predict for the DL model. They
+   2) Four ImageNet-based pre-trained models were fine-             observed that patient information improved the AUC for each
+       tuned. State-of-the-art results are achieved by each of      stage.
+       these models individually.                                      In another study, [23], 25873 training images, 7779 valida-
+   3) An ensemble model is developed by combining pre-              tion images, and 5941 testing images are taken from the OAI
+       dictions from the above-mentioned base models to             dataset. Left and right Knee joints are localized using U-Net.
+       improve overall performance.                                 Demographic information, i.e., age, gender, BMI, is fed to the
+   4) Ordinal classification is considered using a customized       DenseNet. Their method achieved sensitivity results for four
+       ordinal loss function.                                       levels of OA are normal 83.7%, mild 70.2%, moderate 68.9%
+   5) Finally, significant features identified by the model are     Severe 86.0%, and Specificity normal 86.1%, mild 83.8%
+       visualized using class-specific heatmaps.                    moderate 97.1%, and severe 99.1%. They have eliminated
+We focused on early diagnosis of KOA and improved the               the KL1 doubtful grade. Moreover, their internal radiologists
+model’s performance for all grades. Early diagnosis and the         highlight the inter-observer reliability of KL classification
+correct prediction of KOA grade will help physicians devise         varies from 0.51 to 0.89. It has also been observed that
+a better strategy for treating KOA at the early stages and          these wrong classifications are mainly made for adjacent KL
+will reduce the cost borne by the patients due to delayed           grades.
+detection [1]. Our model outperforms all existing methods to           A transfer learning-based approach was applied using pre-
+the best of our knowledge.                                          trained ResNet-34 architecture [24]. They used the OAI data
+                                                                    of 728 participants. Knee radiographs and other clinical
+II. RELATED WORK                                                    assessments, e.g., age, gender, ethnicity, and BMI, are fed
+Anifah et al. [8] have used Contrast Limited Adaptive His-          to the model for possible KL grade and OA progression
+togram Equalization and Template matching for KOA grad-             prediction. Using transfer learning, their achieved AUCs for
+ing. Their classification accuracy for KL grade 0 is 93.8%,         KL grade prediction are 0.93, 0.80, 0.88, 0.96, and 0.99.
+for KL grade 1 is 70%, KL grade 2 is 4%, KL grade 3 is 10%,
+and KL grade 4 is 88.9%.                                            III. METHODOLOGY
+   Chen et al. [19] have used YOLO2 Network for fully               In the following section, we have described the complete
+automated knee joint detection. They have tested multiple           methodology to achieve the objectives mentioned above in
+fine-tuned networks for classification, e.g., ResNet, VGG,          this study. First, section III-A describes the dataset. Then,
+
+48294                                                                                                                              VOLUME 11, 2023
+T. Tariq et al.: Knee Osteoarthritis Detection and Classification Using X-Rays
+
+
+
+
+                              FIGURE 1. Methodology.
+
+
+
+
+                                                                                 is significantly deeper, with 144 million parameters, and is
+                                                                                 a variant of the VGG model that comprises 16 convolutional
+                                                                                 layers, three fully connected layers, five max pool layers, and
+                                                                                 one softmax layer. Max pool layers are crucial for spatial sub-
+                                                                                 sampling and generic feature extraction.
+
+                                                                                 2) RESIDUAL NETWORK (ResNet)
+                                                                                 ResNet, [10] that is comparatively shallow, has proven to
+                                                                                 perform better for image recognition tasks and won ILSVRC
+                                                                                 2015. The ResNet-34 involves over 21 million trainable
+                                                                                 parameters and overcomes the problem of vanishing or
+                                                                                 exploding gradients by adding auxiliary connections. These
+                                                                                 connections help maintain a constant flow of information
+FIGURE 2. Number of images.
+                                                                                 throughout the network and reduce computational costs.
+
+                                                                                 3) DENSELY CONNECTED CONVOLUTIONAL NEURAL
+section III-B narrates the pre-trained deep learning networks                    NETWORK (DenseNet)
+used in our experiments. Finally, in section III-C, experimen-                   DenseNet [12] that connects each layer to each layer in a feed-
+tal settings and the training process are explained. Figure 1                    forward way makes it dense, promotes feature reuse, reduces
+depicts the overall methodology.                                                 the number of parameters, and improves learning. DenseNets
+                                                                                 are based on auxiliary connections of ResNets and impose
+A. DATASET DESCRIPTION                                                           long-chained additional links to form dense blocks. The basic
+The dataset used for this study is based on the Osteoarthritis                   architectures of these four networks are compared in Figure 3.
+Initiative dataset [9]. There are 9786 X-ray images graded                          The ensemble model joins predictions of divergent inde-
+according to the KL grading scheme. In grade 0, there are                        pendently trained machine learning models, also called base
+3857 images, 1770 in grade 1, 2578 in grade 2, 1286 in                           classifiers, to reduce generalization error and improve per-
+grade 3, and 295 in grade 4. The size of each image is                           formance. One of the different forms of the ensemble is
+224 × 224.                                                                       the stacking ensemble, where outputs of base classifiers are
+   Data is highly unbalanced; hence, data has been split into                    combined and passed to another model for final predic-
+the train, test, and validation classes considering the number                   tion. We have separately fine-tuned VGG-19, ResNet-34,
+of available samples for each category. Figure 2 reflects data                   DenseNet 121, and DenseNet 161, inspired by the best mod-
+distribution between training, testing, and validation. The                      els in the previous studies by Chen et al. [19], Tiulpin et al.
+same partitioning is used by [19] and [28]                                       [29], Mikhaylichenko and Demyanenko [28], Yong et al. [14]
+                                                                                 respectively. Finally, we developed an ensemble of these base
+B. NETWORKS                                                                      models to improve the prediction precision and accuracy.
+1) VISUAL GEOMETRIC GROUP NET (VGG)
+VGG [11], winner of ImageNet Large Scale Visual Recog-                           C. EXPERIMENTS
+nition Challenge (ILSVRSC) 2014, for localization and                            1) BASE CLASSIFIERS
+classification task, is based on multiple minute convolution                     For the training of base classifiers, the batch size is 28. Differ-
+filters and max pooling layer. On the other hand, VGG-19                         ent image transformations are applied and chained together
+
+VOLUME 11, 2023                                                                                                                               48295
+                                                                             T. Tariq et al.: Knee Osteoarthritis Detection and Classification Using X-Rays
+
+
+
+
+                              FIGURE 3. Basic architectures of imageNet pre-trained CNNs are compared. all four
+                              networks contain multiple convolutional and max pool layers and, finally, a fully
+                              connected layer to produce 1000 outputs.
+
+
+to improve model learning. These transformations include                     Four logits from the base classifier can be calculated using
+changing the brightness and saturation, flipping the image                the following expression,
+horizontally, random affine, and normalizing. This batch was                                             k−1
+then passed to the base network.
+                                                                                                         X
+                                                                                          q[i] = 1 +            1 (p(y[i] > gj ) > 0.5                 (3)
+   Considering the KL grade classification as an ordinal                                                  j=1
+regression problem, a rank-consistent ordinal regression-
+based framework (CORN) [30] has been used for loss                           For an input image i, the index of KL predicted grade
+calculation and grade prediction. It used the chain rule of               is, gq[i]
+conditional probability distribution to obtain unconditional                 For KL grade 0, the results of all sub-tasks are false,
+rank probabilities and was developed to be used with deep                 resulting in prediction 0. While for KL grade 4, the results
+neural networks. The implementation of CORN is provided                   of all four sub-tasks are true, which makes its sum equal to 4.
+by the coral-PyTorch library. The idea is to solve the KL                 Hence grade 4 is predicted.
+grading problem as an ordinal classification task.                           For training CORN, the following loss function is mini-
+   Given a training set:                                                  mized.
+                                                                                                      k−1 |Sj | h   
+                      D = {x [i] , y[i] )}N                      (1)                            1     XX
+                                          i=1                               L(Z , y) = − Pk−1                    log σ z[i] .
+                                                                                            j=1   S j j=1 i=1
+   These target labels are extended into binary tasks to indi-
+cate if y[i] exceeds a certain grade gk , such that yk[i] ∈ 0, 1.
+                                                                                                                                  i
+                                                                                       × 1y > gj + log σ z[i] − z[i] .1y[i] ≤ gk
+                                                                                            [i]
+These are then passed to the base classifier model. We set
+the output layer for CORN to use g-1 classes associated with                                                                                           (4)
+kl grade 1, grade 2, grade 3, and grade 4, i.e., g1, g2, g3,              where Sj is the size of the j-th conditional training set.
+and g4, respectively, in the output layer of the base classifier             Z is the last layer’s net inputs, and we call these logits.
+model. Then CORN calculates conditional probability based                    All base classifiers calculate logits, predict labels, and cal-
+on conditional training subsets. So, the output of the k-th               culate the loss. The optimizer is Adaptive Moment Estimation
+binary task is                                                            (ADAM) with an initial learning rate of 0.0001. The learning
+             fk (x [i] ) = P(y[i] > gk |y[i] > gk−1 ),           (2)      rate was reduced after every five epochs. The training was
+                                                                          done for 100 epochs. After each training epoch, the model
+where these events are nested {y[i] > gk } ⊆ {y[i] > gk−1 }               is validated on the validation set. Model results with the
+
+48296                                                                                                                                     VOLUME 11, 2023
+T. Tariq et al.: Knee Osteoarthritis Detection and Classification Using X-Rays
+
+
+
+
+                                       FIGURE 4. Training base classifiers: The batch size is 28. Input images are
+                                       transformed using different transformations. Training is done for 100 Epochs.
+                                       Rank Consistent Ordinal Regression based framework (CORN) is applied to
+                                       calculate loss and predict grades. ADAM is used for the optimization of the
+                                       network. Validation data is validated at the end of each epoch.
+
+
+best performances are reported. The Eigen-CAM visualizes                             The recall is the ratio of images correctly identified as
+salient features [31], [32]. All four selected networks are fine-                  positive.
+tuned according to the training process mentioned above, also                                                         TP
+reflected in Figure 4.                                                                                     Recall =                            (7)
+                                                                                                                   TP + FN
+2) ENSEMBLE                                                                        The F1 score or F Measure is used to measure the accuracy of
+The outputs from the base classifiers are joined using a                           a model. The greater the F1 score, the better the performance
+fully connected layer in the Ensemble model, which uses                            of our model.
+the ADAM optimizer with an initial learning rate of 0.0001.                                                   Precision ∗ Recall
+                                                                                                    F =2∗                                      (8)
+The batch size was 28. The learning rate decayed every                                                       Precision + Recall
+three epochs. After each epoch validation set was evaluated.                          Another evaluation measure for Ordinal Regression is
+Training is done for 25 epochs, and CrossEntropy is used to                        Mean Squared Error (MSE) is the mean or average of the
+calculate the loss. The Ensembling process is demonstrated                         square of the difference between actual and estimated values.
+in Figure 5.                                                                       For a dataset of n images, given the actual label and predicted
+   Implementation has been done with python 3.7, PyTorch-                          label, the MSE is defined as
+v1.12.1, and coral-PyTorch-1.4.0 in the GoogleColab                                                             n
+framework.                                                                                                  1X
+                                                                                                 MSE =         (actual − predicted)2          (9)
+                                                                                                            n
+                                                                                                               i=1
+D. EVALUATION METRICS
+                                                                                      Cohen’s Quadratic Weighted Kappa (QWK) (κ) is useful
+A machine learning model will partition the predictions into
+                                                                                   when classification labels are ordered. It measures the agree-
+different classes for evaluation.
+                                                                                   ment between classification accuracy (Proportion of observed
+   True Positive (TP) means an image is correctly identified
+                                                                                   agreement i.e., P0 ) and the theoretical probability of chance
+as positive.
+                                                                                   agreement i.e.,Pe . Weights (w) can be assigned according to
+   False Positive (FP) means an image is negative but identi-
+                                                                                   the ordering or severity information.
+fied as positive.
+   True Negative (TN) means an image is negative and cor-                                                           P0 (w) − Pe (w)
+                                                                                                           κ=                                (10)
+rectly identified as negative.                                                                                        1 − Pe (w)
+   False Negative (FN) means an image is positive but iden-                           The Receiver Operating Characteristics Curve (ROC) mea-
+tified as negative.                                                                sures how accurately the model can differentiate between dif-
+   Based on these outcomes, accuracy can be calculated.                            ferent classes, while Area Under the Curve (AUC) measures
+   Accuracy is the measure of correct predictions. In terms of                     the entire 2-dimensional area underneath the ROC curve.
+FP, TP, TN, and FN, accuracy is
+                            TP + TN                                                IV. RESULTS
+                Accuracy =                 .         (5)                           Accuracy, precision, recall, F1-score, and AUC for all the
+                      TP + TN + FP + FN
+                                                                                   models are compared in Table 2. The Ensemble model has
+  Precision is how many images predicted as positive are
+                                                                                   secured the best overall results for almost all evaluation met-
+positive.
+                                                                                   rics except recall.
+                                             TP                                       The Ensemble model achieved an overall accuracy of 0.98,
+                         Precision =                                         (6)
+                                           TP + FP                                 an overall precision of 0.98, an overall F1-score of 0.97,
+
+VOLUME 11, 2023                                                                                                                             48297
+                                                                               T. Tariq et al.: Knee Osteoarthritis Detection and Classification Using X-Rays
+
+
+
+
+                                FIGURE 5. Ensembling: four imageNet pre-trained networks are fine-tuned, and then
+                                their predictions are joined as an ensemble to produce one final output.
+
+TABLE 2. Performance comparison of five models overall and across different grades.
+
+
+
+
+and an overall AUC of 0.98. The highest QWK (κ), with                       MSE are 0.027 and 0.032, respectively, which the Ensemble
+a confidence interval of 0.95, is 0.99; minimum MAE and                     model also obtains. The confusion matrices of these models
+
+48298                                                                                                                                       VOLUME 11, 2023
+T. Tariq et al.: Knee Osteoarthritis Detection and Classification Using X-Rays
+
+
+
+
+TABLE 3. Cohen kappa, MAE, and MSE for all models.
+
+
+
+
+can observe the same results. For grade 0, 637 classes out of                    to better accuracy of rates with more samples and starts
+639 were correctly predicted by the Ensemble model. ROC                          overfitting for grades with fewer samples, thus reducing their
+curves and AUC values also depict the same exciting fact                         accuracy.
+that DenseNet-161 and Ensemble model performed best for                             The benefits of using CORN can also be observed. By con-
+grades 0, grade 2, and grade 3.                                                  sidering the ordering information of the KL grades, the over-
+   It can also be seen that the overall accuracy of VGG-19 and                   all performances of the models are improved. Most of the
+DenseNet-121 is equal. For overall accuracy, DenseNet-161                        wrong predictions are made to the nearby grade instead of
+scored first, while ResNet-34 was at the lowest by acquiring                     making a wrong prediction to the distant grade, and most
+a minimum accuracy of 0.95. The DenseNet-161 achieved                            predictions now fall towards the diagonal. During training,
+better accuracies for most KL grades, i.e., grade 0, grade 1,                    the learning rate decays, which helps the model converge.
+and grade 3.                                                                        Accuracies, precision, recall, and F-score are reported.
+   DenseNet-121 and ResNet-34 have obtained the best accu-                       In addition, overall quadratic weighted kappa is also reported.
+racy, precision, recall, and F1 score for grade 4. For the                          For computer-aided diagnosis, the focus is on the model’s
+ResNet-34 confusion matrix, out of 639 x-rays for grade 0,                       accuracy and precision hence we used the above-mentioned
+615 were correctly reported as grade 0, 21 were misclassi-                       metrics for the model’s evaluation. The computational com-
+fied as grade 1, and only three were mislabeled as grade 2.                      plexity of deep learning models depends upon the number
+For grade1, 14,6, and 1, X-rays were wrongly identified as                       of parameters and layers, as shown in Figure 3. The num-
+grade 0, grade 2, and grade 3, respectively. Out of 447 x-rays,                  ber of Floating-Point Operations (FLOPs) is another metric
+images of grade2 5, 18, and 5 were wrongly reported as                           that measures the performance of deep networks. ResNet-34
+grade 0, grade 1, and grade 3. For grade 3, only six images                      has 4 Billion FLOPs with 21 Million parameters. VGG-19,
+were improperly classified as grade 2. For grade 4, only two                     DenseNet-121, and DenseNet-161 have 20 Billion, 3 Billion,
+images needed clarification and were marked as grade 3.                          and 8 Billion FLOPs, respectively. Finally, the Ensemble
+   It has been observed that the model wrongly labeled                           model utilizes all these operations to predict better.
+adjacent grades more often than distant ones. Overall final                         Table 5 presents the feature localization by Eigen-CAM.
+accuracy achieved as 95%. Accuracy, precision, recall, and                       It can be concluded that our models could extract valuable
+F-Score results are shown in Table 2 and Table 3. Confusion                      features from the X-ray image. These models can be visu-
+Matrices and ROC curves can be seen in Table 4.                                  alized to differentiate bone sclerosis, osteophytes, cartilage
+   The Ensemble and DenseNet-161 obtained the best pre-                          degeneration, and joint space narrowing, as the Eigen-CAM
+cision, recall, and F-scores. To abridge the research gaps                       highlights their extracted features. For instance, for grade 0,
+discussed earlier in section I, we used the dataset set based                    the Ensemble model has almost 100% accuracy. Similarly,
+on the OAI dataset. In addition, since the OAI study is con-                     for grade 4, ResNet-34 and DenseNet-121 identified better
+ducted within defined protocols and images are annotated                         features, as shown by Eigen-CAM.
+by multiple annotators’ consensus, there are fewer chances                          Table 6 compares our results with other state-of-the-art
+of inter-rater disagreements. To improve the overall perfor-                     techniques.
+mance of the model following strategies were implemented.                           In almost all previous studies overall accuracy of the KL
+First, the input image size enables the model to extract use-                    grade 1 was significantly less than the overall accuracy. Com-
+ful information about the structures and features of bones.                      pared to our research, some studies have used a different
+Secondly, the ratio of samples between each class is not                         dataset, and some have adopted another loss function.
+equal. This problem of data unbalances resolved by applying                         The most recent study by Liu et al. [35] has performed mul-
+different transformations to the training data. These variations                 tiple experiments with Cross Entropy loss and Focal Ordinal
+helped the model learn variance, eliminating the need to treat                   Loss (FOL) using several classical pre-trained models such
+left and right knee images separately, resulting in a robust                     as VGG, ResNet, DenseNet, and GoogleNet. Moreover, they
+model. It was also observed that training for more epochs                        have performed experiments with augmented datasets and
+could enhance the overall accuracy by compromising the                           CBAM. Their best results are reported in Table 6. The overall
+accuracy of any KL grade. Since the number of samples                            accuracy is 66%. In addition, they have shown improvements
+in grade 0 is more abundant than in the rest of the grades,                      in performance measures using FOL, but their results were
+accuracy increases for grade 0. Hence more training leads                        unstable in accuracy.
+
+
+VOLUME 11, 2023                                                                                                                           48299
+                                                                  T. Tariq et al.: Knee Osteoarthritis Detection and Classification Using X-Rays
+
+
+
+
+TABLE 4. Results- confusion matrices and ROC curves.
+
+
+
+
+   If we refer to the work of Yong et al. [14], they have       a QWK of 0.86 using an ordinal regression module with
+performed several experiments with state-of-the-art architec-   DenseNet-161. Their accuracies for initial grades can be
+tures. Overall accuracy was enhanced up to 88.09% with          improved.
+
+48300                                                                                                                          VOLUME 11, 2023
+T. Tariq et al.: Knee Osteoarthritis Detection and Classification Using X-Rays
+
+
+
+
+TABLE 5. Eigen-CAM visualization all models.
+
+
+
+
+   Feng et al. [33] have implemented ResNet, without its                         dataset distribution in a train, testing, and validation as ours,
+residual part, with an attention module, where Mish is used                      their overall performance and performance for each KL grade
+as an activation function. However, with the same dataset and                    still need to be higher than our models.
+
+
+VOLUME 11, 2023                                                                                                                             48301
+                                                                   T. Tariq et al.: Knee Osteoarthritis Detection and Classification Using X-Rays
+
+
+
+
+TABLE 6. Comparison with other state-of-the-art techniques.
+
+
+
+
+   In comparison to the work by Mikhaylichenko and Demya-        angles, i.e., 5o , 10o , and 15o . To train our model, we applied
+nenko [28], which used variants of DenseNet, the accu-           different conversions, e.g., rotation and flipping, to the frontal
+racies of our, DenseNet-121 and DenseNet-161 are better.         images for better training.
+Our lowest-performing model, ResNet-34, performed better            Another impactful and inspiring study that is the basis of
+than their best ensemble model. They performed multiple          most of the studies mentioned above is by Antony et al. [17].
+experiments with DenseNet, training from scratch and with        Unlike our work, they have performed experiments with two
+pre-trained models. They have also compared the results of       types of datasets. They have implemented and trained a CNN
+CrossEntropy loss, and ordinal loss [19]. The main differ-       from scratch and another CNN for simultaneous regression
+ence is that we used CORN to calculate losses and grade          and classification for KOA grading. Our models have shown
+prediction.                                                      a tremendous difference in performance.
+   Chen et al. [19] have applied knee joint localization. Then      A substantial limitation of our study is the need for more
+they made a comparison of fine-tuning variants of ResNet,        diversity in the dataset. For example, the same dataset is used
+VGG, DenseNet as well as Inception. They have also intro-        for training, testing, and validation.
+duced an adjustable ordinal loss function considering KOA
+grading an ordinal regression problem. Our models outper-        V. CONCLUSION
+form their results by using CORN loss.                           In this paper, we have applied a deep learning-based ordinal
+   Tiulpin et al. [29] developed and compared three types        classification approach to grading knee osteoarthritis X-rays.
+of models. One is the pre-trained ResNet-34 as a baseline        We present new state-of-the-art results in automated KOA
+network. Second is the re-implementation of CNN by [17].         classification for all KL grades. In addition, we enhanced
+Finally, their models are based on the siamese network trained   the performance of our models by making an ensemble of
+using multiple hyper-parameters and different seeds. They        fine-tuned models. Our method provides a quick, early, and
+use cropped images into two square patches and feed these        reliable evaluation of input knee X-rays, and medical practi-
+images to the Siamese network, which makes their approach        tioners can use it as an alternative option to save time. Ordi-
+different from our research. Finally, they used ensembling to    nal classification improved the performance of our system
+combine networks trained with different seeds. They have         significantly. Further Ensemble has also shown significant
+used separate datasets for training, testing, and validation.    improvement for all evaluation metrics. In the future, we plan
+They have also included radiographs taken from multiple          to incorporate multiple datasets from multiple settings.
+
+48302                                                                                                                           VOLUME 11, 2023
+T. Tariq et al.: Knee Osteoarthritis Detection and Classification Using X-Rays
+
+
+
+
+REFERENCES                                                                            [21] A. Tiulpin and S. Saarakkala, ‘‘Automatic grading of individual knee
+                                                                                           osteoarthritis features in plain radiographs using deep convolutional neural
+ [1] Y. Badshah, M. Shabbir, H. Hayat, Z. Fatima, A. Burki, S. Khan, and                   networks,’’ Diagnostics, vol. 10, no. 11, p. 932, Nov. 2020.
+     S. U. Rehman, ‘‘Genetic markers of osteoarthritis: Early diagnosis in sus-       [22] T. Tariq, Z. Suhail, and Z. Nawaz, ‘‘Machine learning approaches for
+     ceptible Pakistani population,’’ J. Orthopaedic Surgery Res., vol. 16, no. 1,         the classification of knee osteoarthritis,’’ in Proc. 3rd Int. Conf. Electr.,
+     pp. 1–8, Dec. 2021.                                                                   Comput., Commun. Mechatronics Eng. (ICECCME), 2023.
+ [2] S. K. Das and A. Farooqi, ‘‘Osteoarthritis,’’ Best Pract. Res. Clin. Rheuma-     [23] B. Norman, V. Pedoia, A. Noworolski, T. M. Link, and S. Majumdar,
+     tol., vol. 22, no. 4, pp. 657–675, 2008.                                              ‘‘Applying densely connected convolutional neural networks for staging
+ [3] S. S. Gornale, P. U. Patravali, and R. R. Manza, ‘‘Detection of osteoarthritis        osteoarthritis severity from plain radiographs,’’ J. Digit. Imag., vol. 32,
+     using knee X-ray image analyses: A machine vision based approach,’’ Int.              no. 3, pp. 471–477, Jun. 2019.
+     J. Comput. Appl., vol. 145, no. 1, pp. 20–26, 2016.                              [24] K. Leung, B. Zhang, J. Tan, Y. Shen, K. J. Geras, J. S. Babb, K. Cho,
+ [4] M. N. Iqbal, F. R. Haidri, B. Motiani, and A. Mannan, ‘‘Frequency of fac-             G. Chang, and C. M. Deniz, ‘‘Prediction of total knee replacement
+     tors associated with knee osteoarthritis,’’ J. Pakistan Med. Assoc., vol. 61,         and diagnosis of osteoarthritis by using deep learning on knee radio-
+     no. 8, p. 786, 2011.                                                                  graphs: Data from the osteoarthritis initiative,’’ Radiology, vol. 296, no. 3,
+ [5] Y. X. Teoh, K. W. Lai, J. Usman, S. L. Goh, H. Mohafez, K. Hasikin,                   pp. 584–593, Sep. 2020.
+     P. Qian, Y. Jiang, Y. Zhang, and S. Dhanalakshmi, ‘‘Discovering knee             [25] (2006). Oai. [Online]. Available: https://nda.nih.gov/oai
+     osteoarthritis imaging features for diagnosis and prognosis: Review of           [26] P. Chen. (2018) Knee Osteoarthritis Severity Grading Dataset. [Online].
+     manual imaging grading and machine learning approaches,’’ J. Healthcare               Available: https://data.mendeley.com/datasets/56rmx5bjcr/1/
+     Eng., vol. 2022, pp. 1–19, Feb. 2022.                                            [27] K. A. Thomas, L. Kidzinski, E. Halilaj, S. L. Fleming, G. R. Venkataraman,
+ [6] J. H. Kellgren and J. S. Lawrence, ‘‘Radiological assessment of osteo-                E. H. G. Oei, G. E. Gold, and S. L. Delp, ‘‘Automated classification
+     arthrosis,’’ Ann. Rheumatic Diseases, vol. 16, no. 4, pp. 494–502,                    of radiographic knee osteoarthritis severity using deep neural networks,’’
+     Dec. 1957.                                                                            Radiol., Artif. Intell., vol. 2, no. 2, Mar. 2020, Art. no. e190065.
+ [7] D. Saini, T. Chand, D. K. Chouhan, and M. Prakash, ‘‘A comparative anal-         [28] A. Mikhaylichenko and Y. Demyanenko, ‘‘Automatic grading of knee
+     ysis of automatic classification and grading methods for knee osteoarthritis          osteoarthritis from plain radiographs using densely connected convolu-
+     focussing on X-ray images,’’ Biocybernetics Biomed. Eng., vol. 41, no. 2,             tional networks,’’ in Proc. Int. Conf. Anal. Images, Social Netw. Texts.
+     pp. 419–444, Apr. 2021.                                                               Cham, Switzerland: Springer, 2020, pp. 149–161.
+ [8] L. Anifah, I. K. E. Purnama, M. Hariadi, and M. H. Purnomo, ‘‘Osteoarthri-       [29] A. Tiulpin, J. Thevenot, E. Rahtu, P. Lehenkari, and S. Saarakkala,
+     tis classification using self organizing map based on Gabor kernel and                ‘‘Automatic knee osteoarthritis diagnosis from plain radiographs: A deep
+     contrast-limited adaptive histogram equalization,’’ Open Biomed. Eng. J.,             learning-based approach,’’ Sci. Rep., vol. 8, no. 1, pp. 1–10, Jan. 2018.
+     vol. 7, no. 1, pp. 18–28, Feb. 2013.                                             [30] X. Shi, W. Cao, and S. Raschka, ‘‘Deep neural networks for rank-
+ [9] A. Brahim, R. Jennane, R. Riad, T. Janvier, L. Khedher, H. Toumi, and                 consistent ordinal regression based on conditional probabilities,’’ 2021,
+     E. Lespessailles, ‘‘A decision support tool for early detection of knee               arXiv:2111.08851.
+     OsteoArthritis using X-ray imaging and machine learning: Data from               [31] M. B. Muhammad and M. Yeasin, ‘‘Eigen-CAM: Class activation map
+     the OsteoArthritis initiative,’’ Computerized Med. Imag. Graph., vol. 73,             using principal components,’’ in Proc. Int. Joint Conf. Neural Netw.
+     pp. 11–18, Apr. 2019.                                                                 (IJCNN), Jul. 2020, pp. 1–7.
+[10] K. He, X. Zhang, S. Ren, and J. Sun, ‘‘Deep residual learning for image          [32] Jacob Gildenblat and Contributors. (2021). PyTorch Library for CAM
+     recognition,’’ in Proc. IEEE Conf. Comput. Vis. Pattern Recognit. (CVPR),             Methods. [Online]. Available: https://github.com/jacobgil/pytorch-grad-
+     Jun. 2016, pp. 770–778.                                                               cam
+[11] K. Simonyan and A. Zisserman, ‘‘Very deep convolutional networks for             [33] Y. Feng, J. Liu, H. Zhang, and D. Qiu, ‘‘Automated grading of knee
+     large-scale image recognition,’’ 2014, arXiv:1409.1556.                               osteoarthritis X-ray images based on attention mechanism,’’ in Proc. IEEE
+[12] G. Huang, Z. Liu, L. Van Der Maaten, and K. Q. Weinberger, ‘‘Densely                  Int. Conf. Bioinf. Biomed. (BIBM), Dec. 2021, pp. 1927–1932.
+     connected convolutional networks,’’ in Proc. IEEE Conf. Comput. Vis.             [34] W. Liu, T. Ge, L. Luo, H. Peng, X. Xu, Y. Chen, and Z. Zhuang, ‘‘A novel
+     Pattern Recognit. (CVPR), Jul. 2017, pp. 4700–4708.                                   focal ordinal loss for assessment of knee osteoarthritis severity,’’ Neural
+[13] E. Chaves, C. B. Gonçalves, M. K. Albertini, S. Lee, G. Jeon, and                     Process. Lett., vol. 54, no. 6, pp. 5199–5224, 2022.
+     H. C. Fernandes, ‘‘Evaluation of transfer learning of pre-trained CNNs           [35] B. Liu, J. Luo, and H. Huang, ‘‘Toward automatic quantification of knee
+     applied to breast cancer detection on infrared images,’’ Appl. Opt., vol. 59,         osteoarthritis severity using improved faster R-CNN,’’ Int. J. Comput.
+     no. 17, p. 23, 2020.                                                                  Assist. Radiol. Surgery, vol. 15, no. 3, pp. 457–466, Mar. 2020.
+[14] C. W. Yong, K. Teo, B. P. Murphy, Y. C. Hum, Y. K. Tee, K. Xia,
+     and K. W. Lai, ‘‘Knee osteoarthritis severity classification with ordinal
+     regression module,’’ Multimedia Tools Appl., vol. 81, pp. 41497–41509,
+     Jan. 2021.                                                                       TAYYABA TARIQ is currently pursuing the Ph.D. degree in computer science
+[15] C. Zhang, C. Zhu, J. Xiao, X. Xu, and Y. Liu, ‘‘Image ordinal classification     with the Department of Computer Science, University of the Punjab. She is
+     and understanding: Grid dropout with masking label,’’ in Proc. IEEE Int.         an Assistant Professor with the Department of Computer Science, University
+     Conf. Multimedia Expo (ICME), Jul. 2018, pp. 1–6.                                of the Punjab. Her research interests include image processing and deep
+[16] C. Beckham, ‘‘Techniques in ordinal classification and image-to-                 learning.
+     image translation,’’ Ph.D. dissertation, Mémoire de maîtrise, Départe-
+     ment de génie informatique et génie logiciel, Ecole Polytechnique,
+     Montreal, QC, Canada, 2017. [Online]. Available: https://books.google.
+     com.pk/books?id=GmXAwgEACAAJ
+                                                                                      ZOBIA SUHAIL received the Ph.D. degree in computer science from
+[17] J. Antony, K. McGuinness, K. Moran, and N. E. O’Connor, ‘‘Auto-                  Aberystwyth University, in 2019. She is currently an Assistant Professor with
+     matic detection of knee joints and quantification of knee osteoarthritis         the Department of Computer Science, University of the Punjab. Her research
+     severity using convolutional neural networks,’’ in Proc. Int. Conf. Mach.        interests include medical image processing and machine learning.
+     Learn. Data Mining Pattern Recognit. Cham, Switzerland: Springer, 2017,
+     pp. 376–390.
+[18] D. H. Kim, K. J. Lee, D. Choi, J. I. Lee, H. G. Choi, and Y. S. Lee,                                         ZUBAIR NAWAZ received the Ph.D. degree in
+     ‘‘Can additional patient information improve the diagnostic performance                                      computer engineering from the Delft Univer-
+     of deep learning for the interpretation of knee osteoarthritis severity,’’
+                                                                                                                  sity of Technology, in 2011. He is currently an
+     J. Clin. Med., vol. 9, no. 10, p. 3341, Oct. 2020.
+                                                                                                                  Assistant Professor with the Department of Data
+[19] P. Chen, L. Gao, X. Shi, K. Allen, and L. Yang, ‘‘Fully automatic
+     knee osteoarthritis severity grading using deep neural networks with a                                       Science, University of the Punjab. His research
+     novel ordinal loss,’’ Computerized Med. Imag. Graph., vol. 75, pp. 84–92,                                    interests include data science, machine learning,
+     Jul. 2019.                                                                                                   high-performance computing, compiler optimiza-
+[20] B. Zhang, J. Tan, K. Cho, G. Chang, and C. M. Deniz, ‘‘Attention-based                                       tion, and scientific computing.
+     CNN for KL grade classification: Data from the osteoarthritis initiative,’’ in
+     Proc. IEEE 17th Int. Symp. Biomed. Imag. (ISBI), Apr. 2020, pp. 731–735.
+
+VOLUME 11, 2023                                                                                                                                                   48303
+

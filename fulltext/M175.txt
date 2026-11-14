@@ -1,0 +1,354 @@
+                                                                                                                                                                                             2025 3rd International Conference on Intelligent Systems, Advanced Computing and Communication (ISACC)                                                 805
+
+
+
+
+                                                                                                                                                                                            Knee Osteoarthritis detection and classification
+                                                                                                                                                                                                 using a customized CenterNet with
+
+
+
+
+2025 3rd International Conference on Intelligent Systems, Advanced Computing and Communication (ISACC) | 979-8-3315-2389-3/25/$31.00 ©2025 IEEE | DOI: 10.1109/ISACC65211.2025.10969337
+                                                                                                                                                                                                            DenseNet201
+                                                                                                                                                                                                        N. Shirisha                                                K. Shilpa                                              CH. Meghana
+                                                                                                                                                                                              Dept. of Computer Science and                             Dept. of Computer Science and                               Dept. of Computer Science and
+                                                                                                                                                                                                        Engineering                                               Engineering                                                 Engineering
+                                                                                                                                                                                               MLR Institute of Technology                               MLR Institute of Technology                                 MLR Institute of Technology
+                                                                                                                                                                                                      Hyderabad, India.                                         Nalgonda, India.                                          Hyderabad, India
+                                                                                                                                                                                             nallashirisha@mlrinstitutions.ac.in                          shilpakatnam100@gmail.com                                  chodammeghana@gmail.com
+
+
+                                                                                                                                                                                               Mohammed Abdul Rahman
+                                                                                                                                                                                              Dept. of Computer Science and
+                                                                                                                                                                                                        Engineering
+                                                                                                                                                                                               MLR Institute of Technology
+                                                                                                                                                                                                      Hyderabad, India
+                                                                                                                                                                                                   Rahmanaus9@gmail.com
+
+                                                                                                                                                                                              Abstract—Knee osteoarthritis (KOA) is a prevalent joint                         Traditional diagnostic approaches have employed machine
+                                                                                                                                                                                          disorder diagnosed using imaging modalities like MRI, CT scans,                     learning algorithms with limited accuracy. This study proposes
+                                                                                                                                                                                          and X-rays, with X-rays being the most cost-effective. Early                        a deep learning model that integrates CenterNet with
+                                                                                                                                                                                          detection is crucial for effective management. This study presents                  DenseNet201 to address previous limitations and achieve
+                                                                                                                                                                                          an automated deep learning approach to detect and classify KOA
+                                                                                                                                                                                                                                                                              higher accuracy across all KOA grades. The customized
+                                                                                                                                                                                          severity based on the Kellgren-Lawrence (KL) grading system
+                                                                                                                                                                                          using single posteroanterior standing knee X-ray images.                            CenterNet model, utilizing DenseNet201 as the backbone,
+                                                                                                                                                                                          Utilizing the Osteoarthritis Initiative dataset, we employed                        focuses on the knee joint through a pixel-wise voting
+                                                                                                                                                                                          transfer learning to fine-tune DenseNet-201, enhancing model                        mechanism and computes deep key points from input data.
+                                                                                                                                                                                          performance. Additionally, knowledge distillation was applied to
+                                                                                                                                                                                          reduce computational complexity while maintaining accuracy.                         The primary objective is to enhance KOA detection efficiency
+                                                                                                                                                                                          Our model achieved over 95% accuracy on both testing and                            by employing a flexible deep learning model that extracts
+                                                                                                                                                                                          cross-validation datasets, outperforming existing methods. This
+                                                                                                                                                                                                                                                                              optimal features. The enhanced architecture of CenterNet
+                                                                                                                                                                                          approach offers a reliable tool for early KOA diagnosis and
+                                                                                                                                                                                          grading, potentially aiding clinical decision-making                                contributes to the model's effectiveness.
+
+                                                                                                                                                                                          Keywords— Knee osteoarthritis, Kellgren-Lawrence grading, deep                      The remainder of this paper is organized as follows: Section II
+                                                                                                                                                                                          learning, DenseNet-201, knowledge distillation.                                     presents a literature survey reviewing various KOA detection
+                                                                                                                                                                                                                                                                              and classification approaches. Section III details the datasets
+                                                                                                                                                                                                                     I. INTRODUCTION                                          used, including annotated knee X-ray images. Section IV
+                                                                                                                                                                                                                                                                              describes the proposed methodology, encompassing
+                                                                                                                                                                                                                                                                              CenterNet, DenseNet201, and the pixel-wise voting
+                                                                                                                                                                                          Knee osteoarthritis (KOA) is a chronic disorder characterized
+                                                                                                                                                                                                                                                                              mechanism. Section V evaluates the proposed method's
+                                                                                                                                                                                          by joint pain, swelling, and movement difficulties. The term
+                                                                                                                                                                                                                                                                              performance against existing methodologies. Finally, Section
+                                                                                                                                                                                          "osteoarthritis" originates from Greek, meaning "inflammation
+                                                                                                                                                                                                                                                                              VI concludes the paper by summarizing findings and
+                                                                                                                                                                                          of the joints and bones." KOA progresses through three stages:
+                                                                                                                                                                                                                                                                              suggesting directions for future research.
+
+                                                                                                                                                                                              1.     Early Stage: Minimal damage with inconspicuous
+                                                                                                                                                                                                                                                                                                  II. LITERATURE SURVEY
+                                                                                                                                                                                                     symptoms.
+                                                                                                                                                                                              2.     Moderate Stage: Noticeable damage due to further                             Knee osteoarthritis (KOA) diagnosis has been approached
+                                                                                                                                                                                                     cartilage wear and joint space narrowing.                                using various imaging techniques, including X-rays and MRI,
+                                                                                                                                                                                              3.     Severe Stage: Bone-on-bone contact within the knee                       analyzed through classification-based, segmentation-based,
+                                                                                                                                                                                                     joint.                                                                   and feature extraction-based methods. Recent studies have
+                                                                                                                                                                                                                                                                              introduced early detection systems for osteoarthritis (OA) that
+                                                                                                                                                                                                                                                                              move beyond traditional grading systems, focusing on
+                                                                                                                                                                                          Early detection of KOA is crucial for maintaining mobility and                      molecular, mechanical, electrical, and morphological traits.
+                                                                                                                                                                                          quality of life. Imaging modalities such as MRI, CT scans, and                      Non-invasive imaging modalities, particularly MRI, have been
+                                                                                                                                                                                          X-rays are utilized for diagnosis, with X-rays being the most                       utilized to assess disease progression. For instance, a study
+                                                                                                                                                                                          cost-effective. The Kellgren-Lawrence (KL) grading system                           employed dual-echo steady-state MRI for image processing,
+                                                                                                                                                                                          categorizes KOA into four grades, ranging from 1 to 4.                              region-of-interest detection, and segmentation, applying
+                                                                                                                                                                                                                                                                              machine learning techniques such as Support Vector Machines,
+
+
+
+                                                                                                                                                                                             979-8-3315-2389-3/25/$31.00 ©2025 IEEE
+                                                                                                                                                                                                   Authorized licensed use limited to: University of Pittsburgh. Downloaded on July 09,2026 at 04:25:40 UTC from IEEE Xplore. Restrictions apply.
+                                                                                                                                                        806
+
+
+
+Random Forests, and Artificial Neural Networks to determine                       Lawrence scheme. It includes two thousand knee X-ray digital
+the most effective method.                                                        pictures with a resolution of 8 bits. Two medical specialists
+    Segmentation-based methodologies have been extensively                        annotated the knee photos for appraisal, dividing them up
+explored, with studies segmenting articular cartilage and other                   using the KL approach. Furthermore, The photos are in PNG
+knee joint components. However, some lacked statistical                           format and are in greyscale. The dataset is partitioned into
+comparisons of proposed methods. Feature selection based on                       two parts: 25% is used for test and 75% for training and
+fuzzy logic, combined with machine learning, achieved an                          validation. To be more precise, more than sixteen hundred
+average accuracy of 78.14% using XGBoost with 31 selected                         photos have been trained by the model and examined more
+features. A robust feature selection procedure was also                           than four hundred knee photographs. The joint evaluation of
+proposed to identify KOA risk factors, addressing critical                        the dataset distribution by both experts took into account,
+challenges.                                                                       which included five hundred photos belong to healthy class.
+                                                                                  Four hundred images belong to Grade 1, two hundred from
+    Deep learning architectures have been developed for
+classification and bone segmentation tasks. For example, a 10-                    Grade 2, two hundred from Grade 3, and two hundred from
+layer Signet architecture without a fully connected layer was                     Grade 4. Figure 1 depicts the class-wise distribution of knee
+designed for semantic pixel-by-pixel labeling of 2D knee                          pictures used to assess and train the suggested method.
+images, refining segmentation objectives using the original                       Furthermore, cross-validation is performed using the
+image as guidance. The elimination of the fully connected layer                   Osteoarthritis Initiative dataset. It includes knee joint X-rays
+reduced the model's parameters. Subsequent modifications                          and 3T M scans to be classified according to the Kellgren
+incorporated Conditional Random Forests for multi-class tissue                    Lawrence approach. Data was collected from many
+segmentation, achieving accuracies of 89.9% for the patella,
+                                                                                  individuals, ages forty to eighty, who were both male and
+96.2% for the tibia, and 97% for the femur.
+                                                                                  female. Furthermore, the dataset did not include patients who
+    A slice-based segmentation approach integrated an                             had knee replacement surgery. Some of the individuals' knees
+additional Statistical Shape Model (SSM) feature into a U-Net                     were in good condition, while other images fell into groups 2,
+framework to address issues like false-positive voxels outside                    3, and 4. In addition, our suggested model was assessed using
+the actual range and intensity contrasts, enhancing performance                   a few images from each of the following classes: Healthy,
+albeit with increased computational cost. A simpler                               Grade 1 to 4.
+Convolutional Neural Network (CNN) method, termed the
+Holistically Nested Network (HNN), was introduced for region
+of interest (ROI) segmentation, eliminating the decoding
+pipeline to function as a feed-forward network.
+    Deep learning techniques have demonstrated remarkable
+outcomes in the medical domain. A deep learning-based
+algorithm considering narrow joint space width effectively
+classified KOA severity. Additionally, a multi-layered
+convolutional sparse model was developed to identify anterior
+cruciate ligament (ACL) tears in MRI data, focusing solely on
+the coronal plane, achieving an accuracy of 85%. The You Only
+Look Once (YOLO) model, a successful object detection
+framework, has been applied to locate regions indicative of                       Fig. 1. Dataset samples
+disease using CNNs.
+    Recent advancements include the development of deep                                          IV. PROPOSED METHODOLOGY
+learning-based algorithms that assess knee osteoarthritis                         This research paper presents a robust framework for KOA
+severity in radiographs, achieving performance comparable to                      recognition. This method can be adapted to knee images that
+radiologists. These models utilize Posterior-Anterior (PA) and                    have different degrees of KOA and can be used with new
+Lateral (LAT) knee radiographs to classify KOA severity                           photos that have never been seen before. The main process of
+according to the Kellgren-Lawrence grading system,                                the superimposed medical image is to extract the
+demonstrating the potential of automated systems in clinical                      hyperdimensional features which can aid in the diagnosis and
+settings.                                                                         description of the disease. The samples were placed in the
+Moreover, a novel approach based on the Vision Transformer                        center and indicated area which were marked with rectangular
+(ViT) model with Selective Shuffled Position Embedding                            boxes. Our improved CenterNet was developed by using as a
+(SSPE) and key-patch exchange strategies has been proposed                        base network DenseNet201 for feature creation. In DenseNet,
+for early detection of KOA. This method aims to enhance data                      the end points are highly interconnected, which makes it
+augmentation and improve classification performance,                              possible to capture the small among the knee joints, therefore
+highlighting the evolving landscape of deep learning                              it was a better choice than ResNet. ResNet employs shortcut
+applications in KOA diagnosis.                                                    connections as well as information derived from inserts of the
+                                                                                  special procedure, namely, the second and third stages.
+                   III. DATA RESOURCES
+                                                                                  However, by means of a dense block along with pentagon
+We employed two datasets for several investigations, which                        architecture, DenseNet201 division can reveal a
+included testing, training, and cross-validation. The first                       straightforward pattern of the capturing in papillae. Further, it
+dataset is typically used to determine KOA intensity                              utilizes conversions that are the most efficient and still are the
+classification and identification based on the Kellgren                           most creative beyond ResNet.
+
+
+
+
+       Authorized licensed use limited to: University of Pittsburgh. Downloaded on July 09,2026 at 04:25:40 UTC from IEEE Xplore. Restrictions apply.
+                                                                                                                                                        807
+
+
+
+Prior to the knee joint feature extraction step, the localization                 dataset. Diverse knee joint specimens which were gathered
+outcomes are enhanced by providing the voting function with                       from doctors among other things are utilized to create a more
+an input rectangular box predicate from our customized                            efficient CenterNet neural network.
+CenterNet. Every pixel in the estimated bounding box is voted
+                                                                                  A. CenterNet
+for by the function to determine the best rectangular box so
+that the best bounding box is the one which has the largest                           Object detection can be carried out using various methods,
+score - this is then returned. Additionally, knowledge                            including anchor-based detection, which is the most common,
+distillation is applied to the compressed model and knowledge                     which calculates the maximal intersection over the coordinate
+of the larger model is transferred to the small model without                     of the main box does not always match the anchors. The key
+                                                                                  point of object recognition pipeline is the success of CenterNet.
+enhancing processing power. Thus, the means of an automatic
+                                                                                  Moreover, CenterNet is a follow-up to CenterNet including
+process can be used to detect the presence of KOA in the first
+
+
+
+
+   Fig. 2. CenterNet Architecture
+
+an additional key point that appears in the middle of the                         B. Base Network
+statement which pairs the item with the corner key points.                           We have applied a network of DenseNet201 model which is
+Therefore, every one of these things is identified by two edges                   a network with a few number of parameters. So this
+and a center. The candidate boxes are removed by selecting                        synthesizability is enabled by different levels reuse of features,
+the tope center key point. After the transformation of these                      which increases the variances within each input layer and as a
+center key points to the input sample, central areas are                          result increases the accuracy. Thus each layer channel consists
+identified and examined to determine whether any of them                          of feature maps of the current layer and the prior layer, which
+include a center key point. The efficiency of centerNet method                    results in the expansion of the channel numbers in each layer.
+is greater. It identifies both the characteristic and the position
+of the items inside the frames. On the other hand, the two-
+block object detection methods, thus, not very fast in detection                  C. Loss Of Focal Point
+of early KOA.                                                                        In the positive and negative class contexts, the problem of
+                                                                                  unequal treatment is largely alleviated by CenterNet's key
+CenterNet determines the region of interest using two key
+                                                                                  point localization loss, which is a variant of focal loss. On the
+steps: localisation and regression of size. It creates heat maps
+                                                                                  contrary, it does not deal with class imbalances which in turn
+and use a Gaussian Kernel for localisation, which aids the
+                                                                                  influences the item detection in uncommon categories. Thus,
+classifier in producing the strongest activations close to the
+                                                                                  we adopt a category-based focal loss function to address the
+centre of objects. In contrast, Regression represents the pixels
+                                                                                  imbalance of training samples in both the positive and
+seen at the centre of the item throughout training, forecasts the
+                                                                                  negative classes as well as the categories from each class.
+object's weight and height during training, and then offsets
+that get beyond the output stride R's discretisation mistake.
+Additionally, there are three different types of heat maps are
+produced throughout the feature map computing process.                            D. Distillation Of Knowledge
+There are three types of heat maps: 1) localisation, 2)                              As part of the model improvement efforts, knowledge
+regression, and 3) offset.                                                        distillation issues the extraction of critical features and
+                                                                                  semantic information from a very sophisticated teacher
+
+
+
+
+       Authorized licensed use limited to: University of Pittsburgh. Downloaded on July 09,2026 at 04:25:40 UTC from IEEE Xplore. Restrictions apply.
+                                                                                                                                                         808
+
+
+
+network to a shortened student network, DenseNet26, which                                                V. RESULT ANALYSIS
+consists of a total of eighty-five layers. A teacher network is                    The proposed methodology aims to surpass existing KOA
+usually a larger pre-trained model with a higher capacity that                     detection models. Integrating the pixel-wise voting scheme
+provides high-quality predictions and feature representations.                     with DenseNet201 backbone and customizing the CenterNet
+It serves as a knowledge provider to the student model. The                        architecture promises to enhance the accuracy and precision
+student network is trained on mixed labels, including original                     of knee osteoarthritis detection. Preliminary comparisons lead
+labels and teacher network outputs, which is one of the                            us to believe that our method may perform better than
+features of this approach that makes it possible to minimize                       conventional techniques like YOLO, which hover around 95%
+the model while still being stronger, and the Student Network                      accuracy. The pixel-wise voting mechanism is argued to
+is being trained to replicate the outputs of the Teacher                           reduce misclassification in confused cases and improve
+Network. It seeks to be more effective while achieving                             robustness. The further validation through quantitative
+comparable results. Pixel and pairwise information is one of                       metrics like accuracy, precision, recall, and F1-score will also
+the ways in which the teacher network transfers information                        decipher the effectiveness of the proposed model.
+to the student network using the teacher and student network
+ideas. The HRNet                                                                                             VI. CONCLUSION
+W(32,16) device is used for both teaching purposes and the                         For identifying Knee Osteoarthritis (KOA) and also evaluating
+student networks. In this context, the process of learning the                     the intensity levels with Kellgren Lawrence grading, in this
+small and simple network implies the inclusion of an initial                       work, a strong deep learning architecture is proposed. The
+convolutional layer with sixty-four filters in the teacher                         proposed technique is based on a modernized architecture of
+network architecture. Thus, Knowledge Distillation enhances                        CenterNet that utilizes a base technology, namely
+efficiency by allowing a student network to learn high-level                       DenseNet201. Due to the strong connections between all
+feature representations directly from the teacher network                          layers, it extracts the best features from the designated focal
+during inference, thus removing reliance on complex                                point. The distillation of knowledge that simplifies the model
+architectures. Playing the role of a soft class label significantly                with less cost of computation, as well as to move information
+enhances generalization, while pixel-wise voting improves                          from a complex network to a straightforward one. We used two
+localization accuracy. This process lessens the computational                      datasets. 1) Cross-validation was done on the other dataset
+burden in rendering it faster in inference and scale it up for                     after testing and training on the former one. The model
+real-time applications without compromising its performance.                       achieved cross validation accuracy of 98.97% on the second
+                                                                                   dataset and an accuracy of 99.14% for total localization of
+                                                                                   knee joints and classification of KOA. Our study's most
+                                                                                   significant application is the KL grading system for the early
+                                                                                   and precise localisation of knee joints and the identification of
+                                                                                   KOA, thereby reducing the amount of time and money needed
+                                                                                   for additional testing techniques. As a result, healthcare
+                                                                                   organisations can easily implement the suggested method for
+                                                                                   KOA early identification. Our proposed process accepts raw
+                                                                                   X-ray pictures and handles all changes inside. Our proposed
+                                                                                   approach is intended for use by orthopaedic surgeons and
+                                                                                   radiologists in the early detection and severity of KOA
+                                                                                   utilising X-rays. By detecting KOA disease early on, the
+                                                                                   system helps to prevent it from progressing to the severe state.
+                                                                                   The proposed model proposes detection of the focal point
+                                                                                   using the voting mechanism, followed by the extraction of the
+                                                                                   best significant features due to the dense connections as
+                                                                                   present in DenseNet201. Feature extraction from the region of
+                                                                                   interest has been incorporated in order to enhance the
+                                                                                   prediction abilities as well as the detection accuracy of the
+                                                                                   proposed system. Therefore, health organizations are able to
+                                                                                   implement the proposed method for KOA intensity detection.
+                                                                                   For example, consider a case where a radiologist takes X-rays
+                                                                                   of a patient who has mild pain in the knee. The patient can then
+                                                                                   be told that he has not developed KOA by radiologists using
+                                                                                   the proposed method. In the long run, this will save time and
+                                                                                   effort for both the patients and healthcare providers.
+                                                                                   The model being adaptable allows it to use other imaging
+                                                                                   modalities like MRI and CT along with X-rays. MRI may help
+                                                                                   in the early diagnosis by concentrating on soft tissue structures
+                                                                                   like cartilage and ligaments, while CT can offer detailed
+                                                                                   information about bone morphology and joint space
+                                                                                   narrowing.
+Fig. 3. Architecture of DenseNet-201
+
+
+
+
+        Authorized licensed use limited to: University of Pittsburgh. Downloaded on July 09,2026 at 04:25:40 UTC from IEEE Xplore. Restrictions apply.
+                                                                                                                                                         809
+
+
+
+The proposed model shows some good results; however, when
+put into consideration of justification, clinical usage still faces
+issues. Image quality variation, patient differencing, and large
+datasets diversity requirements will surely undermine proper
+performance. The integration of knowledge distillation does
+further improve model efficiency and training time, further
+exploration could refine this improvement.
+
+
+                               REFERENCES
+[1] C. Ntakolia, C. Kokkotis, S. Moustakidis, and D. Tsaopoulos,
+“Identification of most important features based on a fuzzy ensemble
+technique: Evaluation on joint space narrowing progression in knee
+osteoarthritis patients,” in Proc. IEEE, Oct. 2021.
+[2] C. Kokkotis, S. Moustakidis, V. Baltzopoulos, G. Giakas, and D.
+Tsaopoulos, “Identifying robust risk factors for knee osteoarthritis
+progression: An evolutionary machine learning approach,” Healthcare, vol. 9,
+no. 3, p. 260, Mar. 2021. doi: 10.3390/healthcare9030260.
+[3] H. Bonakdari, A. Jamshidi, J. P. Pelletier, F. Abram, G. Tardif, and J.
+Martel-Pelletier, “A warning machine learning algorithm for early knee
+osteoarthritis structural progressor patient screening,” Ther. Adv.
+Musculoskelet. Dis., vol. 13, Feb. 2021. doi: 10.1177/1759720X21993254.
+[4] L. C. Ribas, R. Riad, and R. Jennane, “A complex network-based approach
+for knee osteoarthritis detection: Data from the osteoarthritis initiative,” in
+Proc. IEEE, Jan. 2022.
+[5] T. Meena and S. Roy, “Bone fracture detection using deep supervised
+learning from radiological images: A paradigm shift,” Diagnostics, vol. 12,
+no. 10, p. 2420, Oct. 2022., in press.
+[6] S. Roy, T. Meena, and S.-J. Lim, “Demystifying supervised learning in
+healthcare 4.0: A new reality of transforming diagnostic medicine,”
+Diagnostics, vol. 12, no. 10, p. 2549, Oct. 2022.
+[7] D. Pal, P. B. Reddy, and S. Roy, “Attention UW-Net: A fully connected
+model for automatic segmentation and annotation of chest X-ray,” Comput.
+Biol. Med., vol. 150, Nov. 2022.
+[8] R. Mahum, H. Munir, Z.-U.-N. Mughal, M. Awais, F. S. Khan, M. Saqlain,
+S. Mahamad, and I. Tlili, “A novel framework for potato leaf disease detection
+using an efficient deep learning model,” Hum. Ecol. Risk Assessment, vol. 29,
+no. 2, pp. 303–326, Feb. 2023.
+[9] S. Sikandar, R. Mahmum, and N. Akbar, “Cricket videos summary
+generation using a novel convolutional neural network,” in Proc. Mohammad
+Ali Jinnah Univ. Int. Conf. Comput. (MAJICC), Oct. 2022, pp. 1–7.
+[10] J. C.-W. Cheung, A. Y.-C. Tam, L.-C. Chan, P.-K. Chan, and C. Wen,
+“Superiority of multiple-joint space width over minimum-joint space width
+approach in the machine learning for radiographic severity and knee
+osteoarthritis progression,” Biology, vol. 10, no. 11, p. 1107, Oct. 2021.
+[11] A. Wahid, J. A. Shah, A. U. Khan, M. Ullah, and M. Z. Ayob,
+“Multilayered basis pursuit algorithms for classification of MR images of knee
+ACL tear,” IEEE Access, vol. 8, pp. 205424–205435, 2020.
+[12] Y. Wang, X. Wang, T. Gao, L. Du, and W. Liu, “An automatic knee
+osteoarthritis diagnosis method based on deep learning: Data from the
+osteoarthritis initiative,” J. Healthcare Eng., vol. 2021, pp. 1–10, Sep. 2021.
+[13] F. Liu, Z. Zhou, H. Jang, A. Samsonov, G. Zhao, and R. Kijowski, “Deep
+convolutional neural network and 3D deformable approach for tissue
+segmentation in musculoskeletal magnetic resonance imaging,” Magn. Reson.
+Med., vol. 79, no. 4, pp. 2379–2391, 2018.
+[14] Z. Zhou, G. Zhao, R. Kijowski, and F. Liu, “Deep convolutional neural
+network for segmentation of knee joint anatomy,” Magn. Reson. Med., vol.
+80, no. 6, pp. 2759–2770, Dec. 2018.
+
+
+
+
+        Authorized licensed use limited to: University of Pittsburgh. Downloaded on July 09,2026 at 04:25:40 UTC from IEEE Xplore. Restrictions apply.
+

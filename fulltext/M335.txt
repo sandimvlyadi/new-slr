@@ -1,0 +1,841 @@
+   Temporal Context Matters: Enhancing Single Image Prediction with Disease
+                        Progression Representations
+
+               Aishik Konwer1 , Xuan Xu1 , Joseph Bae2 , Chao Chen2 , Prateek Prasanna2
+                          1
+                            Department of Computer Science, Stony Brook University
+                       2
+                         Department of Biomedical Informatics, Stony Brook University
+ {akonwer, xuaxu}@cs.stonybrook.edu {joseph.bae, Chao.Chen.1, Prateek.Prasanna}@stonybrook.edu
+
+
+
+                        Abstract                                    lation [48,55] and self-supervision techniques [4,64] to pre-
+                                                                    train models which are then finetuned on limited medical
+   Clinical outcome or severity prediction from medical im-         imaging data. This has led to improved model performance.
+ages has largely focused on learning representations from               However, most medical imaging datasets contain only
+single-timepoint or snapshot scans. It has been shown that          single-timepoint or ‘snapshot’ images. Although a snap-
+disease progression can be better characterized by tempo-           shot image plays an essential role for describing a disease,
+ral imaging. We therefore hypothesized that outcome pre-            sequential scans provide a more comprehensive character-
+dictions can be improved by utilizing the disease progres-          ization of the evolution and prognosis of a pathology. The
+sion information from sequential images. We present a deep          temporal evolution of imaging biomarkers are highly corre-
+learning approach that leverages temporal progression in-           lated with disease progression trajectory. We hypothesize
+formation to improve clinical outcome predictions from              that this rich underlying domain information can be lever-
+single-timepoint images. In our method, a self-attention            aged by deep learning approaches to make accurate predic-
+based Temporal Convolutional Network (TCN) is used to               tions about the disease trajectory even when temporal data
+learn a representation that is most reflective of the disease       is limited/unavailable.
+trajectory. Meanwhile, a Vision Transformer is pretrained               In practice, temporal medical data can be very limited
+in a self-supervised fashion to extract features from single-       because patients are often lost to follow-up or suffer from
+timepoint images. The key contribution is to design a recal-        chronic diseases with infrequent re-evaluations of their con-
+ibration module that employs maximum mean discrepancy               dition. Temporal models usually overfit on these small
+loss (MMD) to align distributions of the above two contex-          datasets leading to poor generalizability. Hence, they are
+tual representations. We train our system to predict clini-         limited in their use as a standalone source for training recur-
+cal outcomes and severity grades from single-timepoint im-          rent neural networks (RNN), Temporal ConvNets (TCN),
+ages. Experiments on chest and osteoarthritis radiography           etc. Recently there have been many deep learning–based
+datasets demonstrate that our approach outperforms other            works that aim to learn representations from sequential
+state-of-the-art techniques.                                        medical imaging data [20, 21, 33, 63]. The bottleneck of
+                                                                    limited training samples is evident in all of them. Unlike the
+                                                                    video vision community where the presence of large scale
+1. Introduction                                                     temporal datasets facilitates temporal modeling approaches,
+                                                                    pursuing similar problems (for e.g., future timepoint sever-
+    Predicting clinical outcomes from medical images is             ity prediction, object evolution) in medical imaging sce-
+a long standing goal in the medical vision community                nario is technically challenging.
+[1, 6, 39, 77]. For the past half a decade, researchers have            In this work we propose to learn disease progression
+employed various deep neural networks (DNNs) [10,30,38]             patterns from limited temporal imaging data, and use this
+to improve diagnostic and prognostic performance. Pre-              auxiliary knowledge to enhance predictive performance of
+viously, DNNs were trained from scratch [56] for classi-            methods that use snapshot scans. Since the representations
+fication and detection tasks on various medical imaging             are obtained from two different domains - snapshot and
+datasets. These multi-organ datasets can range from 2D ra-          temporal - the challenges lie in how to optimally adapt and
+diographs (x-rays) [50] to 3D magnetic resonance imaging            align these feature distributions. Because each image in a
+(MRI) [41] or computerized tomography (CT) [70] scans.              temporal sequence contributes unequally, we first extract an
+More recent frameworks have employed knowledge distil-              ‘optimal’ embedding of the entire sequence. An ‘optimal’
+
+
+                                                                1
+embedding should retain maximum information focused on                     Temporal Progression Learning
+                                                                       1    2       3        4     5       6
+the key transition stages over the course of a disease. The
+temporal feature representation can then be aligned against                                                                    Snapshot Learning
+
+a snapshot feature. Our next step involves employing an                          Sequential images
+
+appropriate feature matching technique to re-calibrate the
+two different domain representations (snapshot and tempo-                         Temporal ConvNet
+                                                                                                                           Unlabeled snapshot image
+ral). We build a framework that leverages partially available
+temporal data to re-calibrate the representations learned by                     Attention                                     Self-supervised ViT
+                                                                                                                                                      Target data
+the single-timepoint pipeline. A temporal network that em-
+                                                                                                                                    Finetune
+ploys multi-head self-attention at each layer is incorporated                   Optimal representation
+
+in our architecture. We eventually obtain a global attention
+distribution that aids in selecting an optimal representation                                    Feature matching with MMD Loss
+
+from the whole sequence. Meanwhile, a vision transformer                                               Recalibration network
+is pretrained in a self-supervised fashion to extract features
+from snapshot images. Finally, during the finetuning phase,                                             Outcome/Severity
+                                                                                                           prediction
+maximum mean discrepancy (MMD) loss is proposed as a
+feature matching tool to minimize the distance between the           Figure 1. Overview of our proposed method. Temporal learning
+two representations.                                                 module learns the optimal representation from sequential images.
+    The main contributions of this work are as follows:              Snapshot learning extracts representations from snapshot images.
+                                                                     The Recalibration network aligns the two contextual representa-
+   • This is the first work that learns representations from         tions using MMD loss.
+     limited temporal medical images, and eventually uti-
+     lizes them to improve clinical prediction tasks from
+     single-timepoint datasets.
+
+   • We use a Temporal ConvNet that employs hierarchical             and fast tempos through a single multi-level architecture by
+     attention to obtain the most optimal representation of          unifying features from different hierarchies. GESTURES
+     a temporal image sequence, so that it can be compared           [47] pretrained a spatio-temporal CNN on action recog-
+     with the features from a single image–based pipeline.           nition data to extract representations from seizure videos.
+                                                                     Konwer et. al [33] used an architecture inspired by Cor-
+   • In our study, intermediate representations are available        rRNN [72] for predicting disease severity at a future time-
+     from temporal and snapshot images. We propose to                point. To do so, a correlation module was integrated within
+     use MMD loss for the first time in this domain, to align        a Gated Recurrent Unit (GRU) to exploit the disease corre-
+     the snapshot feature space with the optimal temporal            lation among different zonal patches. Zhang et. al [75] cap-
+     representations selected through an attention mecha-            tured both the 3D spatial context and temporal dynamics of
+     nism.                                                           a growing tumor by employing a spatio-temporal ConvL-
+                                                                     STM framework.
+2. Related works
+                                                                         Temporal ConvNets (TCN) have been shown to be more
+2.1. Temporal modeling of disease progression
+                                                                     effective over LSTM-based methods in tasks like action
+   In the current era of precision medicine, temporal mod-           segmentation and recognition [14,22], but are yet to be fully
+eling of disease progression is an important field of re-            explored for medical imaging. Recently, TCN showed sig-
+search. To learn disease trajectory from sequential imaging          nificant improvement over recurrent models in Alzheimer’s
+data, medical vision researchers have typically applied var-         disease detection [20]. In our work, we make use of a TCN-
+ious recurrent neural networks (RNNs) widely used by the             based architecture to select the optimal representation of
+video analytics community. Recurrent convolutional mod-              the entire temporal sequence. This requires incorporating
+els [18, 61, 73] were the first to process variable sequence         attention within the temporal approach. A TCN-based ar-
+inputs and exploit their long-term dynamics across time-             chitecture is more explainable than RNNs because attention
+points. Along this direction, many recent techniques have            can be incorporated at various levels - kernel, layer-wise
+been developed for recognizing human action in videos                or globally [28, 36]. This motivates us to use a hierarchi-
+[66,71]. Temporal Difference Network [66] simultaneously             cal attention–based TCN architecture for the temporal sec-
+learns both short and long-term motion information to im-            tion of our framework. Though transformers have recently
+prove action recognition performance. Yang et. al [71] in-           shown improved performance over TCN, limited datasets
+troduced a pyramid network (TPN) that utilized both slow             restrict us to a lightweight transformer alternative like TCN.
+
+
+                                                                 2
+2.2. Feature and probability distribution level losses               disease progression information previously learnt from a
+                                                                     small temporal dataset with sequential scans. An overview
+    Distance measures that match two image distributions,
+                                                                     of our proposed framework is shown in Fig. 1. The key idea
+are generally found to operate at two levels - 1) posterior
+                                                                     is to use the feature representations of the temporal images
+probability and 2) feature space. KL-divergence loss [34]
+                                                                     to recalibrate the representation of snapshot images. In the
+and Bhattacharya distance [5] are two popular measures in
+                                                                     training stage, besides finetuning the snapshot representa-
+the former category that have been used for vision problems
+                                                                     tions through the standard loss (e.g., cross-entropy loss or
+like visual tracking and image segmentation [7, 16, 23, 24].
+                                                                     ordinal loss, depending on the task), we also match them
+However, in our case, the image representations to be com-
+                                                                     with the temporal representations at a distribution level, us-
+pared are derived from two different contexts, i.e, tempo-
+                                                                     ing the MMD loss. At the inference time, the recalibrated
+ral and snapshot. Also, the tasks performed to obtain them
+                                                                     snapshot representations are used for the final prediction.
+are not similar. It is a hard imposition to match the un-
+                                                                     This recalibration strategy, as well as the training losses, are
+derlying probability distributions. Hence, we used the sec-
+                                                                     elaborated in section 3.1. Prior to this, we use state-of-the-
+ond category losses - MMD and CORAL loss to align the
+                                                                     art methods for obtaining both the snapshot and the tempo-
+image feature distributions. [2, 40, 54, 69]. These are pop-
+                                                                     ral representations. First, we extract hidden representations
+ular metrics for feature adaptation between two types of
+                                                                     from temporal images using a hierarchical TCN. This step
+data. MMD is widely used to interpret tasks like neural
+                                                                     selects the best representation from each sequence. Detailed
+style transfer [31], or improving unsupervised image gen-
+                                                                     description is provided in section 3.2. As for the snapshot
+eration [68]. These losses minimize the distance between
+                                                                     representations, we use a pretrained self-supervised vision
+various statistical measures (first and second moments) of
+                                                                     transformer (see section 3.3).
+image embeddings.
+                                                                     3.1. Representation Recalibration network and
+2.3. Self-supervised Transformers in medical imag-                        training losses
+      ing
+                                                                         We first introduce the key component of our method –
+    The introduction of Vision transformers (ViT) [19]               the recalibration network. It uses representations of tempo-
+proved that even without using CNNs, compelling classi-              ral images to recalibrate representations of snapshots. More
+fication performance could be achieved in supervised ap-             details of how these representations are obtained will be ex-
+proaches solely from a sequence of image patches. ViT ex-            plained in later sections. Here we assume snapshot/single-
+ploits the long-range spatial dependencies in images, pre-           timepoint image embeddings xs ∈ R512 . They are fed as
+viously underutilized by CNN models. After pretraining,              input to the recalibration network, i.e., a multilayer percep-
+ViT can be finetuned on downstream medical datasets to               tron (MLP) with 1 hidden layer. We also have temporal
+achieve improved results in classification and segmentation          representations y t ∈ R512 from temporal sequences. The
+tasks [15, 60, 67, 74]. This is perfectly suited for analyz-         temporal representations are only used in the training stage
+ing medical images, where intra-image disease manifes-               to recalibrate snapshot representations. To train the recali-
+tations can be characterized more comprehensively using              bration network, we use both the standard prediction loss,
+ViTs. Hence, we propose to use a ViT as a feature extractor          Lprediction , and the MMD loss, LM M D , to match the snap-
+for snapshot images in our framework. A major disadvan-              shot representations to the temporal representations.
+tage of ViT is that their pretraining necessitates large scale
+datasets.                                                                                                                          \mathcal {L} = \lambda _{1}\mathcal {L}_{MMD} + \mathcal {L}_{prediction} \label {eq:final-all}                                                                       (1)
+    Self-supervised learning approaches [11, 25] have made
+significant advances in recent years, improving the ability             Given two distributions Ps and Pt for snapshot and tem-
+to learn image representations even from smaller datasets.           poral data, by mapping the data into a reproducing kernel
+This is achieved by training models on well-designed proxy           Hilbert space (RKHS) using function ϕ(·), the MMD be-
+goals that do not require manual annotations. Examples               tween the two distributions is calculated as
+of these goals include discriminative tasks such as predict-
+ing image rotation [17], solving multimodal jigsaw puz-                \small {{\rm {MMD}}^2}(s,t) = \mathop {sup }\limits _{{{\left \| \phi \right \|}_{\cal H}} \le 1} \left \| {{E_{{x^s} \sim P_s}}\left [ {\phi ({x^s})} \right ] - {E_{{y^t} \sim P_t}}\left [ {\phi ({y}^t)} \right ]} \right \|_{\cal H}^2 \label {eq:mmd} 
+zles [42], etc. In this work, we focus on training ViT in
+a self-supervised paradigm by leveraging large-scale, albeit
+unannotated, snapshot medical images.                                where Exs ∼Ps [·] denotes the expectation with regard to the
+                                                                     distribution Ps , and ∥ϕ∥H ≤ 1 defines a set of functions in
+3. Methodology                                                       the unit ball of a RKHS, H. In our setting, the problem is
+                                                                     simplified as we assume the data are all represented in the
+   Given a snapshot image of an individual patient, we pre-          same latent space with Euclidean metric. The MMD loss is
+dict their clinical outcomes/disease severity by utilizing the       then reduced to
+
+
+                                                                 3
+Figure 2. Illustration of the proposed architecture. Self-attention block after each layer of TCN, helps to obtain the optimal represen-
+tation from each sequence of temporal images. Meanwhile, snapshot image representations are generated through a self-supervised ViT.
+The snapshot and temporal representations are aligned using MMD loss while training a downstream neural network
+
+
+                                                                                                                                    on the present and the past timepoints. Here, we briefly ex-
+                                              N                                            M
+                                            1 X                                          1 X                                        plain the temporal modeling using a TCN module.
+           LM M D = ∥                                             xs −                                         y t ∥2 ,
+                                          N s=1                                       M t=1                                            Assume a sequence of temporal images {x1 , x2 , ..., xT }
+                                                                                                                                    available for each patient in the pretraining stage. This se-
+in which N and M are the numbers of snapshot representa-                                                                            quence of images is fed to a ResNet-18 model pretrained
+tions and temporal representations, respectively.                                                                                   on ImageNet [26, 51]. A vector with 512 elements is ob-
+   In the loss (Eqn. 1), the prediction loss can be different                                                                       tained with the extracted features. Considering T tempo-
+for different types of target datasets. For outcome prediction                                                                      ral images of a patient, a sequence of 512-element vectors
+on chest radiographs, we prefer a combination of MMD and                                                                            p = {p1 , p2 , ..., pT } is computed, which is then used as in-
+Cross-entropy loss as shown in Eqn. 2.                                                                                              put to the TCN.
+                   \mathcal {L}_{chest} = \lambda _{1}\mathcal {L}_{MMD} + \mathcal {L}_{CE} \label {eq:final1}           (2)          Fig. 2 shows the typical structure of a TCN with 2 di-
+                                                                                                                                    lated causal convolution layers. In our architecture we have
+   On the other hand, the severity changes in knee os-                                                                              used 3 such convolution layers. The dilation factors used
+teoarthritis disease is a classic application of ordinal regres-                                                                    for the layers are d = {1, 2, 4} and the kernel size chosen
+sion [8]. We use a combination of MMD and Ordinal loss                                                                              is k = 3. Dilation is equivalent to introducing a fixed step
+as shown in Eqn. 3.                                                                                                                 between every d adjacent filter taps. For a TCN layer, the
+                                                                                                                                    relevant history information is obtained from (k − 1)d past
+                   \mathcal {L}_{knee} = \lambda _{2}\mathcal {L}_{MMD} + \mathcal {L}_{Ord} \label {eq:final2}           (3)       timepoints. For an input feature sequence p, and a filter
+   Next, we explain how the temporal representation and                                                                             f : {0, ..., k − 1} → R, the dilated convolution D on an
+snapshot representation are obtained before recalibration.                                                                          element s is defined as:
+
+3.2. Temporal progression learning
+                                                                                                                                                         D(s) = \sum _{j=0}^{k-1} f(j) \cdot p_{(s-d.j)} \label {eq:tcn}    (4)
+   Our temporal representation is obtained based on the
+state-of-the-art TCN. We will first provide some details of
+these techniques. For our problem, to match with snapshot                                                                           where s − d.j refers to the past direction.
+representations, we need to find an optimal representation                                                                          Hierarchical attention. In addition to feature extraction,
+from the temporal sequence. To this end, we introduce a hi-                                                                         we also exploit the TCN structure to select the optimal
+erarchical self-attention module. The attention at different                                                                        representation of the entire image sequence. As shown in
+levels will be aggregated to obtain a single optimal repre-                                                                         Fig. 2, a multi-head self attention block is inserted between
+sentation for recalibration.                                                                                                        every two convolutional layers of the TCN. The input fea-
+Background: TCN. The goal of the TCN is to gather the                                                                               tures are transformed into query f and key g via 1 × 1 con-
+spatial dependencies over long ranges through causal di-                                                                            volutions. The attention map A is then obtained from f and
+lated convolutions. The causal nature ensures that the com-                                                                         g by
+putation of output at an individual timepoint t depends only                                                                                                  {A = \beta (f^{T}g}) \label {eq:attweight}  (5)
+
+
+                                                                                                                                4
+where β is the softmax activation function. These maps                                                                                            Contrastive learning task. Positive pairs are constructed
+contain self-attention weights which essentially quantify the                                                                                     with the augmented versions of the same image. Augmen-
+importance of one timepoint relative to another. Next, the                                                                                        tation techniques like cropping and horizontal flipping are
+weighted representations AT h are generated, where h is an-                                                                                       used. Negative pairs denote samples coming from differ-
+other set of feature transformed using 1 × 1 convolution.                                                                                         ent inputs. The network is trained to minimize the distance
+Finally we add the input features p, to AT h.                                                                                                     between a positive pair and maximize the distance between
+                                                                                                                                                  a negative pair. This is achieved through a contrastive loss
+                                                  {o = p + A^{T}h} \label {eq:attoutput}                                                (6)       function, Lc , with cosine similarity as the similarity mea-
+                                                                                                                                                  sure.
+    Note this output is 512 × T dimensional, consisting of
+representations for each of the T time slices. For the final                                                                                          \label {eq:contrastive} \mathcal {L}_{\rm c}(\mathbf {P}) = -\frac {1}{D}\sum _{i=1}^D \log \frac {{\rm e}^{{\rm sim}({\rm T}_{\rm c}(I_i), ~{\rm T}_{\rm c}({\tilde I_j}))/\tau }}{\sum _{j=1, j\neq i}^{2D} {\rm e}^{{\rm sim}({\rm T}_{\rm c}(I_i),~{\rm T}_{\rm c}(I_j))/\tau }} 
+calibration, we need to use the attention A to generate a 512
+dimensional representation.                                                                                                                                                                                 (8)
+    Recall A is a T × T matrix which is normalized for each                                                                                       where Tc (.) denotes the image embedding coming from
+column. We sum up each row of A to get a T dimensional                                                                                            the contrastive head, sim(., .) is the dot product of the ℓ2
+weight vector α, measuring the contribution of each time                                                                                          normalised inputs, which is the cosine similarity, and τ de-
+slice to all other time slices. A higher weight implies the                                                                                       notes a constant temperature parameter which we set to 0.5.
+corresponding time slice is more important. We apply soft-                                                                                        I˜j are Ij are augmentations of the same image. The con-
+max to this weight vector and use the output to calculate a                                                                                       trastive loss is defined as the arithmetic mean over all pos-
+weighted sum of the representations at all time slices. This                                                                                      itive pairs in the batch of the cross entropy of their nor-
+final representation is then used in the recalibration task per-                                                                                  malized similarities. For pretraining of snapshot images,
+formed in section 3.1. Further details on obtaining the op-                                                                                       we used a weighted combination of Reconstruction loss and
+timal representation are provided in Supplementary. The                                                                                           Contrastive loss. It is given by:
+pretraining of sequential images using TCN is performed
+with categorical cross entropy loss.                                                                                                                                                                                                \mathcal {L}_{pre} = \lambda _{p1}\mathcal {L}_{r} + \lambda _{p2}\mathcal {L}_{c} \label {eq:preloss}                                                                                                    (9)
+                                                                                                                                                  The pretrained representation will be used as the input for
+3.3. Snapshot representation learning
+                                                                                                                                                  the recalibration network (Section 3.1).
+   For learning representations from snapshot images, we
+adopt the architecture of Self-supervised image Trans-                                                                                            4. Experiment design and results
+former (SiT) [3] without the rotation task. We employ two
+                                                                                                                                                      To validate our proposed method, we perform experi-
+tokens - first, the image patch token to perform image recon-
+                                                                                                                                                  ments on two types of radiograph images. Chest radio-
+struction, and second, the contrastive token of SimCLR [11]
+                                                                                                                                                  graphs (CXRs) are analyzed in order to predict clinical out-
+for contrastive prediction task.
+                                                                                                                                                  comes for COVID-19 patients and knee radiographs are
+Reconstruction task. For the image reconstruction task, a
+                                                                                                                                                  studied to predict osteoarthritis (OA) severity.
+transformer is trained to extract the encoded visual features.
+                                                                                                                                                      The ability to predict clinical outcomes in COVID-19
+The motivation is to learn context-preserving representa-
+                                                                                                                                                  can have significant implications on physician decision-
+tions from the snapshot scans. Individual image grids are
+                                                                                                                                                  making regarding medical resource allocation and treatment
+intentionally corrupted by passing through various trans-
+                                                                                                                                                  administration. This is particularly true in low-resource or
+formations like addition of random noise, blurring by fil-
+                                                                                                                                                  surging case settings where triage must be performed. Sim-
+ters, and random grid replacement from another image. The
+                                                                                                                                                  ilarly, grading of knee is clinically significant in monitoring
+transformer aims to restore the original image from the cor-
+                                                                                                                                                  a patient’s disease progression and determining appropri-
+rupted image. The output tokens of the transformer are ag-
+                                                                                                                                                  ate treatment measures. Furthermore, accurate grading of
+gregated to reconstruct the input image. The ℓ1-loss be-
+                                                                                                                                                  OA is critical for epidemiological surveys of disease preva-
+tween the input and the reconstructed image is employed as
+                                                                                                                                                  lence. However, current scoring systems for OA rely heav-
+shown in Eqn. 7:
+                                                                                                                                                  ily on physician interpretation of medical images which has
+                                                                                                                                                  been reported to have a high rate of inter-observer variabil-
+                 \label {eq:recloss} \mathcal {L}_{\rm r}(\mathbf {P}) = \frac {1}{D}\sum _i^D ||I_i - {\rm T}_{\rm r}(\bar {I_i})||    (7)       ity [32]. This might be overcome by automated approaches.
+                                                                                                                                                      Multiple datasets are employed for model training and
+                                                                                                                                                  validation for the two applications listed above. While most
+   where, ||.|| is the ℓ1 norm, Ii is the original image, I¯i is                                                                                  datasets have only single-timepoint images, very few con-
+the corrupted image, Tr (.) returns the reconstructed image                                                                                       tain temporal data, described in detail below.
+and D denotes the batch size. P are the parameters of the                                                                                         COVID-19 radiograph dataset. For pretraining of the
+transformer to be learned during training.                                                                                                        vision transformer, we used 28,433 images jointly from
+
+
+                                                                                                                                              5
+two Kaggle sources - 21,165 scans from a COVID-                                        each lung into 3 equal zones. Corresponding grids of tem-
+19-radiography-database [13] and 7268 from the SIIM-                                   poral images were used for separate timepoints, providing a
+COVID19-detection challenge [62]. The temporal dataset,                                grid-level registration across timepoints. Consequently, we
+CovidProg, used for training TCN, included 942 images                                  obtained 6 training sequences for each patient in the tem-
+from 150 COVID patients. Evaluation was performed on                                   poral module. ResNet18 features were extracted from these
+the SnapCXR dataset, which had 631 snapshot images se-                                 grids and fed to TCN.
+lected from TCIA [52] containing clinical outcome infor-                                   For the OAI dataset, we filtered out missing KL scor-
+mation.                                                                                ing labels and derived a training set of 19,704 knees. We
+Knee osteoarthritis dataset. We utilized two publicly                                  utilized the BoneFinder tool [37] to localize the knee joint
+available knee radiograph datasets, OAI [43] and the Kaggle                            landmarks. Using these landmarks, the region of interest
+knee osteoarthritis dataset [12]. OAI is a longitudinal study                          was cropped out for both knees. Following [58], histogram
+of 4,796 participants examined with radiographs and MRI                                clipping and global contrast normalization were applied to
+during 9 follow-up examinations (0 to 96 months). Only                                 each localized knee joint image. Finally, we rescaled all im-
+the radiographs are studied in this work. Each radiograph                              ages to 310 × 310 pixels using bilinear interpolation. The
+also has an associated Kellgren-Lawrence (KL) score pro-                               Kaggle OA dataset was used as provided. To feed the tem-
+vided by a physician interpreter. There are 5 KL grades                                poral data into TCN, each knee image was divided into two
+ranging from 0 to 4 that is a measure of the OA severity in                            parts longitudinally and resized to dimension 128 × 128.
+knee joints. For pretraining the transformer we jointly used                           Thus we obtained 4 training sequences for each patient in
+17,230 images from 4,350 OAI studies, and 5,778 images                                 the temporal module.
+from the training folder of the Kaggle dataset. The remain-                            Evaluation metrics. We employ AUC, sensitivity, speci-
+ing 426 OAI cases comprising 2,474 images were used as                                 ficity, F1 score to evaluate COVID-19 outcome prediction.
+temporal data to train the TCN. Evaluation was done on a                               t-distributed stochastic neighbor embedding (t-SNE) plots
+target dataset of 2,482 images utilizing both the validation                           are computed for ventilation requirement prediction from
+and test folders in the Kaggle data.                                                   features obtained after global average pooling. For knee
+                                                                                       severity multi-label classification, we used µF1, balanced
+4.1. Implementation details                                                            accuracy, AUC (one vs all), and Cohen’s Kappa score as
+Environment. Our framework is built in Pytorch [46]                                    evaluation metrics. Images with the intermediate grades 1,
+and trained on an Nvidia GTX 2080Ti GPU. The self-                                     2 and 3 are more difficult to differentiate from one another.
+supervised snapshot model is trained using the Adam op-                                Hence we also calculate AUC (one vs one) between grades
+timizer. The learning rate and batch size are 0.0005 and 72,                           1,2 and 2,3 to measure their classification performance.
+respectively. We used λp1 = λp2 = 1. For optimization of
+                                                                                       4.2. Results
+the TCN model, we used the following parameters: learning
+rate = 0.001, momentum = 0.9, and optimizer=SGD. Pre-                                  COVID-19 outcome prediction. Quantitative results:
+trained ResNet-18 features were used as input; the training                            To evaluate the proposed model in predicting COVID-19
+converged within 20 epochs.                                                            induced mortality and mechanical ventilation, we com-
+Preprocessing. For the COVID-19 chest radiograph                                       pare it with seven methods including: COVID-Net [65],
+datasets, lung region segmentation was first performed us-                             Rahimzadeh et. al [49], Oh et. al [44], COVIDiagnosis-
+ing a Residual U-Net model [76] so that features only from                             Net [59], DarkCovidNet [45], CNN + LSTM [29], Azizi et.
+lung fields would be analyzed. All CXRs were aligned                                   al [4], and Li et. al [35]. Table 1 shows that our method out-
+to the same intensity range through an average histogram                               performs each of these methods on the SnapCXR dataset.
+matching method. For temporal data, each CXR image was                                 COVID-Net [65] uses a lightweight residual projection-
+divided into six grids. This was accomplished by dividing                              expansion-projection-extension (PEPX) design pattern with
+
+                     Name                                    Ventilation                                 Mortality
+                    Method              AUC(↑)   Sensitivity(↑) Specificity(↑)       F1 score(↑)   AUC(↑) Sensitivity(↑)   Specificity(↑)   F1 score(↑)
+                COVID-Net [65]           0.73        0.64              0.69             0.70        0.76         0.63          0.73            0.72
+              Rahimzadeh et. al [49]     0.75        0.62              0.74             0.68        0.77         0.58          0.76            0.74
+                  Oh et. al [44]         0.75        0.69              0.75             0.75        0.78         0.61          0.75            0.72
+             COVIDiagnosis-Net [59]      0.71        0.60              0.71             0.68        0.78         0.56          0.74            0.65
+               DarkCovidNet [45]         0.77        0.71              0.76             0.74        0.78         0.65          0.71            0.76
+               CNN + LSTM [29]           0.74        0.63              0.66             0.63        0.76         0.62          0.69            0.69
+                 Azizi et. al [4]        0.79        0.74              0.79             0.76        0.80         0.74          0.77            0.78
+                  Li et. al [35]         0.79        0.71              0.75             0.74        0.81         0.68          0.76            0.80
+                      Ours               0.88        0.76              0.80             0.79        0.87         0.74          0.78            0.84
+
+                                       Table 1. COVID-19 outcome prediction results on SnapCXR dataset
+
+
+                                                                                 6
+                                Method                    µF1(↑)    BA(↑)      AUC(↑)    Kappa(↑)    AUC(1,2)(↑)     AUC(2,3)(↑)
+                          MobileNetV2 [53]                0.5104    0.3532     0.7822     0.2554       0.6208          0.6191
+                        CNN + Ordinal loss [9]            0.6865    0.6638     0.8950     0.5557       0.7298          0.8576
+                             SE block [27]                0.7336    0.7237     0.9237     0.6237       0.7866          0.9265
+                            Ensemble [57]                 0.7405    0.7342     0.9112     0.6327       0.7896          0.9360
+                            DeepKnee [58]                 0.3956    0.5078     0.7456     0.2287       0.5931          0.7398
+                    Ours w/o temporal (TCN+MMD)           0.7844    0.7850     0.9520     0.6492       0.8428          0.9165
+                          Ours w/o Attention              0.8126    0.7607     0.9581     0.6842       0.8954          0.9126
+                       Ours w/o Hierarchical Att          0.8327    0.7883     0.9727     0.7065       0.8820          0.9284
+                                 Ours                     0.8265    0.8216     0.9773     0.7357       0.9167          0.9382
+
+                        Table 2. Osteoarthritis severity prediction results and ablation studies on OA Kaggle dataset
+
+                          Name                                     Ventilation                     Mortality
+                          Method                   AUC    Sensitivity Specificity   F1 score   AUC Sensitivity     Specificity   F1 score
+              Ours w/o temporal (TCN+MMD)          0.78      0.71           0.78      0.72     0.79      0.76        0.69          0.73
+                    Ours w/o Attention             0.82      0.69           0.75      0.76     0.82      0.71        0.74          0.75
+                 Ours w/o Hierarchical Att         0.86      0.75           0.84      0.74     0.85      0.75        0.71          0.80
+                           Ours                    0.88      0.76           0.80      0.79     0.87      0.74        0.78          0.84
+
+                          Table 3. Ablation study results for COVID-19 outcome prediction on SnapCXR dataset
+
+
+            Name        Ventilation    Mortality      OAI
+           Method       AUC      F1   AUC     F1   AUC µF1
+                                                                               rather than the large unilateral attention shown in 5.c.1.
+             KL         0.81 0.67     0.82 0.77    0.92 0.76                   OA severity prediction. Quantitative results: We com-
+         Bhattacharya   0.77 0.65     0.75 0.71    0.89 0.79                   pare our method against MobileNetv2 [53], CNN + Ordinal
+           CORAL        0.86 0.77     0.83 0.79    0.95 0.83
+         Ours (MMD)     0.88 0.79     0.87 0.84    0.97 0.82                   loss [9], Squeeze-Excitation block (SE block) [27], Deep-
+                                                                               Knee [58] and, Ensemble [57] in Table 2. MobileNetv2 [53]
+       Table 4. Ablation study results for different losses
+                                                                               incorporates bottleneck depth-separable convolution with
+                                                                               residuals. CNN + Ordinal loss [9] adds an ordinal loss
+                                                                               for grade classification. This loss significantly improves the
+convolutions at each stage. Rahimzadeh et. al [49], Oh et.                     performance motivating us to leverage it in our framework.
+al [44], and DarkCovidNet [45] use various pretrained Deep                     SE blocks performed best out of all comparative models
+CNNs. However, these fully supervised methods fail with                        achieving a 0.92 AUC. Tiulpin et. al [58] fused predictions
+limited training data, and share similar predictive perfor-                    from multiple Siamese deep models, but did not achieve
+mance. COVIDiagnosis-Net [59] tuned a SqueezeNet ar-                           good performance results. Our model is the first to leverage
+chitecture for COVID-19 diagnosis. Though they utilized                        the temporal scans present in this OAI dataset to improve
+an augmentation strategy, their lightweight backbone under-                    severity grading. Learning the progression of OA vastly
+performed other state-of-art approaches. More recent meth-                     improved the classification results from single images. We
+ods, including Azizi et. al [4] and Li et. al [35], exploit                    achieved a ∼ 5.8% increase in AUC over the state-of-the-
+self-supervised learning strategies resulting in a boost in                    art benchmark [27]. Our model also outperforms state-of-
+prediction performance. Our pipeline uses a self-supervised                    the-art approaches in the clinically difficult problem of dis-
+vision transformer as a feature extractor but also uniquely                    criminating between intermediate grades 1 vs 2 and 2 vs
+learns features of temporal progression. This approach out-                    3 (given by AUC(1,2) and AUC(2,3)). We also reported
+performs other methods, achieving a ∼ 11.5% increase in                        a Cohen’s Kappa value of 0.73 for our method which was
+AUC over state-of-the-art benchmarks for both ventilation                      the best among all approaches, demonstrating our model’s
+and mortality prediction tasks. Qualitative results: Fig.                      higher agreement with ground truth KL scores. Qualita-
+3 demonstrates that utilizing temporal representations in                      tive results: CAMs generated from the last layer of each
+our architecture results in better defined clusters between                    compared model are illustrated in Fig. 4. Both our model
+the ventilated and non-ventilated classes on the t-SNE plot.                   and the SE block baseline [27] show superior localization of
+The inter-feature spatial distance also decreases leading to a                 attention to pathological osteophyte development and joint-
+more compact visualization. Class activation maps (CAMs)                       space narrowing when compared with other baselines. The
+were generated before and after the inclusion of our tempo-                    Supplementary section contains further qualitative analyses.
+ral approach and are shown in Fig. 5. 5.b.2 and 5.e.2 each
+                                                                               4.3. Ablation Study
+demonstrate that our model more precisely localizes atten-
+tion to pathological infiltrates when compared with baseline                   Effectiveness of Attention: Several experiments are per-
+CAMs shown in 5.b.1 and 5.e.1. 5.c.2 demonstrates im-                          formed on the SnapCXR and OA Kaggle datasets to verify
+proved localization of model attention to bilateral infiltrates                the benefit of each component of our proposed framework.
+
+
+                                                                           7
+      tSNE_2
+
+
+
+
+                        tSNE_1                                  tSNE_1
+
+
+     Figure 3. Comparison between t-SNE plots before and after using temporal modeling        Figure 4. Qualitative comparisons
+                                                                                              of knee CAMs depicting OA severity
+
+
+
+
+Figure 5. Qualitative comparison of chest CAMs before and after temporal modeling. a-f show      Figure 6. Optimization curve of feature
+CXRs with pathological lung infiltrates indicated by orange arrows a.1 - f.1 show generated      distribution losses
+CAMs before temporal modeling and a.2-f.2, after.
+
+
+We first remove the temporal module from the framework in            like MMD and CORAL are more appropriate. Fig. 6 shows
+Fig. 2 and perform predictions from only snapshot images             the AUC achieved at different stages by varying the weights
+using the SiT [3]. This network is taken as the baseline fea-        of MMD and CORAL in the final loss for our method and
+ture extractor without TCN and Attention. Compared with              ablation work, respectively. The MMD AUC curve achieves
+this baseline, our model yields a 12.8% and 10.12% AUC               saturation earlier at λ = 0.5, suggesting that even a small
+improvement in ventilation and mortality prediction, and a           weight of MMD loss improved results.
+∼ 2.65% improvement for OA severity prediction. We then
+average only the representations from the output of TCN
+without using attention, inhibiting the model from choosing          5. Conclusion
+an optimal representation from the temporal sequence. It
+can be seen in Table 3 that introducing the Global Atten-                This paper presents a novel framework for the augmen-
+tion module improves our AUCs to 0.86 and 0.85 for ven-              tation of snapshot-image–based pipelines by the integration
+tilation and mortality prediction on SnapCXR, and to 0.97            of information from multi-image sequences. Unlike exist-
+AUC for OA severity classification on the Kaggle dataset.            ing approaches trained only on snapshot images, our ar-
+Finally, our application of hierarchical self-attention per-         chitecture learns disease progression representations which
+forms slightly better than the global attention-weighted fea-        are used to re-calibrate snapshot features. When evaluated
+tures. We attribute this improvement to the self-attention           on chest and knee radiograph datasets, the proposed archi-
+exploited after every layer, enabling better contextual un-          tecture outperforms state-of-the-art approaches. This work
+derstanding of the modality itself. Effectiveness of MMD             paves the way for the inclusion of temporal data as auxiliary
+loss: Table 4 presents ablation results for different loss           information for single image-based training paradigms.
+functions. Using the MMD loss resulted in 8.6%, 6.09%
+performance improvement (AUC) for SnapCXR prediction                 6. Acknowledgements
+tasks and 5.4% improvement in OA severity prediction in
+the Kaggle dataset. KL-divergence and Bhattacharya losses               Reported research was supported by the OVPR and
+help in matching two posterior probability distributions and         IEDM seed grants at Stony Brook University, NIGMS
+result in inferior performance. Because our distributions are        T32GM008444, and NIH 75N92020D00021 (subcontract).
+derived from two different contexts (temporal vs snapshot)           The content is solely the responsibility of the authors and
+used for two different purposes (severity progression track-         does not necessarily represent the official views of the Na-
+ing and clinical outcome prediction), feature level losses           tional Institutes of Health.
+
+
+                                                                8
+References                                                                  [13] Muhammad EH Chowdhury, Tawsifur Rahman, Amith
+                                                                                 Khandakar, Rashid Mazhar, Muhammad Abdul Kadir,
+ [1] Saloni Agarwal, Mohamedelfatih Eltigani Osman Abaker,                       Zaid Bin Mahbub, Khandakar Reajul Islam, Muham-
+     and Ovidiu Daescu.           Survival prediction based on                   mad Salman Khan, Atif Iqbal, Nasser Al Emadi, et al. Can
+     histopathology imaging and clinical data: A novel, whole                    ai help in screening viral and covid-19 pneumonia? IEEE
+     slide cnn approach. In International Conference on Medi-                    Access, 8:132665–132676, 2020. 6, 12
+     cal Image Computing and Computer-Assisted Intervention,                [14] Rui Dai, Srijan Das, Luca Minciullo, Lorenzo Garattoni, Gi-
+     pages 762–771. Springer, 2021. 1                                            anpiero Francesca, and Francois Bremond. Pdan: Pyramid
+ [2] Dan Amir and Yair Weiss. Understanding and simplifying                      dilated attention network for action detection. In Proceed-
+     perceptual distances. In Proceedings of the IEEE/CVF Con-                   ings of the IEEE/CVF Winter Conference on Applications of
+     ference on Computer Vision and Pattern Recognition, pages                   Computer Vision, pages 2970–2979, 2021. 2
+     12226–12235, 2021. 3                                                   [15] Yin Dai, Yifan Gao, and Fayu Liu. Transmed: Transformers
+ [3] Sara Atito, Muhammad Awais, and Josef Kittler. Sit:                         advance multi-modal medical image classification. Diagnos-
+     Self-supervised vision transformer.           arXiv preprint                tics, 11(8):1384, 2021. 3
+     arXiv:2104.03602, 2021. 5, 8                                           [16] Martin Danelljan, Luc Van Gool, and Radu Timofte. Prob-
+ [4] Shekoofeh Azizi, Basil Mustafa, Fiona Ryan, Zachary                         abilistic regression for visual tracking. In Proceedings of
+     Beaver, Jan Freyberg, Jonathan Deaton, Aaron Loh, Alan                      the IEEE/CVF Conference on Computer Vision and Pattern
+     Karthikesalingam, Simon Kornblith, Ting Chen, et al. Big                    Recognition, pages 7183–7192, 2020. 3
+     self-supervised models advance medical image classifica-               [17] Carl Doersch, Abhinav Gupta, and Alexei A Efros. Unsuper-
+     tion. arXiv preprint arXiv:2101.05224, 2021. 1, 6, 7                        vised visual representation learning by context prediction. In
+ [5] Anil Bhattacharyya. On a measure of divergence between                      Proceedings of the IEEE international conference on com-
+     two statistical populations defined by their probability distri-            puter vision, pages 1422–1430, 2015. 3
+     butions. Bull. Calcutta Math. Soc., 35:99–109, 1943. 3                 [18] Jeffrey Donahue, Lisa Anne Hendricks, Sergio Guadarrama,
+ [6] Jianan Chen, Helen Cheung, Laurent Milot, and Anne L                        Marcus Rohrbach, Subhashini Venugopalan, Kate Saenko,
+     Martel. Aminn: Autoencoder-based multiple instance neu-                     and Trevor Darrell. Long-term recurrent convolutional net-
+     ral network improves outcome prediction in multifocal liver                 works for visual recognition and description. In Proceed-
+     metastases. In International Conference on Medical Image                    ings of the IEEE conference on computer vision and pattern
+     Computing and Computer-Assisted Intervention, pages 752–                    recognition, pages 2625–2634, 2015. 2
+     761. Springer, 2021. 1                                                 [19] Alexey Dosovitskiy, Lucas Beyer, Alexander Kolesnikov,
+                                                                                 Dirk Weissenborn, Xiaohua Zhai, Thomas Unterthiner,
+ [7] Kan Chen, Bin Li, Lian-fang Tian, Wen-bo Zhu, and Ying-
+                                                                                 Mostafa Dehghani, Matthias Minderer, Georg Heigold, Syl-
+     han Bao. Vessel attachment nodule segmentation using inte-
+                                                                                 vain Gelly, et al. An image is worth 16x16 words: Trans-
+     grated active contour model based on fuzzy speed function
+                                                                                 formers for image recognition at scale. arXiv preprint
+     and shape–intensity joint bhattacharya distance. Signal Pro-
+                                                                                 arXiv:2010.11929, 2020. 3
+     cessing, 103:273–284, 2014. 3
+                                                                            [20] Amir Ebrahimi, Suhuai Luo, Raymond Chiong, Alzheimer’s
+ [8] Pingjun Chen, Linlin Gao, Xiaoshuang Shi, Kyle Allen, and
+                                                                                 Disease Neuroimaging Initiative, et al. Deep sequence mod-
+     Lin Yang. Fully automatic knee osteoarthritis severity grad-
+                                                                                 elling for alzheimer’s disease detection using mri. Comput-
+     ing using deep neural networks with a novel ordinal loss.
+                                                                                 ers in Biology and Medicine, page 104537, 2021. 1, 2
+     Computerized Medical Imaging and Graphics, 75:84–92,
+                                                                            [21] Cong Fang, Song Bai, Qianlan Chen, Yu Zhou, Liming Xia,
+     2019. 4
+                                                                                 Lixin Qin, Shi Gong, Xudong Xie, Chunhua Zhou, Dandan
+ [9] Pingjun Chen, Linlin Gao, Xiaoshuang Shi, Kyle Allen, and                   Tu, et al. Deep learning for predicting covid-19 malignant
+     Lin Yang. Fully automatic knee osteoarthritis severity grad-                progression. Medical image analysis, 72:102096, 2021. 1
+     ing using deep neural networks with a novel ordinal loss.              [22] Yazan Abu Farha and Jurgen Gall. Ms-tcn: Multi-stage tem-
+     Computerized Medical Imaging and Graphics, 75:84–92,                        poral convolutional network for action segmentation. In Pro-
+     2019. 7, 13                                                                 ceedings of the IEEE/CVF Conference on Computer Vision
+[10] Richard J Chen, Ming Y Lu, Wei-Hung Weng, Tiffany Y                         and Pattern Recognition, pages 3575–3584, 2019. 2
+     Chen, Drew FK Williamson, Trevor Manz, Maha Shady,                     [23] Daniel Freedman and Tao Zhang. Active contours for track-
+     and Faisal Mahmood. Multimodal co-attention transformer                     ing distributions. IEEE Transactions on Image Processing,
+     for survival prediction in gigapixel whole slide images. In                 13(4):518–526, 2004. 3
+     Proceedings of the IEEE/CVF International Conference on                [24] Jacob Goldberger, Shiri Gordon, Hayit Greenspan, et al. An
+     Computer Vision, pages 4015–4025, 2021. 1                                   efficient image similarity measure based on approximations
+[11] Ting Chen, Simon Kornblith, Mohammad Norouzi, and Ge-                       of kl-divergence between two gaussian mixtures. In ICCV,
+     offrey Hinton. A simple framework for contrastive learning                  volume 3, pages 487–493, 2003. 3
+     of visual representations. In International conference on ma-          [25] Kaiming He, Haoqi Fan, Yuxin Wu, Saining Xie, and Ross
+     chine learning, pages 1597–1607. PMLR, 2020. 3, 5                           Girshick. Momentum contrast for unsupervised visual rep-
+[12] Pingjun Chen (2018). Knee osteoarthritis severity grading                   resentation learning. In Proceedings of the IEEE/CVF Con-
+     dataset. Mendeley Data, V1, doi: 10.17632/56rmx5bjcr.1. 6,                  ference on Computer Vision and Pattern Recognition, pages
+     12                                                                          9729–9738, 2020. 3
+
+
+                                                                        9
+[26] Kaiming He, Xiangyu Zhang, Shaoqing Ren, and Jian Sun.                    using random forest regression voting. IEEE transactions on
+     Deep residual learning for image recognition. In Proceed-                 medical imaging, 32(8):1462–1472, 2013. 6, 12, 13
+     ings of the IEEE conference on computer vision and pattern           [38] Chen Liu, Jinze Cui, Dailin Gan, and Guosheng Yin. Beyond
+     recognition, pages 770–778, 2016. 4                                       covid-19 diagnosis: Prognosis with hierarchical graph rep-
+[27] Jie Hu, Li Shen, and Gang Sun. Squeeze-and-excitation net-                resentation learning. In International Conference on Med-
+     works. In Proceedings of the IEEE conference on computer                  ical Image Computing and Computer-Assisted Intervention,
+     vision and pattern recognition, pages 7132–7141, 2018. 7,                 pages 283–292. Springer, 2021. 1
+     13                                                                   [39] Mingzhou Liu, Fandong Zhang, Xinwei Sun, Yizhou Yu, and
+[28] Qiang Huang and Thomas Hain. Improving audio anoma-                       Yizhou Wang. Ca-net: Leveraging contextual features for
+     lies recognition using temporal convolutional attention net-              lung cancer prediction. In International Conference on Med-
+     works. In ICASSP 2021-2021 IEEE International Confer-                     ical Image Computing and Computer-Assisted Intervention,
+     ence on Acoustics, Speech and Signal Processing (ICASSP),                 pages 23–32. Springer, 2021. 1
+     pages 6473–6477. IEEE, 2021. 2                                       [40] Djebril Mekhazni, Amran Bhuiyan, George Ekladious, and
+[29] Md Zabirul Islam, Md Milon Islam, and Amanullah Asraf. A                  Eric Granger. Unsupervised domain adaptation in the dis-
+     combined deep cnn-lstm network for the detection of novel                 similarity space for person re-identification. In European
+     coronavirus (covid-19) using x-ray images. Informatics in                 Conference on Computer Vision, pages 159–174. Springer,
+     medicine unlocked, 20:100412, 2020. 6                                     2020. 3
+[30] Golara Javadi, Samareh Samadi, Sharareh Bayat, Samira So-            [41] Bjoern H Menze, Andras Jakab, Stefan Bauer, Jayashree
+     joudi, Antonio Hurtado, Silvia Chang, Peter Black, Parvin                 Kalpathy-Cramer, Keyvan Farahani, Justin Kirby, Yuliya
+     Mousavi, and Purang Abolmaesumi. Training deep networks                   Burren, Nicole Porz, Johannes Slotboom, Roland Wiest,
+     for prostate cancer diagnosis using coarse histopathological              et al. The multimodal brain tumor image segmentation
+     labels. In International Conference on Medical Image Com-                 benchmark (brats). IEEE transactions on medical imaging,
+     puting and Computer-Assisted Intervention, pages 680–689.                 34(10):1993–2024, 2014. 1
+     Springer, 2021. 1                                                    [42] Mehdi Noroozi and Paolo Favaro. Unsupervised learning of
+                                                                               visual representations by solving jigsaw puzzles. In Euro-
+[31] Nikolai Kalischek, Jan D Wegner, and Konrad Schindler.
+                                                                               pean conference on computer vision, pages 69–84. Springer,
+     In the light of feature distributions: moment matching for
+                                                                               2016. 3
+     neural style transfer. In Proceedings of the IEEE/CVF Con-
+                                                                          [43] OAI. Osteoarthritis initiative. https://nda.nih.gov/
+     ference on Computer Vision and Pattern Recognition, pages
+                                                                               oai/. 6, 12
+     9382–9391, 2021. 3
+                                                                          [44] Yujin Oh, Sangjoon Park, and Jong Chul Ye. Deep learn-
+[32] Mark D Kohn, Adam A Sassoon, and Navin D Fernando.
+                                                                               ing covid-19 features on cxr using limited training data sets.
+     Classifications in brief: Kellgren-lawrence classification
+                                                                               IEEE transactions on medical imaging, 39(8):2688–2700,
+     of osteoarthritis. Clinical Orthopaedics and Related Re-
+                                                                               2020. 6, 7
+     search®, 474(8):1886–1893, 2016. 5
+                                                                          [45] Tulin Ozturk, Muhammed Talo, Eylul Azra Yildirim,
+[33] Aishik Konwer, Joseph Bae, Gagandeep Singh, Rishabh                       Ulas Baran Baloglu, Ozal Yildirim, and U Rajendra Acharya.
+     Gattu, Syed Ali, Jeremy Green, Tej Phatak, and Prateek                    Automated detection of covid-19 cases using deep neural
+     Prasanna. Attention-based multi-scale gated recurrent en-                 networks with x-ray images. Computers in biology and
+     coder with novel correlation loss for covid-19 progression                medicine, 121:103792, 2020. 6, 7
+     prediction. In International Conference on Medical Image
+                                                                          [46] Adam Paszke, Sam Gross, Francisco Massa, Adam Lerer,
+     Computing and Computer-Assisted Intervention, pages 824–
+                                                                               James Bradbury, Gregory Chanan, Trevor Killeen, Zeming
+     833. Springer, 2021. 1, 2
+                                                                               Lin, Natalia Gimelshein, Luca Antiga, Alban Desmaison,
+[34] Solomon Kullback and Richard A Leibler. On informa-                       Andreas Kopf, Edward Yang, Zachary DeVito, Martin Rai-
+     tion and sufficiency. The annals of mathematical statistics,              son, Alykhan Tejani, Sasank Chilamkurthy, Benoit Steiner,
+     22(1):79–86, 1951. 3                                                      Lu Fang, Junjie Bai, and Soumith Chintala. Pytorch: An im-
+[35] Zekun Li, Wei Zhao, Feng Shi, Lei Qi, Xingzhi Xie, Ying                   perative style, high-performance deep learning library. In H.
+     Wei, Zhongxiang Ding, Yang Gao, Shangjie Wu, Jun Liu,                     Wallach, H. Larochelle, A. Beygelzimer, F. d'Alché-Buc, E.
+     et al. A novel multiple instance learning framework for                   Fox, and R. Garnett, editors, Advances in Neural Informa-
+     covid-19 severity assessment via data augmentation and self-              tion Processing Systems 32, pages 8024–8035. Curran Asso-
+     supervised learning. Medical Image Analysis, 69:101978,                   ciates, Inc., 2019. 6
+     2021. 6, 7                                                           [47] Fernando Pérez-Garcı́a, Catherine Scott, Rachel Sparks,
+[36] Lei Lin, Beilei Xu, Wencheng Wu, Trevor W Richardson,                     Beate Diehl, and Sébastien Ourselin. Transfer learning
+     and Edgar A Bernal. Medical time series classification                    of deep spatiotemporal networks to model arbitrarily long
+     with hierarchical attention-based temporal convolutional net-             videos of seizures. In International Conference on Medi-
+     works: A case study of myotonic dystrophy diagnosis. In                   cal Image Computing and Computer-Assisted Intervention,
+     CVPR Workshops, pages 83–86, 2019. 2                                      pages 334–344. Springer, 2021. 2
+[37] Claudia Lindner, Shankhar Thiagarajah, J Mark Wilkinson,             [48] Maithra Raghu, Chiyuan Zhang, Jon Kleinberg, and Samy
+     Gillian A Wallis, Timothy F Cootes, arcOGEN Consortium,                   Bengio. Transfusion: Understanding transfer learning for
+     et al. Fully automatic segmentation of the proximal femur                 medical imaging. arXiv preprint arXiv:1902.07208, 2019. 1
+
+
+                                                                     10
+[49] Mohammad Rahimzadeh and Abolfazl Attar. A modi-                       [61] Gül Varol, Ivan Laptev, and Cordelia Schmid. Long-
+     fied deep convolutional neural network for detecting covid-                term temporal convolutions for action recognition. IEEE
+     19 and pneumonia from chest x-ray images based on the                      transactions on pattern analysis and machine intelligence,
+     concatenation of xception and resnet50v2. Informatics in                   40(6):1510–1517, 2017. 2
+     Medicine Unlocked, 19:100360, 2020. 6, 7                              [62] Maria de la Iglesia Vayá, Jose Manuel Saborit, Joaquim An-
+[50] Pranav Rajpurkar, Jeremy Irvin, Kaylie Zhu, Brandon Yang,                  gel Montell, Antonio Pertusa, Aurelia Bustos, Miguel Ca-
+     Hershel Mehta, Tony Duan, Daisy Ding, Aarti Bagul, Curtis                  zorla, Joaquin Galant, Xavier Barber, Domingo Orozco-
+     Langlotz, Katie Shpanskaya, et al. Chexnet: Radiologist-                   Beltrán, Francisco Garcı́a-Garcı́a, et al. Bimcv covid-19+:
+     level pneumonia detection on chest x-rays with deep learn-                 a large annotated dataset of rx and ct images from covid-19
+     ing. arXiv preprint arXiv:1711.05225, 2017. 1                              patients. arXiv preprint arXiv:2006.01174, 2020. 6, 12
+[51] Olga Russakovsky, Jia Deng, Hao Su, Jonathan Krause, San-             [63] Chuang Wang, Andreas Rimner, Yu-Chi Hu, Neelam Tyagi,
+     jeev Satheesh, Sean Ma, Zhiheng Huang, Andrej Karpathy,                    Jue Jiang, Ellen Yorke, Sadegh Riyahi, Gig Mageras,
+     Aditya Khosla, Michael Bernstein, et al. Imagenet large                    Joseph O Deasy, and Pengpeng Zhang. Toward predicting
+     scale visual recognition challenge. International journal of               the evolution of lung tumors during radiotherapy observed
+     computer vision, 115(3):211–252, 2015. 4                                   on a longitudinal mr imaging study via a deep learning algo-
+[52] Joel Saltz, Mary Saltz, Prateek Prasanna, Richard Moffitt,                 rithm. Medical physics, 46(10):4699–4707, 2019. 1
+     Janos Hajagos, Erich Bremer, Joseph Balsamo, and Tahsin               [64] Dong Wang, Yuan Zhang, Kexin Zhang, and Liwei Wang.
+     Kurc. Stony brook university covid-19 positive cases [data                 Focalmix: Semi-supervised learning for 3d medical image
+     set]. the cancer imaging archive. https://doi.org/                         detection. In Proceedings of the IEEE/CVF Conference
+     10.7937/TCIA.BBAG-2923. 6, 12                                              on Computer Vision and Pattern Recognition, pages 3951–
+[53] Mark Sandler, Andrew Howard, Menglong Zhu, Andrey Zh-                      3960, 2020. 1
+     moginov, and Liang-Chieh Chen. Mobilenetv2: Inverted                  [65] Linda Wang, Zhong Qiu Lin, and Alexander Wong. Covid-
+     residuals and linear bottlenecks. In Proceedings of the                    net: A tailored deep convolutional neural network design for
+     IEEE conference on computer vision and pattern recogni-                    detection of covid-19 cases from chest x-ray images. Scien-
+     tion, pages 4510–4520, 2018. 7                                             tific Reports, 10(1):1–12, 2020. 6
+[54] Baochen Sun and Kate Saenko. Deep coral: Correlation
+                                                                           [66] Limin Wang, Zhan Tong, Bin Ji, and Gangshan Wu. Tdn:
+     alignment for deep domain adaptation. In European con-
+                                                                                Temporal difference networks for efficient action recogni-
+     ference on computer vision, pages 443–450. Springer, 2016.
+                                                                                tion. In Proceedings of the IEEE/CVF Conference on Com-
+     3
+                                                                                puter Vision and Pattern Recognition, pages 1895–1904,
+[55] Jinghan Sun, Dong Wei, Kai Ma, Liansheng Wang, and
+                                                                                2021. 2
+     Yefeng Zheng. Unsupervised representation learning meets
+                                                                           [67] Wenxuan Wang, Chen Chen, Meng Ding, Hong Yu, Sen Zha,
+     pseudo-label supervised self-distillation: A new approach to
+                                                                                and Jiangyun Li. Transbts: Multimodal brain tumor seg-
+     rare disease classification. In International Conference on
+                                                                                mentation using transformer. In International Conference on
+     Medical Image Computing and Computer-Assisted Interven-
+                                                                                Medical Image Computing and Computer-Assisted Interven-
+     tion, pages 519–529. Springer, 2021. 1
+                                                                                tion, pages 109–119. Springer, 2021. 3
+[56] Nima Tajbakhsh, Michael B Gotway, and Jianming Liang.
+     Computer-aided pulmonary embolism detection using a                   [68] Wei Wang, Yuan Sun, and Saman Halgamuge. Improv-
+     novel vessel-aligned multi-planar image representation and                 ing mmd-gan training with repulsive loss function. arXiv
+     convolutional neural networks. In International Conference                 preprint arXiv:1812.09916, 2018. 3
+     on Medical Image Computing and Computer-Assisted Inter-               [69] Hongliang Yan, Yukang Ding, Peihua Li, Qilong Wang,
+     vention, pages 62–69. Springer, 2015. 1                                    Yong Xu, and Wangmeng Zuo. Mind the class weight bias:
+[57] Aleksei Tiulpin and Simo Saarakkala. Automatic grad-                       Weighted maximum mean discrepancy for unsupervised do-
+     ing of individual knee osteoarthritis features in plain radio-             main adaptation. In Proceedings of the IEEE Conference
+     graphs using deep convolutional neural networks. Diagnos-                  on Computer Vision and Pattern Recognition, pages 2272–
+     tics, 10(11):932, 2020. 7                                                  2281, 2017. 3
+[58] Aleksei Tiulpin, Jérôme Thevenot, Esa Rahtu, Petri                  [70] Ke Yan, Yifan Peng, Veit Sandfort, Mohammadhadi Bagheri,
+     Lehenkari, and Simo Saarakkala. Automatic knee os-                         Zhiyong Lu, and Ronald M Summers. Holistic and com-
+     teoarthritis diagnosis from plain radiographs: a deep                      prehensive annotation of clinically significant findings on
+     learning-based approach. Scientific reports, 8(1):1–10, 2018.              diverse ct images: learning from radiology reports and la-
+     6, 7, 12, 13                                                               bel ontology. In Proceedings of the IEEE/CVF Conference
+[59] Ferhat Ucar and Deniz Korkmaz. Covidiagnosis-net: Deep                     on Computer Vision and Pattern Recognition, pages 8523–
+     bayes-squeezenet based diagnosis of the coronavirus disease                8532, 2019. 1
+     2019 (covid-19) from x-ray images. Medical hypotheses,                [71] Ceyuan Yang, Yinghao Xu, Jianping Shi, Bo Dai, and Bolei
+     140:109761, 2020. 6, 7                                                     Zhou. Temporal pyramid network for action recognition. In
+[60] Jeya Maria Jose Valanarasu, Poojan Oza, Ilker Hacihaliloglu,               Proceedings of the IEEE/CVF Conference on Computer Vi-
+     and Vishal M Patel. Medical transformer: Gated axial-                      sion and Pattern Recognition, pages 591–600, 2020. 2
+     attention for medical image segmentation. arXiv preprint              [72] Xitong Yang, Palghat Ramesh, Radha Chitta, Sriganesh
+     arXiv:2102.10662, 2021. 3                                                  Madhvanath, Edgar A Bernal, and Jiebo Luo. Deep mul-
+
+
+                                                                      11
+     timodal representation learning from temporal data. In Pro-             A row-wise summation operation is applied on the self-
+     ceedings of the IEEE conference on computer vision and pat-          attention weights obtained from the third and final self-
+     tern recognition, pages 5447–5455, 2017. 2                           attention block in our TCN architecture. This results in a
+[73] Li Yao, Atousa Torabi, Kyunghyun Cho, Nicolas Ballas,                ‘T’ length attention vector, the softmax of which gives the
+     Christopher Pal, Hugo Larochelle, and Aaron Courville. De-           attention scores. When these attention scores are multiplied
+     scribing videos by exploiting temporal structure. In Proceed-        with the output of TCN, they generate an optimal 512 di-
+     ings of the IEEE international conference on computer vi-            mension representation. The steps are illustrated in Supple-
+     sion, pages 4507–4515, 2015. 2
+                                                                          mentary Fig 7
+[74] Shuang Yu, Kai Ma, Qi Bi, Cheng Bian, Munan Ning, Nan-
+     jun He, Yuexiang Li, Hanruo Liu, and Yefeng Zheng. Mil-vt:
+     Multiple instance learning enhanced vision transformer for
+     fundus image classification. In International Conference on
+                                                                          8. Assets and preprocessing
+     Medical Image Computing and Computer-Assisted Interven-
+     tion, pages 45–54. Springer, 2021. 3                                 Chest Radiograph dataset: For snapshot pretraining, we
+                                                                          used 28433 chest radiographs (comprising multiple pul-
+[75] Ling Zhang, Le Lu, Xiaosong Wang, Robert M Zhu, Mo-
+     hammadhadi Bagheri, Ronald M Summers, and Jianhua Yao.               monary diseases). CovidProg dataset, which contained 942
+     Spatio-temporal convolutional lstms for tumor growth pre-            scans from 150 COVID-19 patients, comprised the temporal
+     diction by learning 4d longitudinal patient data. IEEE trans-        data. The duration between the CXR scans are variable (1-
+     actions on medical imaging, 39(4):1114–1126, 2019. 2                 5 days). The number of timepoints per patient varies from
+[76] Zhengxin Zhang, Qingjie Liu, and Yunhong Wang. Road                  4 to 16. Out of the total 150 patients, 23 cases were ob-
+     extraction by deep residual u-net. IEEE Geoscience and Re-           tained from Newark Beth Israel Medical Center, 77 from
+     mote Sensing Letters, 15(5):749–753, 2018. 6, 12                     Stony Brook University Hospital, and 50 from University
+[77] Lei Zhou, Joseph Bae, Huidong Liu, Gagandeep Singh,                  Hospitals Cleveland Medical Center.
+     Jeremy Green, Dimitris Samaras, and Prateek Prasanna.                OA Radiograph dataset: For snapshot pretraining, we
+     Chest radiograph disentanglement for covid-19 outcome pre-
+                                                                          used 23008 images. 2474 knee scans from 426 patients
+     diction. In International Conference on Medical Image Com-
+     puting and Computer-Assisted Intervention, pages 345–355.
+                                                                          comprised the temporal data. The images in the ‘train’
+     Springer, 2021. 1                                                    folder of Kaggle [12] were a fraction of the snapshot co-
+                                                                          hort used in pretraining the transformer. All the images in
+                                                                          ‘validation’ and ‘test’ folder [12] were jointly used in fine-
+Supplementary Material                                                    tuning stage.
+    In this supplementary material, we provide additional in-                The experiments were performed in a 5-fold cross vali-
+formation to further understand our proposed approach. In                 dation setting in the finetuning stage where the pretrained
+section 7, we provide an architectural overview of how to                 transformer model was finetuned on 4 folds and tested on
+calculate a 512 dimension vector from last the layer of Tem-              the remaining fold. Details about the data used for each
+poral Convolutional Network (TCN). We provide dataset                     stage can be found in Supplementary Table 5
+and preprocessing details in section 8. Finally in section
+9, t-SNE plots and additional class activation maps provide
+                                                                              Stage              COVID                                OA
+insights into OA severity prediction from knee radiographs.                 Snapshot     21165 [13] + 7268 [62]        17230 [43] + 5778 train folder [12]
+                                                                            Temporal         942 (CovidProg)                       2474 [43]
+                                                                            Finetune   631 (Vent.), 531 (Mort.) [52]       2482 val + test folder [43]
+7. Architecture details - TCN output
+                                                                                        Table 5. Data utilized in different stages
+
+
+                                                                          COVID-19 preprocessing: Lung region segmentation was
+                                                                          first performed using a Residual UNet model [76]. All chest
+                                                                          scans were aligned to the same intensity range through an
+                                                                          average histogram matching method.
+                                                                          OA preprocessing: We utilized BoneFinder tool [37] to
+                                                                          localize and crop the knee joint landmarks. Following [58],
+                                                                          histogram clipping and global contrast normalization were
+                                                                          applied to each localized knee joint image.
+                                                                              Samples of COVID and OA images after pre-processing
+Figure 7. Derivation of temporal representation from last layer of        are shown in Supplementary Fig 8 and Supplementary Fig
+TCN.                                                                      9, respectively.
+
+
+                                                                     12
+                  Figure 8. Preprocessed chest scans after applying average histogram matching and lung segmentation
+
+
+                                                                         tary Fig 12, Curve A (blue) shows the average distance (d)
+                                                                         between the matched pair of snapshot and temporal repre-
+                                                                         sentation. d is reduced to only 0.10 after 40 epochs. For
+                                                                         reference, we also show d between any snapshot of posi-
+                                                                         tive ventilation status (S+) and any temporal sequence of
+                                                                         positive ventilation status (Tm+). The result is Curve B (or-
+                                                                         ange). Meanwhile, we also report d between S+ and any
+                                                                         temporal sequence with negative ventilation status (Tm-) as
+                                                                         in Curve C (green). After 40 epochs, d in A,B,C are 0.10,
+                                                                         0.67 and 4.26, respectively. C>>B>A shows that (1) the
+Figure 9. Preprocessed knee radiographs (1b, 2b) generated after         matched snapshots and temporal sequences are automati-
+joint localization [37] and global contrast normalization [58] on        cally aligned very well during training, thanks to the MMD
+original samples (1a, 2a)                                                loss; (2) generally a positive temporal sequence is aligned
+                                                                         much closer to a positive snapshot than a negative snapshot,
+                                                                         although not as close as the matched pairs.
+9. Insights from OA severity prediction
+                                                                         11. Longitudinal comparison
+    Supplementary Fig 10 demonstrates that utilizing tem-
+poral representations in our architecture results in better de-             We also compared our method with other tempo-
+fined clusters for the three severity grades (0, 1, 2) on the t-         ral models, namely CNN+LSTM, CNN+biLSTM and
+SNE plot. It may be observed that intermediate grades, such              CNN+biLSTM+Attention. It may be observed from Sup-
+as 1 vs 2, which are more difficult to predict (left) can bene-          plementary Table 6 that our approach outperforms all these
+fit from the proposed temporal approach (right). Additional              longitudinal models.
+CAMs of OA affected knees are compared in Supplemen-
+tary Fig 11. Each row corresponds to knee radiographs from                                Name                   Ventilation
+different severity grades, from 0 to 4. As may be observed,                              Method                    AUC
+the attention maps from DeepKnee [58] , CNN + Ordinal                                  CNN+LSTM                     0.82
+loss [9] and SE block [27] are very sparse and sometimes                              CNN+biLSTM                    0.83
+react to unnecessary areas (bone texture, joint centre). On                        CNN+biLSTM+Attention             0.85
+the contrary, our method provides more focused attention                                  Ours                      0.88
+on the osteophytes and joint narrowing - the two important
+indicators of osteoarthritis.                                                    Table 6. Comparison with longitudinal methods
+
+
+10. Recalibration using matching data                                    12. Limitations
+    In the COVID-19 cohort, we included some matched                        In our temporal analysis, the images are not registered.
+data. 100 of 150 patients in the CovidProg temporal dataset              Registration might result in learning better representations.
+also have their ventilation status known. We use the 100 pa-             We aim to address this in the future by using a spatial trans-
+tients, take the baseline scans (the first image) of their tem-          former network as a pre-processing stage before extracting
+poral sequences as matched snapshot images. We evaluated                 temporal features. Also, due to lack of sufficient temporal
+the distance between these matched temporal/snapshot data                data, we did not use transformer architectures to learn dis-
+in the representation space through training. In Supplemen-              ease progression. This research direction can be pursued
+
+
+                                                                    13
+           Figure 10. Comparison between t-SNE plots before and after using temporal modeling for severity grades (0,1,2)
+
+
+with the availability of more temporal cases in future.
+
+
+
+
+Figure 11. Qualitative comparisons of knee CAMs depicting OA
+severity grades 0 to 4 (top to bottom)
+
+
+
+
+   Figure 12. Distance between feature means across training
+
+
+
+
+                                                                14
+

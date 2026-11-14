@@ -1,0 +1,445 @@
+      Engineering, Technology & Applied Science Research                         Vol. 16, No. 2, 2026, 34018-34023                      34018
+
+
+              Utilizing Cascade Deep Metric Learning for the
+              Kellgren-Lawrence Grading of Knee
+              Osteoarthritis Classification from X-Ray
+              Images
+              Supatman
+              Department of Electrical Engineering, Institut Teknologi Sepuluh Nopember, Surabaya, Indonesia
+              7022212011@student.its.ac.id
+
+              Eko Mulyanto Yuniarno
+              Department of Electrical Engineering, Institut Teknologi Sepuluh Nopember, Surabaya, Indonesia |
+              Department of Computer Engineering, Institut Teknologi Sepuluh Nopember, Surabaya, Indonesia
+              ekomulyanto@ee.its.ac.id
+
+              Mauridhi Hery Purnomo
+              Department of Electrical Engineering, Institut Teknologi Sepuluh Nopember, Surabaya, Indonesia |
+              Department of Computer Engineering, Institut Teknologi Sepuluh Nopember, Surabaya, Indonesia
+              hery@ee.its.ac.id (corresponding author)
+                                       Received: 12 January 2026 | Revised: 10 February 2026 | Accepted: 20 February 2026
+                            Licensed under a CC-BY 4.0 license | Copyright (c) by the authors | DOI: https://doi.org/10.48084/etasr.17478
+
+                                                                 ABSTRACT
+              Accurate automated grading of knee osteoarthritis from X-ray images remains challenging due to inter-
+              radiologist label noise and the inherent ordinal nature of the Kellgren-Lawrence (KL) grading scale. Most
+              existing deep learning approaches address label noise handling, feature embedding, and ordinal modeling
+              as separate components, which limits robustness and consistency across adjacent grades. This study
+              presents a Cascade Deep Metric Learning (CDML) framework that integrates adaptive label reliability
+              updating and ordinal-aware metric learning within a unified cascade design. By iteratively refining feature
+              embeddings under ordinal constraints, the proposed framework explicitly addresses both noisy
+              annotations and ordinal dependencies in KL grading. Experiments conducted on the Osteoarthritis
+              Initiative (OAI) dataset demonstrated that the proposed method achieved an accuracy of 82.12%, a Mean
+              Absolute Error (MAE) of 0.179, and a Quadratic Weighted Kappa (QWK) of 0.935, outperforming
+              baseline deep metric learning methods. Ablation studies further confirmed the effectiveness of the cascade
+              design in improving robustness and preserving clinically consistent ordinal predictions.
+
+              Keywords-cascade deep metric learning; Kellgren–Lawrence grading; knee osteoarthritis; label noise
+              handling; ordinal classification
+
+                    I.   INTRODUCTION                                       evaluation of KOA due to its accessibility and cost-
+                                                                            effectiveness.
+    Knee Osteoarthritis (KOA) is a prevalent degenerative joint
+disease and a significant cause of disability worldwide [1].                    The KL system is the gold standard for the evaluation of
+Deep learning has been increasingly applied to musculoskeletal              KOA, with a scale of 0 to 4 [5]. KL grading relies heavily on
+disorders, including hip osteoarthritis [2], enabling automated             expert visual interpretation and is therefore inherently
+image-based assessments. Radiographic indicators of the                     subjective [6]. Substantial inter-observer variability has been
+progression of KOA include osteophyte formation, joint space                reported [7]. Furthermore, intra-observer inconsistency occurs,
+narrowing, and subchondral bone changes associated with                     leading to noisy and inconsistent labeling in practical settings
+cartilage degeneration [3]. Despite the exploration of                      [8]. This ambiguity arises primarily at adjacent levels, such as
+complementary imaging and signal-based approaches [4],                      KL-0, KL-1, and KL-2, due to subtle visual differences [9].
+conventional radiography remains the main modality for the                  Therefore, publicly available datasets exhibit significant label
+
+
+
+       www.etasr.com              Supatman et al.: Utilizing Cascade Deep Metric Learning for the Kellgren-Lawrence Grading of Knee …
+       Engineering, Technology & Applied Science Research               Vol. 16, No. 2, 2026, 34018-34023                  34019
+
+ambiguity, posing a major challenge to the development of           70.13% accuracy [20], while data-driven relabeling using
+automated image-based methods.                                      EfficientNetB5 and CleanLab achieved 82.07% accuracy [21],
+                                                                    highlighting the critical role of label quality in KL grading
+    Deep learning, particularly CNN-based models, has
+                                                                    performance. Nevertheless, prior studies predominantly tackle
+achieved strong performance across diverse medical image            ordinal modeling, label cleaning, or confidence-aware learning
+classification tasks, including pneumonia detection from chest      as isolated components. An integrated cascade framework that
+X-rays [10], hematological disease diagnosis using erythrocyte      jointly performs adaptive label cleaning, relabeling, and
+images [11], and neurological disorder classification using         ordinal-aware metric learning remains largely unexplored. This
+ensemble learning [12]. In the context of osteoarthritis, DL-       research gap motivates the proposed CDML framework, which
+based approaches have been widely adopted for automated KL          unifies these components to enhance inter-grade discrimination
+grading to enhance objectivity and reproducibility [13].            and improve overall KL grade classification accuracy.
+Nevertheless, most existing methods assume uniform label
+reliability and model KL grading as a standard multi-class                        III. MATERIALS AND METHODS
+problem, neglecting inter-radiologist noise, visual ambiguity,
+and the ordinal nature of KL grades [14]. Moreover, label               This study presents a CDML framework for automated KL
+refinement, feature embedding, and ordinal modeling are often       grade classification from knee X-ray images as shown in
+handled in isolation, limiting robustness and consistency across    Figure 1. Cascade-I applies VGG19-based [22] embedding
+adjacent grades.                                                    with 5-fold cross-validation and Out-Of-Fold (OOF) metric
+                                                                    learning for label cleaning and adaptive relabeling, while
+    To address the limitations of existing approaches, this study   Cascade-II performs ordinal-aware metric learning-based
+proposes a CDML framework for automated KL grading that             classification to model KL grade progression. Performance was
+unifies label cleaning, metric embedding, and ordinal modeling      evaluated using accuracy, MAE, quadratic QWK, and
+in a single iterative pipeline. By enabling mutual reinforcement    confusion matrices, with Grad-CAM providing model
+between embedding refinement and ordinal consistency, the           interpretability [23]. All experiments were implemented in
+proposed framework improves robustness to label noise and           Python on a system equipped with an Intel Xeon W-3425 CPU,
+enhances class separability. To our knowledge, this is the first    32 GB RAM, and NVIDIA RTX A4000 GPU.
+approach to integrate these components into a unified cascade
+tailored to the ordinal and ambiguity-prone nature of KOA
+grading. The main contributions of this study are summarized
+as follows:
+ The proposed CDML framework integrates label
+  refinement and ordinal-aware embedding in a unified
+  iterative pipeline for KL grading.
+ A cascade mechanism jointly suppresses label noise and
+  enforces ordinal consistency, reducing misclassification
+  across non-adjacent KL grades.
+ Experimental results demonstrate consistent improvements
+  in accuracy, MAE, and QWK over baseline deep metric
+  learning methods.
+ II.    STATE-OF-THE-ART IN KNEE OSTEOARTHRITIS
+                      CLASSIFICATION
+    Deep learning-based CNN models have driven significant
+progress in the automated classification of KL grades in KOA.
+Early studies using pre-trained CNN architectures                   Fig. 1. Block diagram illustrating the overall workflow of the proposed
+demonstrated the feasibility of direct KL grading from knee X-      CDML framework.
+ray images [15] but struggled with the ambiguity and ordinal
+nature of KL labels. Ordinal-aware learning strategies have         A. Dataset
+been introduced to address this limitation. In [16], an ordinal         The knee X-ray dataset used in this study is publicly
+loss function was employed, achieving 69.70% accuracy and           available from the OAI through Mendeley Data [24]. The
+revealing the difficulty of separating adjacent grades.             images were annotated according to the KL grading system
+Subsequent CNN-based approaches incorporated bilateral knee         (grades 0–4), and Table I summarizes the dataset distribution.
+information [17], hierarchical classification schemes [18], and     Further details on data acquisition are provided in the original
+ensemble learning [19], reporting accuracies ranging from           OAI publications [25]. All data usage complied with the dataset
+65.98 to 76.93% that indicate moderate improvements through         terms. In addition to the internal training, validation, and test
+architectural refinement.                                           splits, the dataset provides an official Auto Test partition,
+                                                                    which is reported in Table I for completeness. This study used
+   Recent studies have shifted their focus to label reliability.
+Confidence-aware sampling preserved ordinal consistency with        only the training, validation, and test splits for model
+                                                                    development and performance evaluation.
+
+       www.etasr.com              Supatman et al.: Utilizing Cascade Deep Metric Learning for the Kellgren-Lawrence Grading of Knee …
+       Engineering, Technology & Applied Science Research                     Vol. 16, No. 2, 2026, 34018-34023              34020
+        TABLE I.         DATASET DISTRIBUTION PER KL GRADE                C. Cascade-II: Final Embedding and Classification
+         Split      KL-0        KL-1      KL-2     KL-3     KL-4              After obtaining a clean dataset from Cascade-I, the
+         Train      2,286       1,046     1,516    757       173          embedding network was retrained using the triplet loss defined
+       Validation    328         153       212     106       27
+                                                                          in (1). To explicitly enforce the ordinal structure of KL grades,
+         Test        639         296       447     223       51
+       Auto Test     604         275       403     200       44           negative samples were selected only from classes separated by
+                                                                          two or more grades:
+    As summarized in Table I, the dataset comprises 9,786                     |8 − 8 | ≥ 2                                        (5)
+grayscale X-ray images with a resolution of 224×224 pixels.
+For model development, images from the training, validation,              where 8 and 8 denote the KL grades of the anchor and
+and test splits were merged by KL class, yielding 3,253 images            negative samples, respectively, as enforced in (5). This
+for KL-0, 1,495 for KL-1, 2,175 for KL-2, 1,086 for KL-3, and             constraint increases the ordinal margin between classes,
+251 images for KL-4.                                                      resulting in compact and well-separated embeddings that better
+                                                                          reflect KL progression.
+B. Cascade-I: Label Cleaning and Adaptive Relabeling
+                                                                              The optimized embeddings are then fed into a two-hidden-
+    A VGG19-based embedding network was trained using 5-                  layer MLP classifier for KL grade prediction:
+fold cross-validation under a strict OOF protocol, ensuring that
+each sample was represented by an embedding extracted from a                  8A = argmax M (")                                   (6)
+model that had not been trained on that sample. The network
+replaces the final classification layer with a 256-dimensional            where " = ( ) is the learned embedding and M (•) denotes
+embedding layer. It is optimized using a triplet loss [26], where         the output score of class % from the MLP. The classifier was
+each training tuple consists of an anchor sample , a positive             trained using the predefined training, validation, and test splits
+sample from the same class, and a negative sample               from      summarized in Table I to ensure experimental consistency.
+a different class. The triplet loss is defined in (1) as follows:
+                                                                          D. Performance Evaluation
+   ℒ         =       (      ,      − (       ,    )+   ,0    (1)             The proposed framework was evaluated using the following
+                                                                          metrics: accuracy, precision, recall, F1-score [27], confusion
+where       ,     = ( )− ( )          , f(•) denotes the
+                                                                          matrix, MAE [28], and QWK [29]. MAE is computed as:
+embedding function, and = 1.0 ensures balanced separation
+between positive and negative embeddings for stable learning.                 OPQ =      ∑ # |(8A − 8 )|                          (7)
+    After 5-fold cross-validation, OOF embeddings are                     where R is the total number of evaluated samples, 8A is the
+collected for all samples, and class-specific centroids are               predicted KL grade, and 8 is the ground truth KL grade.
+computed as:                                                              Finally, QWK is calculated as :
+       =     ∑# "                                            (2)              S = 1−∑
+                                                                                        ∑U,V TUV WUV
+                                                                                                                                  (8)
+                                                                                         U,V TUV XUV
+where ei represents the embedding of sample $ in class % , and
+& is the number of samples in class % . A sample is flagged as            where Y is the observed agreement matrix, Q is the expected
+suspected if its distance to the centroid exceeds a class-specific        agreement matrix, and Z is the quadratic weight for class pair
+percentile threshold and its predicted label differs from the             ($ , [).
+original label, with the following criterion:
+                                                                                        IV.     RESULTS AND DISCUSSION
+              suspect, $  > 2 and ŷ ≠ 8
+   '( ()' = *                                                (3)
+              keep, otherwise                                             A. Experimental Setup and Evaluation Protocol
+                                                                              Table II summarizes the experimental setup and evaluation
+where      = ?|" − |? , 2 is the class-specific percentile                protocols. A VGG19 backbone pretrained on ImageNet was
+threshold, 8A is the predicted label, and 8 is the original label.        employed to extract 256-dimensional embeddings, followed by
+For suspect samples, ordinal-safe relabeling is performed                 a two-stage CDML pipeline comprising label reliability
+according to (4), where 8 B is the relabeled class:                       assessment through OOF metric learning and ordinal-aware
+                                                                          classification to ensure consistent and reproducible evaluation.
+   8 B ∈ {max (0, 8 − 1), 8 , min (4, 8 + 1)}                (4)
+                                                                          B. Quantitative Classification Results
+This limits candidate labels to the original KL grade or its
+neighbors and removes extreme outliers above the 99th                         The proposed CDML framework was evaluated on a 20%
+percentile. With a total of 8,260 samples, 292 were flagged,              test split (1,594 knee X-rays) covering all KL grades (0–4). The
+only 6 were removed, and the rest were conservatively                     quantitative results in Table III demonstrate that CDML
+relabeled to adjacent KL grades.                                          produces stable and balanced performance across all KL grades
+                                                                          with no bias toward the dominant class. The error pattern,
+                                                                          dominated by misclassification between adjacent grades,
+                                                                          confirms the successful modeling of the ordinal structure of
+                                                                          osteoarthritis. The integration of label reliability updating and
+                                                                          ordinal-aware metric learning has been proven to increase
+
+       www.etasr.com                    Supatman et al.: Utilizing Cascade Deep Metric Learning for the Kellgren-Lawrence Grading of Knee …
+       Engineering, Technology & Applied Science Research                      Vol. 16, No. 2, 2026, 34018-34023                34021
+
+prediction consistency and reduce annotation subjectivity,                 D. Confusion Matrix Analysis
+making CDML more robust and relevant for clinical                              To analyze test performance in detail, Figure 2 presents the
+applications.                                                              confusion matrix. The CDML framework is stable, with most
+                                                                           misclassifications occurring between adjacent KL grades and
+     TABLE II.           EXPERIMENTAL SETUP AND CONFIGURATION
+                                                                           no significant error. Although KL Grade 4 was consistently
+       Component                              Configuration                predicted, some overlap existed between Grades 0 and 1 owing
+        Input image                           224×224 pixels               to visual similarities, indicating that the learned embeddings
+         Data split                                                        effectively encoded ordinal progression for stable, ordinal-
+                                                  70:10:20
+ (Train:Validation:Test)
+    Backbone network                  VGG19 (pretrained on ImageNet)
+                                                                           consistent classification.
+  Embedding dimension                              256
+       Learning rate                              1x10-4
+         Batch size                                 16
+Dataset imbalance handling
+                                               Class weight
+        (Classifier)
+                               5-fold cross-validation OOF DML, Triplet
+        Cascade-I
+                                   Margin Loss, AdamW, LR 1×10-4
+                                Negative sampling with |ΔKL|>2, Triplet
+                              Margin Loss, AdamW, MLP (2 hidden layers),
+       Cascade-II
+                              Weighted Binary Cross-Entropy with ordinal
+                                          encoding, LR 1×10-3
+    Evaluation metrics                   Accuracy, QWK, MAE
+
+     TABLE III.          CLASSIFICATION RESULTS ON THE TEST SET
+                Metrics                                  Value
+               Accuracy                                 82.12%
+             Macro Precision                             0.840
+              Macro Recall                               0.853                                   Fig. 2.   Confusion Matrix
+             Macro F1-score                              0.846
+            Weighted F1-score                            0.822             E. Ablation Study
+                 MAE                                     0.179
+                 QWK                                     0.935
+                                                                               An ablation study compared the baseline DML and CDML
+                                                                           under identical data splits to assess the effectiveness of the
+                                                                           latter in KL grade classification. As shown in Table V, the
+C. Class-Wise Performance Analysis                                         ablation results indicate that incorporating the full CDML
+    Table IV shows the performance of the CDML model                       pipeline leads to substantial performance improvements over
+across various KL grades. This table presents the class-wise               the baseline DML, with an accuracy gain of 24.13% points, a
+classification results for evaluating the model robustness across          0.295 reduction in MAE, and a 0.146 increase in QWK. These
+individual KL grades in an ordinal, imbalanced setting. The                gains highlight the cumulative contribution of label noise
+proposed model demonstrated strong discriminative                          reduction, class balancing, and ordinal-aware embedding
+performance for KL-2, KL-3, and KL-4. In contrast, a lower                 learning, demonstrating that each component plays a
+performance was observed for KL-1, which can be attributed to              complementary role in improving ordinal consistency and
+the intrinsic ambiguity between KL-0 and KL-1. Overall, the                reducing prediction error; bootstrap analysis on QWK (mean
+class-wise analysis indicated improved discrimination between              gain 0.146 with a 95% confidence interval of [0.125, 0.167])
+adjacent KL grades and confirmed the effectiveness of the                  confirms that these improvements are statistically significant.
+ordinal-aware metric learning strategy in constraining
+                                                                                  TABLE V.       PERFORMANCE COMPARISON OF BASELINE
+misclassifications predominantly to neighboring KL grades                                      DML AND CDML ON KL GRADE OF KNEE
+rather than to non-adjacent categories.                                                                 OSTEOARTHRITIS
+                                                                                     Model         Accuracy (%)       MAE        QWK
+        TABLE IV.          CLASS-WISE CLASSIFICATION RESULTS
+                                                                                  Baseline DML        57.99           0.474      0.789
+                                                      Accuracy                       CDML             82.12           0.179      0.935
+ KL Grade    Precision       Recall      F1-score                Support
+                                                        (%)
+   KL-0          0.828       0.814        0.821        81.37       655         To justify the choice of percentile threshold for outlier
+   KL-1          0.571       0.598        0.584        59.80       296
+   KL-2          0.945       0.926        0.936        92.60       392
+                                                                           rejection, a sensitivity analysis was conducted at the 95th, 97th,
+   KL-3          0.919       0.928        0.923        92.75       207     and 99th percentiles, with Table VI showing their impact on the
+   KL-4          0.936       1.000        0.967        100.00      44      discarded samples and classification performance.
+  Macro-
+                 0.840       0.853        0.846         85.31          -
+ averages                                                                          TABLE VI.     PERCENTILE THRESHOLD SELECTION FOR
+                                                                                                      OUTLIER REJECTION
+                                                                               Percentile   Drop (%) Accuracy (%)       MAE        QWK
+                                                                                  p95         0.47      81.99           0.181      0.936
+                                                                                  p97         0.21      82.25           0.178      0.936
+                                                                                  p99         0.07      82.12           0.179      0.935
+
+
+       www.etasr.com                     Supatman et al.: Utilizing Cascade Deep Metric Learning for the Kellgren-Lawrence Grading of Knee …
+       Engineering, Technology & Applied Science Research                   Vol. 16, No. 2, 2026, 34018-34023                   34022
+
+    As shown in Table VI, the classification performance is             G. Comparison with Previous Studies
+largely insensitive to the percentile threshold, with differences           A comparative analysis was conducted with state-of-the-art
+in accuracy below 0.2% and negligible variations in MAE and             approaches reported in the literature. Table IX shows that the
+QWK. In contrast, the proportion of discarded samples varied            CDML framework outperforms previous methods, including
+substantially, with lower percentiles resulting in more                 CNN regression [15], YOLOv2 with ordinal loss [16], Deep
+aggressive data removal. Considering the minimal performance            Siamese CNN [17], ensemble networks [19], DenseNet121
+differences and the importance of retaining clinically plausible        [20], and CleanLab+EfficientNet B5 [21], achieving slightly
+samples, the 99th percentile was selected as a conservative             higher accuracy (+0.05%) and macro F1-score (+0.027%), and
+threshold that balanced robustness and data retention.                  notably higher QWK (+0.105%), with lower MAE, indicating
+    evaluate the influence of the CNN backbone within the               better preservation of ordinal relationships. These
+CDML framework, ResNet50, EfficientNet-B0, and VGG19                    improvements are attributed to label cleaning, adaptive
+were compared, and the results are summarized in Table VII.             relabeling, and ordinal-aware embeddings, which jointly
+Although VGG19 is an older CNN architecture, it remains                 reduce the label noise and class imbalance. Other methods,
+highly effective within the CDML framework. Compared with               such as [18], were not compared because they relied on private
+ResNet50 and EfficientNet B0, VGG19 yielded more                        data.
+discriminative and stable embeddings for KL grade prediction.
+This observation suggests that in metric-learning-based medical                    TABLE IX.    COMPARISON WITH PREVIOUS STUDIES
+image analysis, particularly for knee X-ray images with subtle                                 Dataset
+                                                                           Study     Dataset                 Method         Evaluation result
+structural variations, embedding stability and feature                                          size
+consistency may be more critical than architectural complexity.                                                             Precision = 0.610
+                                                                                                              CNN
+                                                                           [15]       OAI       8,892                        Recall = 0.620
+                                                                                                          Regression loss
+                                                                                                                            F1-score = 0.590
+           TABLE VII.    PERFORMANCE COMPARISON OF CNN
+               BACKBONES WITH CDML ON KL GRADE KNEE                                                         YOLOv2,
+                      OSTEOARTHRITIS CLASSIFICATION                                                        CNNs with        Accuracy = 69.70%
+                                                                           [16]       OAI       9,786
+                                                                                                           ordinal loss       MAE = 0.3440
+     CNN backbone           Accuracy (%)      MAE        QWK                                                function
+        ResNet50               61.08          0.522      0.729                                                            Accuracy = 66.71%
+     EfficientNet-B0           69.60          0.376      0.826                       OAI and              Deep Siamese
+                                                                           [17]                27,293                        QWK = 0.830
+         VGG19                 82.12          0.179      0.935                       MOST                    CNN
+                                                                                                                             ROC = 0.930
+                                                                                                            Ensemble      Accuracy = 76.93%
+                                                                           [19]       OAI       9,786
+    Embedding robustness is further ensured through 5-fold                                                  Networks       F1-score = 0.770
+OOF triplet learning and adaptive relabeling, which minimizes                                                             Accuracy = 70.13%
+                                                                           [20]       OAI       9,786     Densenet121
+                                                                                                                            MCC = 0.5864
+the sensitivity to noisy KL labels. The consistently low MAE                                                              Accuracy = 82.07%
+and high QWK indicate that the performance gains primarily                                                 CleanLab+     Macro Precision = 0.805
+stem from the proposed CDML learning paradigm rather than                  [21]       OAI       9,786
+                                                                                                         EfficientNet B5 Macro Recall = 0.803
+the backbone architecture.                                                                                               Macro F1-score = 0.819
+                                                                                                                          Accuracy = 82.12%
+F. Grad-CAM Visualization                                                                                                  Precision = 0.840
+                                                                         Proposed                                            Recall = 0.853
+    To illustrate the dominant features supporting the                    CDML
+                                                                                      OAI       9,786        CDML
+                                                                                                                           F1-score = 0.846
+classification, Grad-CAM visualizations are presented in Table                                                               MAE = 0.179
+VIII, showing Grad-CAM heatmaps overlaid on the original X-                                                                  QWK = 0.935
+ray images. KL-0 and KL-1 primarily emphasize the medial
+and lateral joint spaces. KL-2 and KL-3 highlight joint space
+narrowing and subchondral bone regions, while KL-4 focuses                                      V.       CONCLUSION
+on bone deformities and osteophyte formation. These heatmaps                This study presented a CDML framework for the automated
+consistently emphasize anatomically relevant areas associated           KL grade classification of knee X-ray images, explicitly
+with osteoarthritis progression.                                        addressing label noise and ordinal dependencies. By integrating
+                                                                        label reliability updating with ordinal-aware classification,
+             TABLE VIII.    GRAD-CAM RESULTS FOR KL GRADE
+                           CLASSIFICATION USING CDML                    CDML outperformed baseline DML on the OAI dataset,
+                                                                        achieving an accuracy of 82.12%, MAE of 0.179, and QWK of
+   Image        KL-0         KL-1      KL-2       KL-3     KL-4         0.935, improving accuracy by 24.13%, reducing MAE by
+                                                                        0.295, and increasing QWK by 0.146. CDML with the VGG19
+  Original
+                                                                        backbone also surpasses implementations with ResNet50 and
+                                                                        EfficientNetB0, highlighting the effectiveness of the cascade
+                                                                        design and ordinal-aware learning over network depth. A
+   CDML
+                                                                        limitation is the absence of subject identifiers, which restricts
+                                                                        subject-level separation across splits, and validation is limited
+                                                                        to the OAI dataset. Future work will focus on cross-dataset
+                                                                        evaluations and multimodal integration to further assess
+                                                                        generalization and robustness.
+
+
+       www.etasr.com                  Supatman et al.: Utilizing Cascade Deep Metric Learning for the Kellgren-Lawrence Grading of Knee …
+        Engineering, Technology & Applied Science Research                            Vol. 16, No. 2, 2026, 34018-34023                        34023
+
+                             REFERENCES                                                ordinal loss,'' Computerized Medical Imaging and Graphics, vol. 75, pp.
+                                                                                       84–92, July 2019, https://doi.org/10.1016/j.compmedimag.2019.06.002.
+[1]  L. Qiao et al., ''Epidemiological trends of osteoarthritis at the global,
+                                                                                  [17] A. Tiulpin, J. Thevenot, E. Rahtu, P. Lehenkari, and S. Saarakkala,
+     regional, and national levels from 1990 to 2021 and projections to 2050,''
+                                                                                       ''Automatic Knee Osteoarthritis Diagnosis from Plain Radiographs: A
+     Arthritis Research & Therapy, vol. 27, no. 1, Oct. 2025, Art. no. 199,
+                                                                                       Deep Learning-Based Approach,'' Scientific Reports, vol. 8, no. 1, Jan.
+     https://doi.org/10.1186/s13075-025-03658-w.
+                                                                                       2018, Art. no. 1727, https://doi.org/10.1038/s41598-018-20132-7.
+[2] F. Muttaqin et al., ''A Combination Method of ROI, CLAHE, and
+     DenseNet-169 for Hip Osteoarthritis Detection,'' Engineering,                [18] J. Pan et al., ''Automatic knee osteoarthritis severity grading based on X-
+     Technology & Applied Science Research, vol. 15, no. 3, pp. 22690–                 ray images using a hierarchical classification method,'' Arthritis
+     22697, June 2025, https://doi.org/10.48084/etasr.10576.                           Research & Therapy, vol. 26, no. 1, Nov. 2024, Art. no. 203,
+                                                                                       https://doi.org/10.1186/s13075-024-03416-4.
+[3] D. J. Hunter, L. March, and M. Chew, ''Osteoarthritis in 2020 and
+     beyond: a Lancet Commission,'' The Lancet, vol. 396, no. 10264, pp.          [19] S. W. Pi, B. D. Lee, M. S. Lee, and H. J. Lee, ''Ensemble deep-learning
+     1711–1712, Nov. 2020, https://doi.org/10.1016/S0140-6736(20)32230-                networks for automated osteoarthritis grading in knee X-ray images,''
+     3.                                                                                Scientific Reports, vol. 13, no. 1, Dec. 2023, Art. no. 22887,
+                                                                                       https://doi.org/10.1038/s41598-023-50210-4.
+[4] K. S. Basavaraju, T. K. Kumar, and K. A. Reddy, ''Vibroarthrographic
+     Signal Classification for Knee Joint Disorder Detection using Tunable        [20] Y. Wang et al., ''Learning From Highly Confident Samples for
+     Q-factor Wavelet Transform based on Entropy Measures,'' Engineering,              Automatic Knee Osteoarthritis Severity Assessment: Data From the
+     Technology & Applied Science Research, vol. 15, no. 1, pp. 19953–                 Osteoarthritis Initiative,'' IEEE Journal of Biomedical and Health
+     19958, Feb. 2025, https://doi.org/10.48084/etasr.9245.                            Informatics, vol. 26, no. 3, pp. 1239–1250, Mar. 2022,
+                                                                                       https://doi.org/10.1109/JBHI.2021.3102090.
+[5] J. H. Kellgren and J. S. Lawrence, ''Radiological Assessment of Osteo-
+     Arthrosis,'' Annals of the Rheumatic Diseases, vol. 16, no. 4, pp. 494–      [21] T. Momenpour and A. Abu Mallouh, ''Optimizing CNN-Based
+     502, Dec. 1957, https://doi.org/10.1136/ard.16.4.494.                             Diagnosis of Knee Osteoarthritis: Enhancing Model Accuracy with
+                                                                                       CleanLab Relabeling,'' Diagnostics, vol. 15, no. 11, May 2025, Art. no.
+[6] J. S. Yoon et al., ''Assessment of a novel deep learning-based software            1332, https://doi.org/10.3390/diagnostics15111332.
+     developed for automatic feature extraction and grading of radiographic
+                                                                                  [22] K. Simonyan and A. Zisserman, ''Very Deep Convolutional Networks
+     knee osteoarthritis,'' BMC Musculoskeletal Disorders, vol. 24, no. 1,
+                                                                                       for Large-Scale Image Recognition.'' arXiv, Apr. 10, 2015,
+     Nov. 2023, Art. no. 869, https://doi.org/10.1186/s12891-023-06951-4.
+                                                                                       https://doi.org/10.48550/arXiv.1409.1556.
+[7] S. Beyaz, S. B. Yayli, and K. Kılıç, ''From variability to consistency:
+                                                                                  [23] R. R. Selvaraju, M. Cogswell, A. Das, R. Vedantam, D. Parikh, and D.
+     building a Kellgren-Lawrence gonarthrosis dataset,'' Journal of
+                                                                                       Batra, ''Grad-CAM: Visual Explanations From Deep Networks via
+     Orthopaedic Surgery and Research, vol. 20, no. 1, Oct. 2025, Art. no.
+                                                                                       Gradient-Based Localization,'' presented at the Proceedings of the IEEE
+     922, https://doi.org/10.1186/s13018-025-06057-8.
+                                                                                       International Conference on Computer Vision, Venice, Italy, 2017, Art.
+[8] A. G. Culvenor, C. N. Engen, B. E. Øiestad, L. Engebretsen, and M. A.              no. 618–626.
+     Risberg, ''Defining the presence of radiographic knee osteoarthritis: a
+     comparison between the Kellgren and Lawrence system and OARSI                [24] P. Chen, ''Knee Osteoarthritis Severity Grading Dataset.'' Mendeley,
+     atlas criteria,'' Knee Surgery, Sports Traumatology, Arthroscopy, vol. 23,        Sept. 04, 2018, https://doi.org/10.17632/56RMX5BJCR.1.
+     no. 12, pp. 3532–3539, Dec. 2015, https://doi.org/10.1007/s00167-014-        [25] J. B. Driban et al., ''The state of the Osteoarthritis Initiative (OAI):
+     3205-0.                                                                           Entering a new era,'' Seminars in Arthritis and Rheumatism, vol. 75,
+[9] K. Klara et al., ''Reliability and Accuracy of Cross-sectional                     Dec.               2025,            Art.             no.            152887,
+     Radiographic Assessment of Severe Knee Osteoarthritis: Role of                    https://doi.org/10.1016/j.semarthrit.2025.152887.
+     Training and Experience,'' The Journal of Rheumatology, vol. 43, no. 7,      [26] E. Hoffer and N. Ailon, ''Deep Metric Learning Using Triplet Network,''
+     pp. 1421–1426, July 2016, https://doi.org/10.3899/jrheum.151300.                  in Similarity-Based Pattern Recognition, vol. 9370, A. Feragen, M.
+                                                                                       Pelillo, and M. Loog, Springer International Publishing, 2015, pp. 84–
+[10] A. S. Buriboev, A. Abduvaitov, and H. S. Jeon, ''Binary Classification of
+                                                                                       92.
+     Pneumonia in Chest X-Ray Images Using Modified Contrast-Limited
+     Adaptive Histogram Equalization Algorithm,'' Sensors, vol. 25, no. 13,       [27] D. M. W. Powers, ''Evaluation: from precision, recall and F-measure to
+     June 2025, Art. no. 3976, https://doi.org/10.3390/s25133976.                      ROC, informedness, markedness and correlation.'' arXiv, Oct. 11, 2020,
+[11] V. Jain, A. K. Dubey, and A. Jain, ''SCDNet 1.0: Adaptive CNN                     https://doi.org/10.48550/arXiv.2010.16061.
+     Framework for Sickle Cell Disease Detection with OTSU Segmentation           [28] C. Willmott and K. Matsuura, ''Advantages of the mean absolute error
+     and Gaussian Filter,'' Journal of Intelligent & Fuzzy Systems:                    (MAE) over the root mean square error (RMSE) in assessing average
+     Applications in Engineering and Technology, Dec. 2025, Art. no.                   model performance,'' Climate Research, vol. 30, pp. 79–82, 2005,
+     18758967251405463, https://doi.org/10.1177/18758967251405463.                     https://doi.org/10.3354/cr030079.
+[12] R. R. Sarra, A. E. Korial, I. I. Gorial, and A. J. Humaidi, ''Enhancing      [29] J. Cohen, ''Weighted kappa: Nominal scale agreement provision for
+     Migraine Classification Through Machine Learning: A Comparative                   scaled disagreement or partial credit.,'' Psychological Bulletin, vol. 70,
+     Study of Ensemble Methods,'' Technologies, vol. 13, no. 11, Nov. 2025,            no. 4, pp. 213–220, 1968, https://doi.org/10.1037/h0026256.
+     Art. no. 500, https://doi.org/10.3390/technologies13110500.
+[13] Y. Wang, X. Wang, T. Gao, L. Du, and W. Liu, ''An Automatic Knee
+     Osteoarthritis Diagnosis Method Based on Deep Learning: Data from
+     the Osteoarthritis Initiative,'' Journal of Healthcare Engineering, vol.
+     2021, pp. 1–10, Sept. 2021, https://doi.org/10.1155/2021/5586529.
+[14] D. Karimi, H. Dou, S. K. Warfield, and A. Gholipour, ''Deep learning
+     with noisy labels: Exploring techniques and remedies in medical image
+     analysis,'' Medical Image Analysis, vol. 65, Oct. 2020, Art. no. 101759,
+     https://doi.org/10.1016/j.media.2020.101759.
+[15] J. Antony, K. McGuinness, N. E. O’Connor, and K. Moran,
+     ''Quantifying radiographic knee osteoarthritis severity using deep
+     convolutional neural networks,'' in 2016 23rd International Conference
+     on Pattern Recognition (ICPR), Cancun, Mexico, Dec. 2016, pp. 1195–
+     1200, https://doi.org/10.1109/ICPR.2016.7899799.
+[16] P. Chen, L. Gao, X. Shi, K. Allen, and L. Yang, ''Fully automatic knee
+     osteoarthritis severity grading using deep neural networks with a novel
+
+
+
+        www.etasr.com                    Supatman et al.: Utilizing Cascade Deep Metric Learning for the Kellgren-Lawrence Grading of Knee …
+

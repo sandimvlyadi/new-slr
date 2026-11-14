@@ -1,0 +1,1426 @@
+                                                        H-SemiS: Hierarchical Fusion of Semi and Self-Supervised Learning for
+                                                                        Knee Osteoarthritis Severity Grading
+
+                                                      Chandravardhan Singh Raghawa , Anushka Parwalb , Shahid Shafi Dara , Prajakta Daradea , Nagendra Kumara
+
+
+                                                          a
+                                                              Department of Computer Science and Engineering, Indian Institute of Technology Indore, Indore 453552, India
+                                              b
+                                                  Department of Computer Science and Engineering, National Institute of Technology Tiruchirappalli, Tiruchirappalli 620015, India
+
+
+
+
+arXiv:2604.23335v1 [cs.CV] 25 Apr 2026
+                                         Highlights
+                                            • A semi-supervised framework with self-supervision for knee osteoarthritis
+                                            • Hierarchical mechanism decompose multi-class into binary classes to address imbalance
+
+                                            • Adversarial-inspired self-supervision enhance semi-supervise teacher-student learning
+                                            • Quantum principles capture nonlinear knee patterns to enhance feature discrimination
+                                            • Comprehensive experiments validate the superiority of our H-SemiS framework
+
+
+
+
+                                         This is the preprint version of the accepted paper.
+                                         This paper is accepted in Expert Systems with Applications, 2026.
+                                         DOI: https://doi.org/10.1016/j.eswa.2026.132279
+              H-SemiS: Hierarchical Fusion of Semi and Self-Supervised Learning for
+                              Knee Osteoarthritis Severity Grading
+
+           Chandravardhan Singh Raghawa , Anushka Parwalb , Shahid Shafi Dara , Prajakta Daradea , Nagendra Kumara,∗
+                    a Department of Computer Science and Engineering, Indian Institute of Technology (IIT) Indore, Indore 453552, India
+             b Department of Computer Science and Engineering, National Institute of Technology Tiruchirappalli, Tiruchirappalli 620015, India
+
+
+
+
+Abstract
+Knee osteoarthritis (KOA) is a degenerative joint disease that can lead to chronic pain, reduced mobility, and long-term disability.
+Automated severity grading from knee radiographs can support early assessment, but current methods heavily depend on large
+labeled datasets and remain sensitive to class imbalance, noisy samples, and variability in clinical annotations. To alleviate these
+limitations, we propose a Hierarchical fusion of Semi-Supervised framework with Self-Supervision (H-SemiS) for KOA severity
+grading in knee X-ray samples using limited annotated data. Rather than treating severity grading as a flat multi-class problem,
+H-SemiS decomposes the task into a sequence of binary sub-tasks within a semi-supervised teacher–student architecture, directly
+mitigating the impact of class imbalance. To further enhance feature learning from unlabeled data, the framework integrates an
+adversarial self-supervised reconstruction module that encourages the network to capture robust anatomical structures. In parallel,
+a teacher–student design with quantum-inspired feature mixing improves discrimination boundaries between adjacent grades when
+pseudo-labels are noisy. We comprehensively evaluate H-SemiS on two challenging multi-class datasets and assess its general-
+izability on two binary-class datasets. Our experimental results demonstrate the superiority of the proposed H-SemiS framework
+across multiple evaluation metrics, consistently outperforming several competing baselines and state-of-the-art methods. The code
+is publicly available at https://github.com/chandravardhan-singh-raghaw/H-SemiS.
+Keywords: Knee osteoarthritis, Semi-supervised, Self-supervised, Hierarchical classification, Deep learning
+
+
+1. Introduction                                                                  Table 1: Description of Kellgren-Lawrence (KL) system for grading severity
+
+
+     Knee Osteoarthritis (KOA) is a musculoskeletal disorder                    KL Grade      Severity    Definition
+where the protective cartilage at the ends of bones gradually                   KL Grade 0    None        No detectable signs of osteoarthritis
+breaks down, resulting in chronic pain and functional disability                KL Grade 1    Doubtful    Possible osteophytes
+(Wang et al., 2025). KOA affects more than 240 million people                   KL Grade 2    Minimal     Clear presence of osteophytes with possible joint
+worldwide, with the highest cases in China, India, the United                                             space narrowing (JSN)
+                                                                                KL Grade 3    Moderate    Multiple moderate osteophytes, confirmed JSN,
+States, and Japan (Wang et al., 2025). Radiographic signs ap-                                             and early sclerosis
+pear in nearly 80% of individuals over fifty, and the disease                   KL Grade 4    Severe      Large osteophytes, definite JSN, severe sclerosis
+places a substantial burden on middle-aged and older adults,
+with a higher incidence in women (Zhuang et al., 2023). Cur-
+rent KOA treatment includes physiotherapy, medication, and                      1.1. Challenges in Knee Osteoarthritis Diagnosis
+joint arthroplasty . Physiotherapy strengthens surrounding mus-                     The diagnosis of KOA depends on radiologist expertise,
+cles and reduces joint stress, medications control pain and in-                 which is time-consuming and varies across practitioners (Pan
+flammation, and arthroplasty provides surgical relief but has a                 et al., 2024). Computer-aided diagnosis (CAD) provides a prac-
+limited lifespan and restricts physical activity (Zhuang et al.,                tical alternative for grading KOA severity from knee X-rays
+2023). These limitations motivate early diagnosis, for which we                 (KXR), yet several challenges in KXR, illustrated in Fig. 1,
+adopt the KL grading system (Kellgren and Lawrence, 1957) as                    limit accurate assessment. Blurred regions around joint space
+the reference standard. The KL system categorizes KOA sever-                    narrowing (JSN) caused by bone spurs dilute key structural in-
+ity into five grades based on radiographic features, as summa-                  formation, while the grayscale nature of KXR, with low con-
+rized in Table 1.                                                               trast and poor illumination, limits the visibility of subtle vari-
+                                                                                ations. Overlapping anatomical structures, including cartilage
+   ∗ Corresponding author email: nagendra@iiti.ac.in                            and surrounding soft tissues, further complicate the extraction
+     Email addresses: phd2001201007@iiti.ac.in (Chandravardhan                  of discriminative patterns. Dataset inconsistency also affects
+Singh Raghaw), anushkaparwal.nitt@gmail.com (Anushka Parwal),                   performance, as some scans include both knees, whereas most
+phd2201201004@iiti.ac.in (Shahid Shafi Dar),
+cse210001052@alum.iiti.ac.in (Prajakta Darade)
+                                                                                capture only one, resulting in less uniform feature extraction
+                                                                                and interpretation.
+Fig. 1: Diagnostic challenges in KXR analysis for KOA are highlighted from (a) to (f), including blurred pixels, indistinct joint space narrowing (JSN), low contrast,
+varying illumination, overlapping anatomical structures, and inconsistencies in scan composition (single or dual joint).
+
+
+
+1.2. Existing Research and Gaps                                                       research. To tackle the issues shown in Fig. 1: (a) We pre-
+     Several machine learning approaches have been explored                           serve JSN by using the Random Forest Regression Voting Con-
+for KOA diagnosis from KXR (Du et al., 2018; Sam Chan-                                strained Local Model (Lindner et al., 2013), which detects knee
+dra Bose et al., 2024; Sohail et al., 2025), but noise and vari-                      key points for precise joint space mapping and reduces errors
+ability in radiographs limit performance and generalizability.                        from blurred pixels, ensuring reliable JSN measurements; (b)
+To address this, researchers have introduced supervised meth-                         We apply the contrast enhancement technique (Raghaw et al.,
+ods (Hu et al., 2022; Lo and Lai, 2023; Nguyen et al., 2024;                          2024) during preprocessing to improve contrast and illumina-
+Teoh et al., 2023) that capture complex knee patterns. De-                            tion, strengthening feature extraction; (c) We integrate quan-
+spite their potential, supervised techniques rely on large, la-                       tum principles to address complications from overlapping struc-
+beled datasets, which are costly and time-consuming to obtain.                        tures, capturing nonlinear relationships between knee points
+To reduce the dependency on labeled data, semi-supervised meth-                       and improving the learning of complex knee patterns; (d) We
+ods (Azizi et al., 2023, 2021; Cai et al., 2023; Wu et al., 2023)                     maintain consistency across KXR samples by using region-of-
+leverage limited labeled samples for model training. While                            interest (ROI) localization (Redmon and Farhadi, 2017) to ex-
+semi-supervised methods demonstrate comparable performance                            tract knee pairs from bilateral scans, standardizing them into
+with fewer labels, they still depend on pseudo-labels. This de-                       single-knee KXRs.
+pendency leads to incorrect predictions because of noisy and                               Second, to resolve the limitations within existing research
+ambiguous samples, which compromise the overall performance                           (refer to Fig. 2): While existing methods require extensive la-
+and consistency. The limited availability of labeled data re-                         beled datasets (G1), our framework functions effectively with
+stricts semi-supervised methods from capturing the fine-grained                       only 20% labeled samples (S1), reducing annotation overhead.
+features needed for robust and discriminative knee anatomy anal-                      Current research struggles with skewed KOA severity grading
+ysis.                                                                                 (G2); we mitigate this by hierarchically decomposing the multi-
+                                                                                      class problem and incorporating reconstructed samples to en-
+1.3. Research Aim                                                                     sure balanced learning (S2). (c) Unlike semi-supervised tech-
+                                                                                      niques compromised by noisy pseudo-labels (G3), we leverage
+   We designed this study to address diagnostic challenges in
+                                                                                      filtered proxy labels to eliminate noise and enhance diagnostic
+knee X-ray (KXR) samples and the gaps identified in existing
+
+
+
+
+Fig. 2: Gaps in existing research on severity grading of knee osteoarthritis are highlighted in the first row (i) to (iv). The second row (v) to (viii) presents the
+solutions offered by the proposed H-SemiS framework.
+
+                                                                                  2
+stability (S3). (d) Existing studies overlook anatomical feature           The paper is organized as follows: Section 2 reviews the
+relationships (G4); in contrast, we map fine-grained features          existing literature, and Section 3 details the proposed method-
+into quantum space to analyze nonlinear interactions, improv-          ology. Section 4 outlines the datasets and experimental setup,
+ing severity discrimination (S4).                                      followed by performance evaluation in Section 5. Section 6
+                                                                       addresses significance, limitations, and future work, while Sec-
+1.4. Contribution                                                      tion 7 concludes the study.
+    Addressing the discussed challenges, we propose H-SemiS,
+a Hierarchical Semi-Supervised framework with Self-Supervision         2. Related Work
+for Knee Osteoarthritis (KOA) severity grading (KL Grades
+0−4). The methodological objective is to develop an enhanced           2.1. Supervised learning-based Classification
+KOA assessment framework that can classify severity levels                  Supervised learning leverages labeled datasets to identify
+from KL Grade 0 to KL Grade 4. H-SemiS integrates self-                complex patterns and correlations in imaging data. It has gained
+supervised and semi-supervised learning, where the former gen-         traction in medical imaging for classification and segmentation.
+erates high-quality proxy data to directly support the latter, es-     Nguyen et al. (2024) introduces CLIMATv2, a dual-transformer
+pecially when annotated data is limited. H-SemiS performs hi-          framework for one-to-many prognosis prediction using images
+erarchical severity classification and incorporates reconstructed      and clinical data. Lo and Lai (2023) employs a pre-trained ViT
+samples (proxy labels) to increase feature diversity. The ex-          to extract features from knee ultrasound scans for septic arthri-
+perimental objective is to analyze the quantitative and qualita-       tis diagnosis. Teoh et al. (2023) explores a CNN with a feature
+tive performance of H-SemiS and compare it to state-of-the-            extraction strategy using global average pooling for KOA anal-
+art models on the OAI (Chen, 2018) and DKXI (Gornale and               ysis. Hu et al. (2022) proposes A-ENN, integrating evolution-
+Patravali, 2020) datasets. An ablation study evaluates perfor-         ary traces and adversarial training for longitudinal KOA grad-
+mance across different modules, and a generalizability analysis        ing. Although supervised models have advanced KOA detec-
+examines performance under various training and testing com-           tion, they require large datasets for effective training and show
+binations. The main contributions of this research are outlined        limited generalizability across diverse datasets. In contrast, H-
+as follows:                                                            SemiS captures fine-grained details and complex patterns while
+                                                                       relying on fewer labeled samples in a semi-supervised setting.
+   • We propose a novel semi-supervised framework incorpo-
+     rating self-supervised learning for grading knee osteoarthri- 2.2. Self-Supervised learning-based Classification
+     tis severity in knee X-ray images with limited annotated
+     samples.                                                           The limited availability of labeled medical samples poses a
+                                                                   major challenge for supervised learning, which self-supervised
+   • A dual approach is adopted to address multi-class imbal-      techniques address by extracting features from unlabeled data (Huang
+     ance. First, we propose a hierarchical mechanism to de-       et al., 2023). Methods such as Masked Autoencoder (MAE) (He
+     compose multi-class problems into multiple binary classes, et al., 2022) and SimCLR (Chen et al., 2020) employ pretext
+     ensuring balanced learning across all severity levels. Sec-   tasks, including masked reconstruction and contrastive learn-
+     ond, we design an adversarial-inspired self-supervised mod- ing, to derive meaningful representations. Azizi et al. (2023)
+     ule for masked image reconstruction (MI-Rec) to gen-          combines supervised transfer learning with contrastive self-supervision
+     erate reconstructed samples. These samples are utilized       to improve data-efficient generalization. Cai et al. (2023) in-
+     at each decision node in the binary classification to bal-    troduces Dual-distribution Discrepancy for Anomaly Detection
+     ance sample distribution across severity levels and en-       (DDAD), a one-class semi-supervised learning (OC-SSL) method
+     hance feature diversity.                                      that models distributions of unlabeled and normal samples us-
+                                                                   ing reconstruction networks. Wu et al. (2023) develops a Self-
+   • We introduce a Similarity-aware Reconstructed Image La-       supervised Multimodal Fusion Network (S-MFN), a multimodal
+     beler (SiRL) that assigns labels to unlabeled reconstructed   self-supervised framework integrating X-ray and MRI for KOA
+     samples while filtering out noisy and ambiguous sam-          grading. Wang et al. (2022) integrates self-supervised and semi-
+     ples. This process improves feature discriminability and      supervised learning to learn complementary information across
+     enhances overall performance.                                 multi-sequence images. Azizi et al. (2021) introduces the Multi-
+   • To the best of our knowledge, we are the first to incorpo-    Instance Contrastive Learning (MICLe) method that improves
+     rate quantum principles within semi-supervised learning       robustness to distribution shifts. In contrast, H-SemiS distin-
+     to learn complex knee patterns despite the presence of        guishes itself from existing self-supervised methods by inte-
+     overlapping structures, enabling a deeper understanding       grating generative adversarial learning with a masked autoen-
+     of knee anatomy.                                              coder to reconstruct masked patches without labels. This reconstruction-
+                                                                   driven augmentation mitigates class imbalance, enhances fea-
+   • H-SemiS outperforms thirteen existing baselines across        ture discriminability, and improves the performance of KOA
+     the benchmark datasets, demonstrating an effective and        severity grading.
+     annotation-efficient approach for reliable KOA severity
+     assessment.
+
+                                                                   3
+2.3. Semi-Supervised learning-based Classification                                KXR sample. The task is formulated as a multi-class classifica-
+    Semi-supervised learning (SSL) enhances model performance                     tion problem where labels yi ∈ {1, 2, . . . , C} correspond to KL
+by utilizing both labeled and unlabeled samples, particularly                     grades. Our objective is to learn a classifier f : x → [0, 1]C that
+when labeled data is scarce. Among SSL strategies, consis-                        minimizes the error between predicted and ground-truth sever-
+tency regularization is widely used, encouraging consistent pre-                  ity grades by utilizing both labeled and unlabeled samples.
+dictions under data perturbations (Ghosh et al., 2024). The π-                          As illustrated in Fig. 3, the framework operates in a three-
+Model (Laine and Aila, 2017) applies weak-strong augmenta-                        stage pipeline to address data scarcity and class imbalance. Stage 1
+tion to generate pseudo-labels and predict from strongly aug-                     (Masked Image Reconstruction) generates proxy data by uti-
+mented inputs. Its variant, TemporalEmbedding (Laine and                          lizing unlabeled samples from Du and partitioned into non-
+Aila, 2017), enhances pseudo-label stability by utilizing an ex-                  overlapping patches xuk = {xu(1) , . . . , xu(p) }, where each patch xk ∈
+                                                                                      2
+ponential moving average (EMA). Mean Teacher (Tarvainen                           R p ×ch . The positional information is added and 75% of patches
+and Valpola, 2017) further stabilizes pseudo-labels by updating                   are randomly masked, after which the model reconstructs the
+the teacher model through EMA. In medical imaging, Berrimi                        missing regions by minimizing the reconstruction loss (Lrec ),
+                                                                                                                           u
+et al. (2024) proposes a CNN-based SSL framework for os-                          producing reconstructed samples xrec         . Next, Stage 2 (Similarity-
+teoarthritis detection, while Farooq et al. (2023) introduces a                   aware Reconstructed Image Labeler) assigns proxy labels yrec
+dual-channel adversarial autoencoder for KL-grade classifica-                     to these samples by maximizing a combined cosine and Eu-
+tion. Huo et al. (2022) develops a teacher-student framework
+                                                                                                                    u
+                                                                                  clidean similarity metric S̈i (xrec , Ti ) against class-specific tem-
+leveraging both labeled and unlabeled samples. Burton et al.                      plates Ti . Finally, in Stage 3 (Hierarchical Quantum-infused
+(2020) uses a semi-supervised approach that combines CNNs                         Teacher-Student Framework) the proxy-labeled reconstructed
+with Monte Carlo patch sampling to improve knee MRI seg-                          samples and weakly and strongly augmented views of unla-
+mentation accuracy. Building on expanding consistency reg-                        beled data, xw = Aw (xu ) and x s = A s (xu ), are jointly used
+ularization, Nguyen et al. (2020) proposes the Semixup algo-                      within a hierarchical quantum-infused teacher–student frame-
+rithm. However, current methods often underutilize unlabeled                      work. The teacher parameters θT e are updated using an expo-
+data. In contrast, H-SemiS fuses self-supervision with semi-                      nential moving average of the student parameters θS t , and the
+supervision, leveraging proxy labels to maximize feature learn-                   trained teacher model is finally used to predict KOA severity.
+ing from unlabeled samples. Through consistency training on
+weak and strong augmentations, the framework improves per-                        3.2. Stage 1: Masked Image Reconstruction
+formance and generalizability across diverse distributions.                           Inspired by recent advances in self-supervised masked im-
+                                                                                  age reconstruction (Fei et al., 2023; He et al., 2022; Song et al.,
+3. Methodology                                                                    2024), we employ self-supervised learning within a semi-supervised
+                                                                                  framework for grading osteoarthritis severity. The proposed
+3.1. Problem Definition and Framework Overview                                    Masked Image Reconstruction (MI-Rec) module builds on Masked
+     We aim to improve the severity grading of knee osteoarthri-                  Autoencoders (He et al., 2022) and Generative Adversarial Net-
+tis (KOA) in a semi-supervised setting by jointly leveraging                      works (Goodfellow et al., 2020). Through adversarial recon-
+self-supervised and semi-supervised learning. We utilize a small                  struction of masked images, MI-Rec learns robust anatomical
+labeled set Dl = {xl , yl }ni=1 and a large unlabeled set Du =                    features from unlabeled data and generates high-fidelity proxy
+{xu }mj=1 , with m ≫ n, where xl , xu ∈ Rh×w×ch with h, w, and                    samples that (i) alleviate data scarcity, (ii) balance class distri-
+ch denote the height, width, and number of channels for each                      butions, and (iii) inject diverse discriminative features into the
+
+
+
+
+Fig. 3: Overview of the proposed Hierarchical Semi-Supervised framework with Self-Supervision (H-SemiS) for knee osteoarthritis severity grading, consisting of
+three stages. Stage 1: Mask Image Reconstruction (MI-Rec) (refer Section 3.2) for KXR reconstruction; Stage 2: Similarity-aware Reconstructed Image Labeler
+(SiRL) (refer Section 3.3), assigns labels (KL-0 to KL-4) to reconstructed samples; and Stage 3: Hierarchical Quantum-infused Teacher-Student Framework (HQ-
+TeSt) (refer Section 3.4), decomposes multi-class classification into binary class and refines predictions through teacher-student framework.
+
+                                                                              4
+Fig. 4: Overview of our Masked Image Reconstruction (MI-Rec). The MI-Rec process begins with applying random masking to the input sample, dividing the
+image into visible and masked patches. Next, a reconstruction generator reconstructs the masked patches. Finally, the reconstruction discriminator evaluates the
+generated masked patches, classifying them as real or fake to produce the final unlabeled reconstructed sample.
+
+
+
+training set. As shown in Fig. 4, MI-Rec comprises a recon-                        visible subset xv , which are defined in Eq. (2a) and Eq. (2b).
+struction generator (G MI-Rec ) and a reconstruction discrimina-                                                                                  
+tor (D MI-Rec ), where the generator reconstructs masked regions,                    xm = {zi | i ∈ zm }, zm = RandomS ample {1, . . . , N p }, Nm
+and the discriminator distinguishes real patches from recon-                                                                                     (2a)
+structed ones, ensuring anatomical correctness and structural
+                                                                                                               xv = {zi | i < zm }                        (2b)
+consistency.
+                                                                                   Here, Nm = 0.75N p represents the number of masked patches,
+3.2.1. Masking Process                                                             and xm ∪ xv = {1, . . . , N p } and xm ∩ xv = ∅.
+    Given an input sample xu ∈ Rh×w×ch , where h, w, and ch
+denote the height, width, and number of channels. We partition                     Why high masking ratio? When masking is high, only a few
+the input sample into N p non-overlapping patches of size p × p,                   patches remain visible, forcing the model to learn deeper pat-
+with N p = h×w
+            p2
+               patches. Each patch pi ∈ R p×p×ch is flatten into a                 terns instead of relying on random predictions from neighbor-
+                 2
+vector zi ∈ R p ·ch forming the patch sequence z = {z1 , . . . , zN p }.           ing pixels. Uniform random masking ensures the model learns
+We add positional encoding PEi to each patch zi to preserve the                    to reconstruct missing patches from all parts of the image equally,
+spatial information, where PE = {PE1 , . . . , PE N p }. The result-               preventing any bias towards specific regions like edges or the
+ing patch representations with positional encoding are defined                     center. Since most patches are masked, the input to the recon-
+in Eq. (1).                                                                        struction generator is primarily sparse. This sparsity encour-
+                                                                                   ages the reconstruction generator (described next) to process
+                 z̃i = zi + PEi ;       z̃ = {z̃1 , . . . , z̃N p }      (1)       information from the visible patches efficiently.
+
+After patching and adding positional encoding, we follow a                         3.2.2. Reconstruction Generator
+uniform distribution to apply random masking to create a uni-                          Our reconstruction generator G MI-Rec follows an encoder–decoder
+formly distributed random set zm . A masking ratio of 75% to                       architecture inspired by Masked Autoencoders (MAE). Its pri-
+partition the sequence of patches into the masked subset xm and                    mary objective is to reconstruct the masked patches x̃m from
+
+                                                                               5
+the visible patches xv . The encoder comprises five residual                  3.2.4. Loss Strategy
+          k
+blocks ERes  , {k = 1 . . . 5}, where each block applies separable                The MI-Rec framework adopts a dual loss strategy to op-
+convolutions (CS ep ), batch normalization (βn ), and ReLU ac-                timize the reconstruction generator G MI-Rec and discriminator
+tivation (αReLU ), followed by downsampling to reduce spatial                 D MI-Rec . The generator loss Lgen combines adversarial loss (Bi-
+resolution. The encoder progressively reduces the spatial res-                nary Cross-Entropy (BCE)) and reconstruction loss (L1). The
+olution while increasing feature dimensionality, producing en-                adversarial term Ladv encourages G MI-Rec to produce patches
+coded features Fek as defined in Eq. (3). The decoder then uses               classified as real by D MI-Rec , while the reconstruction term Lrec
+the encoded representations to reconstruct the masked patches                 preserves consistency with masked regions. The generator ob-
+x̃m , which are validated by the reconstruction discriminator.                jective is defined in Eq. (6):
+                                   
+                Fek = ERes
+                         k
+                               Fek−1 , k ∈ {1, . . . , 5}                               Lgen = BCE D MI−Rec ( x̃m ), 1 +α · ∥ x̃m − xm ∥1
+                                                                                                                      
+                                                               (3)                                                                               (6)
+                                                                                               |      {z             }      | {z }
+                                                                                                          Ladv                    Lrec
+Here, the initialization Fe0 = xv and ERes     k
+                                                   takes the encoded
+representation as input from the previous block’s output. Fe5 is              where, x̃m denotes the reconstructed patch, xm the original masked
+the final output of the last encoder block E5 .                               patch, D MI-Rec the discriminator prediction for the reconstructed
+    After encoding, the highest-level encoded feature maps are                patch, and α a weighting factor that balances the two loss terms.
+passed to the decoder to reconstruct the masked patches. The                  The reconstruction discriminator loss Ldis measures its abil-
+decoder mirrors the encoder and consists of five decoder blocks               ity to classify real patches as real and reconstructed patches as
+Dk , k ∈ 1, . . . , 5. Each block applies upsampling, an attention            fake using BCE loss. The discriminator objective is defined
+unit (DkAtt ), and a residual block (DkRes ) to progressively recover         in Eq. (7).
+spatial resolution. A transpose convolution upsamples the fea-
+                                                                                       1                            1
+tures from the previous block. Next, an attention unit fuses                  Ldis =     BCE(D MI−Rec (xm ), 1) +α · BCE(D MI−Rec ( x̃m ), 0)
+                                                                                                                                            
+the upsampled features with the corresponding encoder output                           2
+                                                                                       |       {z             }     2
+                                                                                                                    |      {z               }
+Fek−1 to produce an attention-refined representation FAtt     k
+                                                                . The                             Lreal                            L f ake
+attention output is concatenated with the upsampled features to                                                                               (7)
+form F⊕k , which is then refined by DkRes to generate the decoded             where, D MI-Rec (xm ) and D MI-Rec ( x̃m ) denote the discriminator
+features Fdk , as defined in Eq. (4):                                         predictions for real and generated patches. The real patch is as-
+                                                                              signed a label of 1, while the fake patch is labeled 0. The loss
+                             
+                Fdk = Dk Fdk+1 ,       k ∈ {1, . . . , 5}           (4)       averages the two BCE terms to balance real and fake classifica-
+                                                                              tions. The final objective combines the generator and discrimi-
+For the final decoding stage, D5 receives the encoder output Fe5              nator losses, as defined in Eq. (8):
+(i.e., Fd6 = Fe5 ), and the output Fd1 represents the reconstructed
+masked image x̃m .                                                                                  L MI−Rec = Lgen + Ldis                       (8)
+
+                                                                            where, Lgen promotes realistic and accurate patch reconstruc-
+3.2.3. Reconstruction Discriminator
+                                                                            tion, while L dis enforces effective discrimination between real
+    Next, the reconstruction discriminator D MI-Rec predicts whether and reconstructed patches.
+each reconstructed patch is real or synthetic. It takes a repaired
+image xrep as input, formed by replacing the masked patches                 3.3. Stage 2: Similarity-aware Reconstructed Image Labeler
+xm in the visible image xv with reconstructed patches x̃m , such
+that xrep = xv ∪ x̃m and xm ∩ xv = ∅. Given the ground-truth                     The Similarity-aware Reconstructed Image Labeler (SiRL)
+label sequence ỹ = {ỹ1 , . . . , ỹN p }, where ỹk ∈ {0, 1} denotes real assigns     proxy labels to unlabeled reconstructed samples by mea-
+(1) or synthetic (0) patches, the discriminator learns to predict           suring     their  similarity to predefined templates. SiRL performs
+these labels from xrep . The discriminator comprises five convo-            three   steps:    (a) template library construction by extracting and
+lutional blocks DB , k ∈ {1, . . . , 5}, each applying convolution C,
+                  k                                                         storing     features,   (b) similarity computation between a sample
+instance normalization (βin ), and leaky ReLU activation ( α ),             and   the    median    feature  vector of each template, and (c) simi-
+                                                                    lReLU   larity ranking and labeling by selecting the template with the
+followed by progressive downsampling. The network outputs a                 highest similarity score. An overview is shown in Fig. 5.
+scalar confidence score indicating the likelihood of each patch
+being real, as defined in Eq. (5):                                          3.3.1. Template Library Construction
+                                                                               The process begins by constructing a template library T =
+        D MI−Rec = probD ỹk |xrep , k , k ∈ {1, . . . , N p }          (5)
+                                                                            {T0 , . . . , T4 } for the five osteoarthritis severity classes. For each
+where probD denotes the discriminator’s confidence for classi-              class, we randomly select 50 labeled samples and extract super-
+fying each patch as real or synthetic. When the confidence score            pixel level features f si using a pre-trained Wide Residual Net-
+is high, the repaired image is denoted as xrec        u
+                                                        , representing the  work (Zagoruyko and Komodakis, 2016). These features cap-
+final unlabeled reconstructed sample.                                       ture the essential visual patterns of each class. For each tem-
+                                                                            plate, we compute a representative feature vector Tim by aggre-
+                                                                            gating the extracted features from the selected samples, which
+
+                                                                          6
+Fig. 5: Overview of the Similarity-aware Reconstructed Image Labeler (SiRL) module for labeling unlabeled reconstructed KXR samples. The template library
+(top) is constructed using Wide Residual Networks (WRNs) to derive median feature vectors Tim for each KL grade. The similarity computation (bottom) assigns
+labels based on the highest similarity score.
+
+
+
+serves as the reference for subsequent similarity matching, where                ized in Eq. (10):
+i ∈ {0, . . . , 4}.                                                                                                           
+                                                                                                                 {S̈ frec , Tim ≥ τ}
+                                                                                                 
+                                                                                                  C if arg max
+                                                                                                 
+                                                                                                 
+                                                                                          yrec = 
+                                                                                                            i∈C
+3.3.2. Similarity Computation and Label Assignment                                                                                                   (10)
+                                                  u
+                                                                                                  −1 if arg max {S̈ frec , Tim < τ}
+                                                                                                 
+                                                                                                 
+    For each unlabeled reconstructed sample xrec    , SiRL com-                                                       i∈C
+pares its feature representation frec with the median feature vec-
+                                                                                 where C = {KL0 , . . . , KL4 } denotes the osteoarthritis severity
+tors in the template library. It computes similarity using cosine
+                                                                                 classes, −1 indicates an unassigned sample that is excluded
+similarity and Euclidean distance, which are combined into a
+                                                                                 from further processing, and τ is a threshold set to 0.80 (τ80 ) to
+unified score S̈ to provide a balanced similarity measure, as de-
+                                                                                 filter unreliable proxy labels. The operator arg max S̈i ( frec , Ti )
+fined in Eq. (9):                                                                                                                          i
+                                                                           selects the template Ti with the highest similarity score and
+                     frec · Tim                           1                assigns the corresponding label yrec to the reconstructed sam-
+S̈ frec , Ti = α·
+            m
+                                    +(1−α)· q                              ple. The labeled sample is then forwarded to the Hierarchical
+                  ∥ frec ∥ · ∥Tim ∥          ( frec − Tim )( frec − Tim )T Quantum-infused Teacher–Student framework for final severity
+                 | {z }
+                  cosine−similarity        |             {z              }
+                                                  euclidean−distance       grading.
+                                                                     (9)
+where α is a tunable parameter that balances the contributions             3.4. Stage 3: Hierarchical Quantum-infused Teacher-Student
+of cosine similarity and Euclidean distance in the overall score.               Framework
+To ensure reliable template matching and avoid incorrect proxy                 The proposed Hierarchical Quantum-infused Teacher–Student
+label assignment, we apply the following labeling rules, formal-           Framework (HQ-TeSt) is a semi-supervised teacher–student model
+                                                                                 that leverages self-supervised, reconstructed samples for grad-
+
+                                                                             7
+ing the severity of osteoarthritis. HQ-TeSt enhances represen-                   statistics. A 2 × 2 max-pooling layer ρ2×2
+                                                                                                                          max with stride 2 then
+tation learning by integrating reconstructed samples into train-                 downsamples the feature maps. After the five blocks, the out-
+ing, while the student model continuously updates the teacher                    put of FeX5 is flattened and passed through two fully connected
+via an exponential moving average. The framework comprises                       layers, FC1024 and FC512 . The operations in the i-th block are
+two stages:(i) semi-supervised training of the quantum-infused                   defined in Eq. (11):
+teacher–student (Q-TeSt) model and (ii) hierarchical multi clas-                                                
+                                                                                                                           f      
+sification of osteoarthritis severity. We first describe the Q-TeSt                            FeXi (x) = ρ2×2
+                                                                                                            max βn αReLU C3×3 (x)           (11)
+architecture, then present its consistency training strategy, and
+finally detail the hierarchical multi-classifier.                                where x is the augmented input sample. Finally, global aver-
+                                                                                 age pooling is applied to the FC512 output to produce the base
+3.4.1. Quantum-infused Teacher-Student Framework                                 feature vector Fbase ∈ R512 .
+     The proposed Quantum-infused Teacher–Student (Q-TeSt)                           To address the limitations of current quantum systems, which
+framework is inspired by the Mean-Teacher (MT) architecture                      support small qubit circuits (eight in our case), we first map
+(Tarvainen and Valpola, 2017). Unlike MT, which utilizes a                       classical features into a quantum-compatible space. We project
+ResNet backbone, Q-TeSt employs a standard convolutional                         the high-dimensional feature vector into a 256-dimensional rep-
+neural network infused with Quantum Convolutional Neural                         resentation Ft ∈ R256 , where 256 = 28 corresponds to the num-
+Networks, thereby forming a hybrid semi-supervised frame-                        ber of qubits, as defined in Eq. (12):
+work (Mari et al., 2020). As shown in Fig. 6, Q-TeSt extracts vi-
+sual features from different augmented views of the same sam-                                            Ft = W(t) · Fbase + b(t)                      (12)
+ple in both classical and Hilbert spaces, thereby capturing fine-
+grained spatial patterns and nonlinear relationships. The frame-                 where, W(t) ∈ R256×512 and b(t) denote the projection weights
+work addresses data scarcity in osteoarthritis severity grading                  and bias. The transformed feature Ft is then fed into the quan-
+by learning from limited labeled data while leveraging unla-                     tum convolutional network. This layer bridges the classical and
+beled samples. Q-TeSt comprises three components: (i) a base                     quantum components of the Q-TeSt framework, enabling effi-
+network, (ii) a normalization layer, and (iii) a quantum convo-                  cient quantum processing of osteoarthritis samples.
+lution network (QCN).                                                            (ii) Normalization Layer: The transformed feature vector Ft
+(i) Base Network: The base network in Q-TeSt captures spa-                       is fed into QCN, which requires normalized inputs within a
+tial information using a stack of five feature extraction blocks                 bounded range for stable learning (Benedetti et al., 2019). As
+FeXi , i ∈ {1, . . . , 5}. Each block applies a 3 × 3 Conv2D op-                 Ft is not normalized, previous work uses tanh to restrict feature
+           f
+eration C3×3  with ReLU activation, where the number of fil-                     values to the [−1, 1] range (Mari et al., 2020). However, tanh
+ters increases as f ∈ {32, 64, 128, 256, 512}. ReLU mitigates                    saturates near ±1, leading to vanishing gradients as ∇ tanh(x) =
+vanishing gradients with low computational cost, while batch                     1 − tanh2 (x). Following Ovalle-Magallanes et al. (2022), we
+normalization βn stabilizes training by normalizing mini-batch                   adopt L2 − tanh normalization to improve gradient flow while
+
+
+
+
+Fig. 6: Overview of the Quantum-infused Teacher-Student (Q-TeSt) framework. Q-TeSt integrates convolutional networks with quantum convolutional networks in
+a teacher-student learning framework. The architecture leverages weakly and strongly augmented samples, transferring knowledge via EMA to optimize supervised
+and unsupervised learning objectives.
+
+                                                                             8
+preserving feature magnitude and nonlinearity. The normalized               the Y-axis of the Bloch sphere by Θq . The tensor product ⊗
+output Fnorm is defined in Eq. (13):                                        combines the single-qubit rotations into a two-qubit operation.
+                                            !                               The pooling operation V(Φ) reduces quantum state dimension-
+                                      Ft                                    ality using Controlled Rotation-Z (CRz (Φq )), Pauli-X (X), and
+                    Fnorm = tanh ω ·                     (13)
+                                     ∥Ft ∥2                                 Controlled Rotation-X (CR x (Φq )) gates to selectively reduce
+                                                                            entanglement between qubit pairs. This downsampling limits
+where Ft denotes the projected feature embedding and ω con-                 circuit complexity while preserving salient information, play-
+trols the saturation range, ensuring that the normalized features           ing a role analogous to pooling in classical CNNs while exploit-
+lie within a Bloch sphere of radius ω.                                      ing quantum entanglement and superposition for feature extrac-
+(iii) Quantum Convolution Network: The quantum convolution                  tion.
+network (QCN) operates directly in the quantum domain. First,
+                                                                            Decoder: The decoder maps the quantum state produced by
+the quantum encoder Ue (Fnorm ) maps the normalized feature
+                                                                            the ansatz to classical features through quantum measurement.
+vector Fnorm to a quantum state. Next, the ansatz Ua (Θ) trans-
+                                                                            It performs computational basis measurements on the processed
+forms the encoded state using learnable parameters Θ. Finally,
+                                                                            quantum state and estimates the associated outcome probabili-
+the decoder applies quantum state measurement to project the
+                                                                            ties, which form the classical output vector. In our implementa-
+qubit-encoded information back into the classical domain for
+                                                                            tion, measurement is applied to wire 4, yielding the probability
+further processing. During training, the decoder updates Θ by
+                                                                            distribution over computational basis states. For a single qubit,
+minimizing the cost function.
+                                                                            the probability of observing state |0⟩ or |1⟩ is defined in Eq. (16):
+Quantum Encoder: The quantum algorithm operates on quan-
+tum states, and normalized classical features cannot be used di-                                      p(i) = |⟨qi |Ψ̈⟩|2                    (16)
+rectly by the quantum convolution network. Therefore, the en-
+coder maps the input features into a quantum state before ansatz            where |qi ⟩ denotes the computational basis state with qi ∈ {0, 1},
+processing. Among common encoding strategies, computation                   and Ψ̈ is the final quantum state after the convolution and pool-
+basis encoding converts inputs into binary states, whereas am-              ing operations. The ansatz parameters are optimized using a
+plitude encoding maps data to quantum state amplitudes. We                  hybrid quantum–classical approach. The quantum circuit pro-
+adopt amplitude encoding, which represents the normalized fea-              duces measurement outcomes for current parameters and then
+ture vector Fnorm as the amplitudes of a quantum state, ensuring            used to evaluate an objective function. We employ cross-entropy
+that the sum of squared amplitudes equals one. This encoding                loss (LCE ) to iteratively update the parameters and minimize
+applies a unitary transformation, defined in Eq. (14):                      this objective.
+                                  N
+                                  X                                         3.4.2. Semi-Supervised Training
+                          |Ψ⟩ =         ai |i⟩                  (14)            Semi-supervised training forms the first stage of the Hier-
+                                  i=1
+                                                                            archical Quantum-infused Teacher–Student (HQ-TeSt) frame-
+where, |Ψ⟩ denotes the quantum state, ai are the components                 work, leveraging labeled, reconstructed labeled, and unlabeled
+                            |ai |2 = 1, and |i⟩ represents the com-         samples. The objective is to minimize supervised loss on la-
+                       PN
+of Fnorm satisfying i=1
+putational basis states. Amplitude encoding is qubit-efficient,             beled data while reducing consistency loss on unlabeled sam-
+encoding N features using ⌈log2 N⌉ qubits, which limits circuit             ples. During training, the teacher predicts on strongly aug-
+width and improves scalability.                                             mented unlabeled samples, and the student enforces consis-
+Ansatz: An ansatz is a parameterized quantum circuit com-                   tency on weakly augmented views of the same inputs. This pro-
+posed of tunable quantum gates whose parameters are opti-                   cess promotes invariant feature learning and enhances robust-
+mized to approximate a target quantum state. By adjusting                   ness to perturbations, thereby improving generalization. The
+these parameters, the ansatz explores a broad space of quantum              semi-supervised training of Q-TeSt proceeds in three steps: (a)
+states, capturing correlations and hidden patterns that enable ef-          model initialization, (b) supervised training on labeled data, and
+ficient learning of complex relationships. In this work, the QCN            (c) consistency training on unlabeled data.
+circuit comprises three layers, as shown in Fig. 7, where each              (a) Model Initialization: The quantum-infused teacher–student
+layer applies unitary operations analogous to classical convolu-            (Q-TeSt) framework consists of a teacher and a student model
+tion and pooling.                                                           with identical architectures, each comprising a convolutional
+     The convolutional layers apply unitary transformations U(Θ)            network followed by quantum convolution (see Section 3.4.1).
+implemented as parameterized quantum gates acting on qubits.                The convolutional weights of the student and teacher are initial-
+In our setting, each transformation consists of rotation gates              ized independently and updated using EMA, while the quantum
+Ry (Θ0 ) and Ry (Θ1 ) followed by a controlled-NOT (CNOT) gate,             convolution weights are kept identical across both models. This
+as defined in Eq. (15):                                                     design stabilizes the classical feature extraction stage, yielding
+                                                                            more consistent inputs for the QCN. We denote the convolu-
+                U(Θ) = CNOT · Ry (Θ0 ) ⊗ Ry (Θ1 )               (15)        tional weights of the teacher and student by θT e and θS t , respec-
+                                                                            tively, and the shared quantum weights by θQCN .
+where the CNOT gate flips the target qubit when the control                 (b) Supervised Training on Labeled data: In supervised train-
+qubit is in the |1⟩ state, and Ry (Θq ) rotates qubit q ∈ 0, 1 around       ing, we use labeled samples to train the student model. Given
+                                                                        9
+the scarcity of labeled data, the student alone may not learn suf-                 put, as defined in Eq. (18). Here, M(·) denotes the Q-TeSt clas-
+ficiently discriminative representations. To address this limita-                  sification framework, while θT e and θS t represent the teacher
+tion, we incorporate self-supervised learning (see Section 3.2)                    and student model parameters, respectively.
+to generate reconstructed samples, which serves a dual purpose:
+(i) increasing the volume of labeled data strengthens the student                                    Lunsup = M(·)(θT e , Aw )(θS t , A s )                 (18)
+model’s ability to capture local patterns within the samples, and
+(ii) training the student on enriched samples subsequently im-                         An individual consistency mechanism (Tarvainen and Valpola,
+proves the teacher model’s performance when processing unla-                       2017) is employed in our framework to ensure consistency be-
+beled data. The student model (MS t) is optimized using su-                        tween the teacher and student model outputs. As defined in
+pervised loss (L sup), implemented as cross-entropy to align                       Eq. (19), the loss penalizes per-sample prediction discrepancies
+predictions with ground-truth labels. The supervised objective                     under weak and strong augmentations:
+is defined in Eq. (17).                                                                      n+m
+                                                                                             X
+                                                                                    Lcon =         EAw ,As ∥MT e (xi , θT e , Aw )−MS t (xi , θS t , A s )∥22 (19)
+                     L sup = CE (MS t (xi ; θS t , yi ))               (17)                  i=1
+
+where xi and yi denote the labeled input and its ground-truth,                     where Aw and A s denote weak and strong augmentations; n
+respectively, and CE represents the cross-entropy loss.                            and m, (m ≫ n) are labeled and unlabeled samples; xi is a train-
+(c) Consistency Training on Unlabeled data: Consistency train-                     ing sample; and θT e , θS t are model parameters. Following Mean
+ing uses a teacher–student framework to improve predictions                        Teacher framework (Tarvainen and Valpola, 2017), we update
+on unlabeled data. The student model MS t is first trained on                      the teacher via EMA applied only to the student’s base network,
+labeled samples in a supervised manner, and the teacher model                      while keeping the QCN fixed to stabilize classical feature ex-
+MT e is updated via EMA of the student’s weights. The ap-                          traction and provide consistent inputs to the quantum module,
+proach encourages both models to produce consistent predic-                        as defined in Eq. (20).
+tions under different augmentations of the same unlabeled sam-
+ple. We apply weak augmentations Aw , such as flipping and                                              θT(t+1)
+                                                                                                            e ← µ · θT e + (1 − µ) · θS t
+                                                                                                                     (t)              (t)
+                                                                                                                                                            (20)
+translation, to generate inputs for MT e , and strong augmenta-
+                                                                                   where t represents the training iteration and µ is the EMA smooth-
+tions A s using RandAugment (Cubuk et al., 2020), including
+                                                                                   ing coefficient, set to 0.99 following Tarvainen and Valpola
+invert, shear, and scale operations, for MS t (see Section 4.3).
+                                                                                   (2017), which controls the update rate of the teacher parame-
+For an unlabeled sample xu , the teacher predicts a pseudo-label
+                                                                                   ters. This consistency strategy gradually transfers knowledge
+from the weakly augmented input xw = Aw (xu ), while the stu-
+                                                                                   from the student to the teacher, aligns their predictions, and im-
+dent predicts from the strongly augmented counterpart x s =
+                                                                                   proves performance on both labeled and unlabeled data.
+A s (xu ). The corresponding predictions are given by yT e =
+MT e (xw ; θT e ) and yS t = MS t (x s ; θS t ). The unsupervised loss
+Lunsup enforces prediction consistency between the teacher and
+student models under different augmentations of the same in-
+
+
+
+
+Fig. 7: Architectural overview of the Quantum Convolutional Network (QCN), comprising a quantum encoder, ansatz, and decoder. The quantum encoder processes
+and encodes the input data for transformation in the ansatz. The ansatz applies quantum gates to capture complex transformations through entanglement, and the
+decoder extracts the final outputs.
+
+                                                                              10
+3.4.3. Hierarchical Multi-classifier                                                      dedicated Q-TeSt framework in a semi-supervised manner and
+     The Hierarchical Multi-classifier (HiM) classifies knee X-                           incorporate reconstructed samples to mitigate class imbalance.
+rays into five osteoarthritis severity grades using hierarchical                          As shown in Fig. 8, the hierarchy performs binary decisions
+binary classification. Motivated by Ning et al. (2025), HiM mit-                          at successive levels. The root node Q-TeSt1 separates com-
+igates class imbalance by decomposing the multi-class task into                           bined normal (KL0 , KL1 ) from osteoarthritis (KL2 , KL3 , KL4).
+a sequence of binary decisions. The key distinction lies at each                          The left branch Q-TeSt2L further distinguishes KL0 from KL1 ,
+binary decision node, where reconstructed samples are incorpo-                            while the right branch Q-TeSt2R splits KL2 from (KL3 , KL4 ).
+rated and the classifier is trained in a semi-supervised manner                           At the final level, Q-TeSt3 discriminates between KL3 and KL4 .
+using the Q-TeSt framework (refer to Section 3.4.1).                                      After training all nodes, we aggregate their outputs to compute
+(i) Hierarchical Decomposition: In the hierarchical decompo-                              the final classification accuracy, providing a structured solution
+sition stage, we convert the multiclass osteoarthritis grading                            to the multi-class grading task.
+problem C = KL0 , . . . , KL4 into a sequence of binary classi-                           (iii) Aggregation: In the aggregation stage, we compute the fi-
+fication tasks using a dual rule-based strategy. At the root node,                        nal classification performance by combining the outputs of all
+classes are grouped by severity into normal Cn = {KL0 , KL1 }                             Q-TeSt frameworks using a weighted scheme. Each frame-
+and osteoarthritis Co = {KL2 , KL3 , KL4 }. Subsequent levels                             work Q-TeSti is assigned a weight wi proportional to its depth
+leverage majority and minority class distributions to form bal-                           li in the hierarchy, defined as wi = ln(li + 1). The weighting
+anced binary splits. This process builds a hierarchical binary                            scheme assigns greater importance to classifiers at deeper lev-
+tree, where each decision node is implemented with the Q-TeSt                             els of the hierarchy, which capture finer-grained distinctions,
+framework Q-TeSti and leaf nodes correspond to specific sever-                            than to higher-level classifiers that model coarse separations.
+ity grades. Hierarchical decomposition improves classification                            The aggregated accuracy Aagg is computed as the normalized
+accuracy and mitigates multi-class imbalance.                                             weighted sum of individual accuracies Ai , as shown in Eq. (21).
+                                                                                                                          P
+                                                                                                                             i wi · Ai
+                                                                                                                    Aagg = P                            (21)
+                                                                                                                                i wi
+
+                                                                                          where i ∈ {Q-TeSt1 , Q-TeSt2L , Q-TeSt2R , Q-TeSt3 }. This nor-
+                                                                                          malization keeps Aagg within [0, 1] and preserves the hierarchi-
+                                                                                          cal structure, thereby providing a balanced overall performance
+                                                                                          measure.
+
+                                                                                          4. Dataset and Experimental Settings
+                                                                                          4.1. Benchmark Datasets
+                                                                                               We evaluate H-SemiS on two multiclass benchmark datasets
+                                                                                          and assess generalizability on two publicly available binary datasets.
+                                                                                          Table 2 summarizes the original and reconstructed samples used
+                                                                                          for training, and Fig. 9 illustrates representative knee osteoarthri-
+                                                                                          tis examples from each dataset.
+
+                                                                                          4.1.1. Multiclass Dataset
+                                                                                          (i) Osteoarthritis Initiative Dataset: The Osteoarthritis Initia-
+                                                                                          tive (OAI) (Chen, 2018) is a publicly available, multi-center
+                                                                                          dataset designed to study the development and progression of
+                                                                                          knee osteoarthritis. It contains 9,786 single-knee X-ray images
+                                                                                          from 4,796 subjects aged 45 to 79, each with a resolution of
+                                                                                          299 × 299 pixels. To address multiclass imbalance in a hierar-
+                                                                                          chical binary setting, we augment the dataset with 5,400 recon-
+                                                                                          structed KXR samples. Images are annotated using SiRL (see
+                                                                                          Section 3.3), which follows the five-grade KL system: KL-0
+Fig. 8: Overview of the Hierarchical Multi-classifier (HiM) module for knee               (normal), KL-1 (doubtful), KL-2 (mild), KL-3 (moderate), and
+osteoarthritis severity grading. The HiM module operates in three stages. First,          KL-4 (severe).
+during the decomposition stage, the entire training dataset is divided based on
+                                                                                          (ii) Digital Knee X-ray Images: The Digital Knee X-ray Im-
+the severity at the root node and sample distributions at subsequent nodes. Sec-
+ond, in the classification stage, Q-TeSt models are trained at each level to grade        ages (DKXI) dataset (Gornale and Patravali, 2020) comprises
+osteoarthritis severity. Finally, in the aggregation stage, the framework com-            8-bit grayscale images acquired using a PROTEC PRS 500E
+bines classification outputs in a bottom-up manner using a weighted scheme.               X-ray system from multiple hospitals and diagnostic centers.
+                                                                                          Two medical experts annotated all samples using the KL grad-
+(ii) Classification: At each decision node (Q-TeSti ), we train a                         ing system. The dataset includes both single-knee images and
+                                                                                     11
+Class                                 Original          Reconstructed             Total                     Original           Reconstructed            Total
+                                      Samples             Samples                Samples                    Samples              Samples               Samples
+Multi-class Dataset                                      OAI Dataset                                                           DKXI Dataset
+Class 0                                 3857                   0                    3857                       576                    0                   576
+Class 1                                 1770                 1982                   3752                       514                    0                   514
+Class 2                                 2578                 1243                   3821                       273                  243                   516
+Class 3                                 1286                  608                   1894                       267                    0                   267
+Class 4                                  295                 1567                   1862                       206                   54                   260
+Binary Dataset                                            OP Dataset                                                            KO Dataset
+Class 0                                 1651                  478                   2129                      1434                  2089                 3523
+Class 1                                 2155                   0                    2155                      3554                    0                  3554
+
+
+    Table 2: Overview of the dataset, highlighting the count of original and reconstructed samples in multi-class and binary-class datasets for KOA detection.
+
+
+
+
+Fig. 9: Sample dataset used for evaluation of the proposed framework. The Multiclass dataset (left) includes five severity levels (KL-0 to KL-4) from the OAI and
+DKXI datasets. The Binary dataset (right) comprises normal (Class 0) and severe (Class 1) cases from the OP and KO datasets. Each severity level is color-coded
+for clarity.
+
+
+
+scans containing both knees; we crop the latter into individual                     0) and severe (class 1). For consistency, we crop images con-
+knees for consistency, resulting in 1,836 knee X-ray samples.                       taining both knees into single-knee views, yielding 4,988 knee
+All images are provided in PNG format, with resolutions rang-                       X-ray samples. To address class imbalance, we augment the
+ing from 300 × 162 to 640 × 481 pixels. To mitigate class im-                       dataset with 2,089 reconstructed normal KXR samples.
+balance, we further augment the dataset with 297 reconstructed
+KXR samples.                                                                        4.2. Evaluation Metrics
+                                                                                        We evaluate H-SemiS using standard metrics: Accuracy
+4.1.2. Binary Dataset                                                               (Acc), Precision (Pre), Recall (Rec), and F1-score (F1) for grad-
+(i) Osteoarthritis Prediction Dataset: The Osteoarthritis Pre-                      ing KOA severity. For multiclass evaluation, Precision, Recall,
+diction (OP) dataset (Tao, 2023), released by the University of                     and F1-score are macro-averaged across classes. Table 3 sum-
+Florida and the OAI organization, contains anteroposterior, lat-                    marizes the mathematical definitions of these metrics. Here,
+eral, and oblique knee X-rays from diverse patients. In this                        TPKOA denotes KOA samples correctly classified as KOA, TNNor
+study, we use only anteroposterior and lateral views. After                         denotes normal samples correctly classified as normal, FPKOA
+cropping images that contain both knees into single-knee sam-                       denotes normal samples misclassified as KOA, and FNNor de-
+ples, the dataset includes 1,651 normal (class 0) and 2,155 se-                     notes KOA samples misclassified as normal.
+vere (class 1) X-rays. To mitigate class imbalance, we augment
+the dataset with 478 reconstructed normal KXR samples.                              4.3. Implementation Details
+(ii) Knee Osteoarthritis Dataset: The Knee Osteoarthritis (KO)                      Data Preprocessing: The dataset comprises single KXR scans
+dataset (Shaw, 2024) contains X-rays with and without KL grad-                      containing both knees with varying resolutions. For consis-
+ing across multiple joints, including knees, wrists, elbows, necks,                 tency, we detect individual knee joints using YOLOv2 (Red-
+and hips. We use knee X-rays without KL grading to evalu-                           mon and Farhadi, 2017) and crop them into single-knee KXR
+ate the generalizability of the proposed framework in a binary                      samples, which are then resized to 224 × 224. To enhance
+classification setting. Samples are grouped into normal (class                      low-level features and overall image quality, we apply Contrast
+                                                                               12
+Table 3: Evaluation metrics for H-SemiS framework for osteoarthritis severity        et al. (2022); Lo and Lai (2023); Nguyen et al. (2024); Teoh
+grading
+                                                                                     et al. (2023), four self-supervised: Azizi et al. (2023, 2021);
+                                                                                     Cai et al. (2023); Wu et al. (2023), and five semi-supervised:
+Evaluation Metrics                          Mathematical Formulation
+                                                                                     Berrimi et al. (2024); Burton et al. (2020); Farooq et al. (2023);
+                                                TPKOA + TNnor                        Huo et al. (2022); Nguyen et al. (2020) methods. We repro-
+Accuracy (Acc)
+                                         TPKOA + FPKOA + TNnor + FNNor
+                                                                                     duce all baseline results under identical experimental settings
+                                                      TPKOA                          to ensure a fair comparison.
+Precision (Pre)
+                                                   TPKOA + FPKOA
+
+                                                      TPKOA                          5.1.1. Quantitative Analysis
+Recall (Rec)
+                                                   TPKOA + FNNor                          We report quantitative results across three training settings:
+                                                                                     supervised, self-supervised, and semi-supervised. In the super-
+                                                   Precision × Recall
+F1-Score (F1)                                 2×
+                                                   Precision + Recall
+                                                                                     vised setting, models are trained using the full labeled dataset.
+                                                                                     In the self-supervised setting, models learn representations from
+                                                                                     unlabeled data without manual annotations. In the semi-supervised
+Limited Adaptive Histogram Equalization (CLAHE) (Raghaw                              setting, all baselines are trained with 20% labeled samples and
+et al., 2024). We further utilize BoneFinder (Lindner et al.,                        no additional data, matching the H-SemiS protocol.
+2013) to detect key knee points and preserve joint space narrow-                          (i) Analysis on OAI Dataset: We report quantitative results
+ing (JSN), which is crucial for capturing complex knee anatomy.                      in Table 4, showing that H-SemiS demonstrates superior perfor-
+                                                                                     mance across nearly all metrics. Among supervised methods,
+Augmentations: We adopt two augmentation strategies for
+                                                                                     H-SemiS achieves the strongest overall performance. Only Lo
+consistency training in the teacher–student framework (see Sec-
+                                                                                     and Lai (2023) achieve a marginally higher recall by 0.1, while
+tion 3.4.2): weak (Aw ) and strong (A s ). For weak augmenta-
+                                                                                     the best competing supervised approach, Teoh et al. (2023), still
+tion (Aw ), applied to the teacher, we flip KXR samples ver-
+                                                                                     lags by 1.8. These gaps indicate that H-SemiS exhibits stronger
+tically and/or horizontally with probability 0.5 and randomly
+                                                                                     feature learning under limited supervision. H-SemiS also sur-
+translate them by up to 0.2 of the image dimensions along each
+                                                                                     passes all self-supervised methods, with Wu et al. (2023) yield-
+axis. For strong augmentation (A s ), applied to the student, we
+                                                                                     ing the lowest accuracy, highlighting the limitations of learn-
+use RandAugment (Cubuk et al., 2020), which applies a se-
+                                                                                     ing from unlabeled data alone. Among semi-supervised ap-
+quence of transformations including pixel inversion, X/Y shear-
+                                                                                     proaches, Huo et al. (2022) achieves the closest performance
+ing in [-0.3, 0.3], scaling in [0.51, 0.60], horizontal and vertical
+                                                                                     with an F1-score of 82.7, whereas H-SemiS maintains a clear
+translation in [-0.3, 0.3], brightness adjustment in [0.05, 0.95],
+                                                                                     advantage with an F1-score of 84.7. Although Burton et al.
+rotation in [-30◦ , 30◦ ], HSV ratio modification in [-1, 1], and
+                                                                                     (2020) attains the highest precision among existing methods, it
+Gaussian blurring with kernel sizes in [3,5].
+                                                                                     still falls short of H-SemiS by 3.2. Overall, these results demon-
+Training Setting: We train and evaluate H-SemiS and all base-                        strate the effectiveness of the hierarchical design and self-supervised
+lines using TensorFlow and PyTorch on a Linux server equipped                        components in enhancing feature learning and maintaining bal-
+with an Intel Xeon Silver S-4316 CPU (2.30 GHz), 512 GB                              anced performance, thereby establishing H-SemiS as a strong
+DDR4 RAM, and an NVIDIA A16 GPU (64 GB). We optimize                                 framework for grading osteoarthritis severity with limited la-
+networks with Adam (weight decay 3e-4, initial learning rate                         beled data.
+3e-4) using a batch size of 8 (4 labeled, 4 unlabeled) for up to
+                                                                                          (ii) Analysis on DKXI Dataset: For the DKXI dataset, H-
+100 epochs with early stopping (patience = 10). Datasets are
+                                                                                     SemiS outperforms all competing baselines across every evalu-
+split into 80% training and 20% testing, with the training set
+                                                                                     ation metric, as shown in Table 4, confirming its effectiveness
+containing 20% labeled (original + reconstructed) and 80% un-
+                                                                                     in grading osteoarthritis severity. Among supervised methods,
+labeled samples. All metrics are reported on the held-out test
+                                                                                     Teoh et al. (2023) achieves the closest performance with an
+set. We further evaluate performance under varying labeled ra-
+                                                                                     F1-score of 81.9. Although a self-supervised method attains
+tios (1%, 5%, 10%, 20%) (see Section 5.3). The Quantum Con-
+                                                                                     the second-highest accuracy, H-SemiS remains superior by 1.7,
+volution Network (QCN) is simulated using PennyLane1 with
+                                                                                     reflecting stronger discriminative feature learning. Cai et al.
+Adam (learning rate 1e-3), batch size 64, and cross-entropy loss
+                                                                                     (2023) reports the highest accuracy among self-supervised ap-
+with logits for binary classification.
+                                                                                     proaches, followed by H-SemiS. Azizi et al. (2023) achieves the
+                                                                                     best self-supervised F1-score of 82.2 but still trails H-SemiS by
+5. Experimental Results and Analysis                                                 2.2. This gap reflects the advantage of combining self-supervision
+                                                                                     with hierarchical learning. Among semi-supervised methods,
+5.1. Comparison with Competing Baselines                                             Burton et al. (2020) and Berrimi et al. (2024) show competi-
+    We evaluate H-SemiS against thirteen baselines on two multi-                     tive results. However, despite achieving 84.5 accuracy and 82.8
+class datasets, OAI (Chen, 2018) and DKXI (Gornale and Pa-                           recall, Burton et al. (2020) remains below H-SemiS. Overall,
+travali, 2020). The comparison includes four supervised: Hu                          these results show that H-SemiS effectively addresses limita-
+                                                                                     tions in prior work. The framework leverages quantum princi-
+                                                                                     ples to capture complex patterns in knee X-ray data. In addi-
+    1 https://pennylane.ai
+
+
+                                                                                13
+Table 4: Quantitative evaluation of H-SemiS against existing baselines on the OAI and DKXI datasets. Orange and blue denote the best and second-best results.
+| ⇓d | indicates the absolute performance drop relative to H-SemiS.
+
+
+             Methods                                                         OAI Dataset                                                                          DKXI Dataset
+                                            Acc       | ⇓d |         Pre         | ⇓d |   Rec    | ⇓d |        F1   | ⇓d |          Acc      | ⇓d |     Pre       | ⇓d |    Rec      | ⇓d |        F1     | ⇓d |
+I            Nguyen et al. (2024)           69.1      15.8           68.8        17.3     71.4   12.0      70.1     14.6            74.6     12.2       75.8       9.5     73.1      10.5          74.4   10.0
+             Lo and Lai (2023)              80.9       4.0           81.6         4.5     83.5   0.1       82.5     2.2             77.8     9.0        78.3       7.0     77.2       6.4          77.7    6.7
+             Teoh et al. (2023)             83.1       1.8           82.4         3.7     79.3   4.1       80.8     3.9             81.4     5.4        84.4       0.9     79.5       4.1          81.9    2.5
+             Hu et al. (2022)               73.9      11.0           74.5        11.6     72.8   10.6      73.6     11.1            66.2     20.6       67.4      17.9     63.6      20.0          65.4   19.0
+II           Wu et al. (2023)               59.4      25.5           58.1        28.0     57.5   25.9      57.8     26.9            69.8     17.0       70.6      14.7     67.3      16.3          68.9   15.5
+             Azizi et al. (2023)            81.2       3.7           82.3         3.8     78.6   4.8       80.4     4.3             82.1     4.7        83.2       2.1     81.3       2.3          82.2    2.2
+             Cai et al. (2023)              78.6       6.3           78.8         7.3     76.9   6.5       77.8     6.9             85.1     1.7        82.2       3.1     81.6       2.0          81.9    2.5
+             Azizi et al. (2021)            79.8       5.1           80.1         6.0     81.2   2.2       80.6     4.1             78.2     8.6        76.3       9.0     79.1       4.5          77.7    6.7
+III          Berrimi et al. (2024)          77.1       7.8           78.4         7.7     80.1   3.3       79.2     5.5             82.8     4.0        81.9       3.4     82.4       1.2          82.1    2.3
+             Farooq et al. (2023)           76.7       8.2           75.1        11.0     79.4   4.0       77.2     7.5             75.5     11.3       76.0       9.3     74.2       9.4          75.1    9.3
+             Huo et al. (2022)              81.8       3.1           82.4         3.7     83.1   0.3       82.7     2.0             69.8     17.0       70.6      14.7     71.3      12.3          70.9   13.5
+             Burton et al. (2020)           82.9       2.0           82.9         3.2     80.5   2.9       81.7     3.0             84.5     2.3        81.3       4.0     82.8       0.8          82.0    2.4
+             Nguyen et al. (2020)           71.3      13.6           70.3        15.8     72.1   11.3      71.2     13.5            76.2     10.6       74.5      10.8     76.8       6.8          75.6    8.8
+Ours         H-SemiS                        84.9       0.0           86.1         0.0     83.4   0.0       84.7     0.0             86.8     0.0        85.3       0.0     83.6       0.0          84.4    0.0
+                                           I: Supervised-based Techniques; II: Self-Supervised-based Techniques; III: Semi-Supervised-based Techniques
+
+
+
+tion, the use of proxy labels filtered from noisy and ambigu-                                                  5.1.2. Qualitative Analysis
+ous samples supports learning more discriminative features for                                                     We evaluate the qualitative performance of H-SemiS us-
+KOA severity grading.                                                                                          ing Explainable Artificial Intelligence (XAI) methods, includ-
+    We utilize radar plots to visualize the quantitative results,                                              ing Grad-CAM (Selvaraju et al., 2019), Grad-CAM++ (Chat-
+as shown in Fig. 10. These plots provide a comparative view of                                                 topadhay et al., 2018), and Score-CAM (Wang et al., 2020).
+Acc, Pre, Rec, and F1-score achieved by the proposed frame-                                                    To assess the reliability and effectiveness of the resulting ex-
+work and competing baselines on the OAI (Chen, 2018) and                                                       planation maps, we use the ADCC score (Poppi et al., 2021),
+DKXI (Gornale and Patravali, 2020) datasets. We further re-                                                    which identifies critical regions for KOA severity. The ADCC
+port confusion matrices for both datasets in Fig. 11 to illustrate                                             score (χADCC ) is defined as the harmonic mean of Average Drop
+class-wise prediction behavior.                                                                                (χAvD ), Coherency (χCo ), and Complexity (χCx ), and is com-
+
+
+
+
+                                V             IV                                                                                                  V               IV
+
+                    VI                                         III                                                                  VI                                        III
+
+
+
+         VII                                                                II                                           VII                                                             II
+
+
+
+
+      VIII                                                                       I                                  VIII                                                                       I
+               90   80    70    60                                                                                             90    80     70     60
+
+
+
+         IX                                                             XIV                                              IX                                                              XIV
+
+
+
+                    X                                      XIII                                                                     X                                         XIII
+
+                               XI             XII                                                                                                 XI             XII
+                         Acc         Pre        Rec             F1                                                                         Acc          Pre         Rec        F1
+
+                               (a) OAI Dataset                                                                                                   (b) DKXI Dataset
+                         I: Nguyen et al. (2024)       II: Lo and Lai (2023)                III: Teoh et al. (2023)           IV: Hu et al. (2022)             V: Wu et al. (2023)
+                         VI: Azizi et al. (2023)       VII: Cai et al. (2023)               VIII: Azizi et al. (2021)         IX: Berrimi et al. (2024)        X: Farooq et al. (2023)
+                         XI: Huo et al. (2022)         XII: Burton et al. (2020)            XIII: Nguyen et al. (2020)        XIV: H-SemiS
+
+
+Fig. 10: Quantitative evaluation of the proposed H-SemiS framework (XIV) against existing baselines (I-XIII) for KOA severity grading. The radar plots compare
+the Acc, Pre, Rec, F1-score against different competing baselines on (a) OAI dataset (Chen, 2018) and (b) DKXI dataset (Gornale and Patravali, 2020).
+
+                                                                                                          14
+                             Class 0    676      67        28          0    0                                                  Class 0     106      3         4           2   0
+
+
+                             Class 1     0      653        97          0    0                                                  Class 1      5      94         0           1   3
+
+
+
+              Actual Class                                                                                      Actual Class
+                             Class 2     1       34       667       62      0                                                  Class 2      2       3         95          2   1
+
+
+                             Class 3     1       7         58     294      19                                                  Class 3      0       1         6       38      8
+
+
+                             Class 4     44      11        29          0   288                                                 Class 4      5       8         0           2   37
+
+                                       Class 0 Class 1 Class 2 Class 3 Class 4                                                           Class 0 Class 1 Class 2 Class 3 Class 4
+                                                     Predicted Class                                                                                    Predicted Class
+
+                                       (a) OAI Dataset Evaluation                                                                        (b) DKXI Dataset Evaluation
+
+                                          Fig. 11: Confusion matrices displaying the classification performance on the OAI and DKXI datasets.
+
+
+
+puted as follows:                                                                                  ingful. Together, these components provide quantitative valida-
+                                                                                 !−1               tion of the interpretability of H-SemiS and its clinical relevance
+                                            1     1     1                                          for assessing KOA.
+            χADCC = 3                           +   +                                  (22)
+                                        1 − χAvD χCo 1 − χCx
+                                                                                                   5.2. Comparison with State-of-the-art models
+    Fig. 12 visualizes class activation maps with ADCC scores,
+                                                                                                        We compare H-SemiS with state-of-the-art (SOTA) mod-
+demonstrating the ability of H-SemiS to localize clinically rel-
+                                                                                                   els to demonstrate its effectiveness in KOA severity grading, as
+evant features. Higher ADCC values indicate more reliable and
+                                                                                                   summarized in Table 5. Evaluations are conducted on the OAI
+interpretable explanations aligned with the framework’s predic-
+                                                                                                   (Chen, 2018) and DKXI (Gornale and Patravali, 2020) datasets
+tions. A lower χAvD reflects reduced confidence when high-
+                                                                                                   against a diverse set of SOTA methods, including ResNet50
+lighted regions are removed, while χCo measures the consis-
+                                                                                                   (He et al., 2016), DenseNet201 (Huang et al., 2017), ViT-B/32
+tency of activation maps with expert interpretation. The χCx
+                                                                                                   (Dosovitskiy et al., 2021), MedViT (Manzari et al., 2023), CMT
+term ensures that highlighted regions remain compact and mean-
+
+
+
+
+Fig. 12: Qualitative evaluation of the H-SemiS framework on the OAI and DKXI datasets across various KOA severity levels. The consistently high ADCC scores
+suggest that the framework maintains confidence while accurately highlighting the relevant features for prediction.
+
+                                                                                              15
+Table 5: Comparative performance analysis of H-SemiS against state-of-the-art models on the OAI and DKXI datasets. Orange and blue denote the best and
+second-best results. | ⇓d | indicates the absolute performance drop relative to H-SemiS.
+
+
+Methods                                                             OAI Dataset                                                   DKXI Dataset
+                                               Acc | ⇓d |    Pre     | ⇓d | Rec | ⇓d |    F1     | ⇓x |     Acc | ⇓d |     Pre     | ⇓d | Rec | ⇓d |       F1       | ⇓d |
+ResNet50 (He et al., 2016)                     72.8   12.1   71.9    14.2   73.0 10.4 72.4 12.3            75.9 10.9 73.8 11.5 75.8 7.8 74.8 9.60
+DenseNet201 (Huang et al., 2017)               74.8   10.1   75.3    10.8   75.6 7.8 75.4 9.3              78.6 8.2 77.3 8.0 76.9 6.7 77.1 7.26
+ViT-B/32 (Dosovitskiy et al., 2021)            70.4   14.5   72.6    13.5   73.1 10.3 72.8 11.9            73.8 13.0 73.6 11.7 75.1 8.5 74.3 10.05
+MedViT (Manzari et al., 2023)                  76.9    8.0   77.2    8.9    77.3 6.1 77.2 7.5              77.0 9.8 79.5 5.8 80.6 3.0 80.0 4.35
+CMT (Guo et al., 2022)                         73.2   11.7   74.8    11.3   72.5 10.9 73.6 11.1            75.7 11.1 76.8 8.5 73.0 10.6 74.9 9.53
+π-Model (Laine and Aila, 2017)                 79.5    5.4   82.2    3.9    78.6 4.8 80.4 4.3              80.2 6.6 85.8 0.5 80.7 2.9 83.2 1.23
+Mean-Teacher (Tarvainen and Valpola, 2017)     80.3    4.6   81.5    4.6    82.3 1.1 81.9 2.8              85.5 1.3 84.1 1.2 82.8 0.8 83.5 0.93
+H-SemiS                                        84.9    0.0   86.1    0.0    83.4 0.0 84.7 0.0              86.8 0.0 85.3 0.0 83.6 0.0 84.4 0.0
+
+
+
+(Guo et al., 2022), π-Model (Laine and Aila, 2017), and Mean-                     Table 6: Effect of masking ratio and reconstruction techniques on H-SemiS
+                                                                                  performance using the OAI dataset. | ⇓d | represents the absolute performance
+Teacher (Tarvainen and Valpola, 2017). Across both datasets,                      drop relative to H-SemiS.
+H-SemiS achieves the highest accuracy, at 84.9 on OAI and
+86.8 on DKXI, surpassing Mean-Teacher at 80.3 and 85.5, re-
+                                                                                         Methods                  Acc | ⇓d | Pre | ⇓d | Rec | ⇓d |                  F1   | ⇓d |
+spectively. This improvement reflects stronger feature learning
+                                                                                  I    Nm = 0.70                  83.8    1.1    82.5     3.6    83.1    0.3    82.8         1.9
+under limited supervision, a strength also observed in the Mean-
+                                                                                       Nm = 0.80                  83.1    1.8    84.3     1.8    82.6    0.8    83.4         1.3
+Teacher model. While Mean-Teacher and the π-Model bene-                           II   MAE                        79.5    5.4    80.1     6.0    77.2    6.2    78.6         6.1
+fit from effective pseudo-labeling, H-SemiS further improves                           CMAE                       80.4    4.5    82.6     3.5    81.9    1.5    82.2         2.5
+performance by leveraging filtered proxy labels and quantum-                           ViT-AE++                   78.5    6.4    79.7     6.4    82.6    0.8    81.1         3.6
+inspired feature learning to capture fine-grained knee structures                      GAN-MAE                    83.1    1.8    80.4     5.7    83.2    0.2    81.8         2.9
+and nonlinear patterns. In contrast, transfer learning models                     Ours Nm =0.75+ MI-Rec           84.9    0.0    86.1     0.0    83.4    0.0    84.7         0.0
+such as ResNet50 and DenseNet201, as well as transformer-                                      I: Effect of Masking Ratio; II: Effect of Reconstruction Technique
+based architectures including ViT-B/32, MedViT, and CMT, ex-
+hibit limited adaptability to KOA grading, resulting in weaker
+performance. Overall, these findings establish H-SemiS as a ro-
+bust and superior framework for osteoarthritis severity grading
+under limited supervision.
+
+5.3. Ablative Experiments
+    We conduct an ablation study on the OAI (Chen, 2018)
+dataset to assess the contribution of individual components in
+the H-SemiS framework. By varying one component at a time
+while keeping all other settings fixed, we quantify their impact
+on overall performance. The following subsections summarize
+the results.
+(i) Effect of Image Reconstruction: We examine the contri-
+bution of Masked Image Reconstruction (MI-Rec) (see Sec-
+tion 3.2) by analyzing the effects of the masking ratio and the
+choice of reconstruction technique. Table 6 reports performance
+across masking ratios (Nm ), showing optimal results at 75%.                      Fig. 13: KXR reconstruction examples across different KL grades. The first
+Performance drops by 1.1 and 1.8 when the masking ratio is set                    column represents the original images, while the subsequent columns display
+to 70% and 80%, respectively. Fig. 13 visualizes reconstructed                    masked and reconstructed images with varying masking ratios (70%, 75%, and
+samples, where excessive masking (80%) yields blurry recon-                       80%).
+structions with poorly defined edges that degrade performance.
+Fig. 14 further shows a peak accuracy of 84.9 at 75%, with ac-
+                                                                                  proposed MI-Rec. GAN-MAE achieves the second-best perfor-
+curacy decreasing as the masking ratio moves away from this
+                                                                                  mance, while MI-Rec consistently outperforms all alternatives
+value. This trend indicates that MI-Rec performs best at 75%,
+                                                                                  across metrics. These results suggest that MI-Rec better pre-
+where missing patches are reconstructed uniformly without bias
+                                                                                  serves structural consistency and key KOA markers, including
+toward specific regions.
+                                                                                  cartilage thickness and joint space narrowing. The combined
+    We next compare reconstruction techniques at a fixed mask-
+                                                                                  choice of an optimal masking ratio and reconstruction strat-
+ing ratio of 75%. As summarized in Table 6, we evaluate MAE
+                                                                                  egy prevents spatial feature loss and enables high-fidelity re-
+(He et al., 2022), CMAE (Huang et al., 2024), ViT-AE++ (Prab-
+                                                                                  constructions, leading to more accurate KOA classification.
+hakar et al., 2024), and GAN-MAE (Fei et al., 2023) against the
+                                                                             16
+                                                   84.9
+             84.5
+
+
+  Accuracy
+               84
+                                         83.8
+             83.5
+               83               83.2                        83.1
+                      82.8                                           82.7
+             82.5
+                                                                              82.3
+                    60        65       70       75        80       85       90
+                                        Mask Ratio (%)
+
+Fig. 14: Mask ratio ablation study highlighting the impact of masking on H-
+SemiS performance.
+
+
+
+(ii) Effect of Template Matching: Table 7 analyzes the role of
+the Similarity-aware Reconstructed Image Labeler (SiRL), de-
+scribed in Section 3.3, within the H-SemiS framework. SiRL
+assigns proxy labels to reconstructed unlabeled samples based                                 Fig. 15: Structural Similarity Index (SSIM) values assess the structural simi-
+on similarity to predefined templates. We evaluate thresholds                                 larity between original and reconstructed KXR samples. Higher values indicate
+from τ60 to τ90 and identify τ80 as optimal, achieving the best                               greater structural resemblance, while the blue regions highlight the differences.
+performance across all metrics. Lower thresholds (τ60 , τ70 ) ad-
+mit more reconstructed samples but introduce noise, reducing                                                                IV                 III
+                                                                                                                                     85
+                                                                                                                                     5
+performance by 6.3% and 1.1%, respectively. A higher thresh-
+old (τ90 ) admits too few samples, limiting class imbalance mit-                                                                     80
+                                                                                                                                     4
+                                                                                                           V                                                    II
+igation and causing a 5% drop. The strong performance at
+τ80 indicates effective selection of reliable reconstructed sam-                                                                     3
+                                                                                                                                     75
+ples. We further assess reliability using Structural Similarity
+Index Measure (SSIM) between randomly selected original and                                                                          70
+                                                                                                                                     2
+reconstructed images. As shown in Fig. 15, τ80 yields high                                       VI                                                                         I
+                                                                                                                                     65
+                                                                                                                                     1
+SSIM scores, confirming that SiRL assigns accurate proxy la-
+bels while MI-Rec preserves critical structural details.
+                                                                                                                                     0
+                                                                                                                                     60
+
+Table 7: Effect of the threshold on H-SemiS performance for labeling recon-
+structed samples in the OAI dataset. | ⇓d | represents the absolute performance
+                                                                                                VII                                                                        XII
+drop relative to H-SemiS.
+
+
+Methods             Acc      | ⇓d |    Pre      | ⇓d |    Rec      | ⇓d |   F1       | ⇓d |
+H-SemiS (τ60 )      78.6      6.3      75.2     10.9      76.7      6.7     75.9      8.8
+H-SemiS (τ70 )      83.8      1.1      84.1      2.0      83.6      0.2     83.8      0.9                 VIII                                                  XI
+H-SemiS (τ90 )      79.9      5.0      81.2      4.9      80.3      3.1     80.7      4.0
+H-SemiS (τ80 )      84.9      0.0      86.1      0.0      83.4      0.0     84.7      0.0
+                                                                                                                            IX                  X
+
+                                                                                                        I: 1%: BN         II: 1%: BN+NL               III: 1%: BN+NL+QCN
+(iii) Effect of Labeling in Teacher-Student Framework: We                                              IV: 5%: BN         V: 5%: BN+NL                VI: 5%: BN+NL+QCN
+evaluate H-SemiS under varying labeled data ratios (1%, 5%,                                           VII: 10%: BN       VIII: 10%: BN+NL            IX: 10%: BN+NL+QCN
+10%, and 20%). For each ratio, we examine different archi-                                             X: 20%: BN         XI: 20%: BN+NL            XII: 20%: BN+NL+QCN
+tectural configurations of the quantum-infused teacher–student                                 BN: Base Network; NL: Normalization Layer; QCN: Quantum Convolution Network
+framework (Q-TeSt) (see Section 3.4.1), including the Base Net-
+work (BN), Normalization Layer (NL), and Quantum Convo-                                       Fig. 16: Impact of labeled data percentage on Teacher-Student framework ac-
+                                                                                              curacy. Each quadrant shows performance at 1%, 5%, 10%, and 20% labeled
+lutional Neural Network (QCN). As reported in Table 8, with                                   data for three architectural configurations: Base Network (BN), BN with Quan-
+only 1% labeled data, the base configuration achieves com-                                    tum Convolution Network (QCN), and BN with Normalization Layer (NL) and
+petitive performance, highlighting robustness under severe data                               QCN. Quadrant XII (20% BN+NL+QCN) demonstrates the best performance.
+scarcity. As shown in Fig. 16, increasing the labeled ratio from
+1% to 5% consistently improves performance across all config-
+urations, highlighting the contribution of labeled supervision.                               combined BN+NL+QCN configuration, demonstrating consis-
+This trend persists at 10% and 20%, where Q-TeSt further en-                                  tent gains across all supervision levels.
+hances feature extraction by learning complex knee patterns in                                (iv) Effect of Decomposition: We analyze the impact of de-
+quantum space. Incorporating QCN strengthens the capture                                      composition strategies in the hierarchical multi-classifier on H-
+of nonlinear relationships within normalized spatial features.                                SemiS performance for KOA severity grading. As shown in
+The best performance is achieved at 20% labeled data using the                                Fig. 17, we compare three strategies: no decomposition, ran-
+                                                                                         17
+Table 8: Effect of the percentage of labeled samples on H-SemiS performance                                                       ble 9 reports performance across different training and testing
+on OAI dataset. BN, NL, and QCN represent the Base Network, Normalization
+Layer, and Quantum Convolutional Neural Network. | ⇓d | represents the abso-                                                      distributions for both multi-class and binary settings. H-SemiS
+lute performance drop relative to H-SemiS.                                                                                        performs best when trained and evaluated on the same dataset,
+                                                                                                                                  while performance decreases when models trained on smaller
+%               BN NL QCN           Acc       | ⇓d |   Pre       | ⇓d |          Rec      | ⇓d |    F1           | ⇓d |           datasets are tested on larger or combined datasets. For multi-
+                                                                                                                                  class evaluation, training and testing on OAI (Chen, 2018) yields
+1%              ✓ ×     ×           66.4      18.5     65.5      20.6            63.2     20.2     64.3          20.4
+                ✓ ×     ✓           67.7      17.2     67.2      18.9            67.1     16.3     67.1          17.6             the highest accuracy of 84.9, which drops by 7.7 and 3.7 when
+                ✓ ✓     ✓           68.3      16.6     69.4      16.7            69.4     14.0     69.4          15.3             tested on DKXI (Gornale and Patravali, 2020) and the com-
+5%              ✓ ×     ×           70.3      14.6     71.3      14.8            70.6     12.8     70.9          13.8             bined OAI+DKXI dataset, respectively. A similar trend is ob-
+                ✓ ×     ✓           71.4      13.5     71.7      14.4            72.8     10.6     72.2          12.5             served in the binary setting, where H-SemiS achieves accura-
+                ✓ ✓     ✓           73.1      11.8     74.7      11.4            73.9     9.5      74.3          10.4
+                                                                                                                                  cies of 90.8, 92.3, and 91.7 when trained and tested on OP,
+10%             ✓ ×     ×           79.3      5.6      80.2       5.9            78.3     5.1      79.2           5.5
+                ✓ ×     ✓           80.6      4.3      81.8       4.3            78.9     4.5      80.3           4.4             KO, and OP+KO datasets, respectively. In contrast, training on
+                ✓ ✓     ✓           81.4      3.5      82.2       3.9            79.4     4.0      80.8           3.9             OP (Tao, 2023) and testing on KO (Shaw, 2024) and OP+KO
+20%             ✓ ×     ×           82.3      2.6      83.5       2.6            80.7     2.7      82.1           2.6             leads to accuracy reductions of 11.3 and 18.9. We further re-
+                ✓ ×     ✓           83.7      1.2      84.9       1.2            81.6     1.8      83.2           1.5             port ROC and PR curves with AUC and AUPR for the binary
+                ✓ ✓     ✓           84.9      0.0      86.1       0.0            83.4     0.0      84.7           0.0
+                                                                                                                                  datasets in Fig. 18, demonstrating the robustness of H-SemiS
+                                                                                                                                  under cross-dataset shifts. Overall, the cross-dataset results
+                                                                                                                                  confirm that H-SemiS generalizes reliably across both multi-
+dom decomposition, and hierarchical decomposition, and ex-                                                                        class and binary settings and remains competitive on unseen
+amine the use of original samples (OriS) and reconstructed sam-                                                                   datasets.
+ples (RecS). Without decomposition, the framework performs
+direct multiclass classification and attains a lower accuracy of                                                                  5.5. Statistical analysis
+75.4% using OriS. Random decomposition, which splits classes
+                                                                                                                                      We statistically analyze H-SemiS’s performance to deter-
+into binary tasks without accounting for class imbalance, yields
+                                                                                                                                  mine its significance relative to a null distribution. The null
+inferior results, with performance drops of 12.4% using OriS
+                                                                                                                                  hypothesis postulates that a random process generates the ob-
+and 10.8% using OriS+RecS relative to hierarchical decom-
+                                                                                                                                  served results. We define the significance level as 0.05 (α =
+position. Incorporating reconstructed samples consistently im-
+                                                                                                                                  0.05), the threshold for rejecting the null hypothesis. We then
+proves performance across all decomposition strategies, demon-
+                                                                                                                                  compute p-values for all training and testing combinations across
+strating their effectiveness in mitigating multiclass imbalance.
+                                                                                                                                  the multi-class and binary-class datasets and find that all values
+Hierarchical decomposition achieves the best performance, reach-
+                                                                                                                                  are below 10−10 . We reject the null hypothesis since every p-
+ing an accuracy of 84.9% with OriS+RecS, corresponding to a
+                                                                                                                                  value is significantly lower than α. We conclude that H-SemiS’s
+4.5% gain over using OriS alone. These results show that hier-
+                                                                                                                                  performance significantly surpasses that of random chance.
+archical decomposition effectively integrates information from
+both sample types. In addition, the proposed hierarchical strat-
+                                                                                                                                  5.6. Computation Cost Analysis
+egy employs a dual rule-based design (see Section 3.4.3), sup-
+porting balanced learning under multiclass imbalance.                                                                                 We evaluate the computational cost of H-SemiS by compar-
+                                                                                                                                  ing trainable parameters and inference time against supervised,
+5.4. Generalizability Evaluation                                                                                                  self-supervised, and semi-supervised baselines. Among super-
+                                                                                                                                  vised methods, Teoh et al. (2023) reports the lowest inference
+    We assess the generalizability of H-SemiS through cross-
+                                                                                                                                  time at 4.34 4 milliseconds (ms) with 110.40 million (M) pa-
+dataset evaluation by training the framework on one dataset
+                                                                                                                                  rameters, whereas Hu et al. (2022) has the largest model size
+and testing it on another, including concatenated datasets. To
+                                                                                                                                  at 121.35M. In the self-supervised setting, Wu et al. (2023) ex-
+strengthen this analysis, we also consider additional binary data-
+                                                                                                                                  hibits the highest complexity with 554.75M parameters and a
+sets (see Section 4.1.2) alongside the multi-class datasets. Ta-
+
+                90
+                                                                                                                                                                                                      86.1
+                                                                                                                 Acc             Pre   Rec           F1                                        84.9                 84.7
+                85                                                                                                                                                                                           83.4
+                                                                                                                                                                                 81.3   80.5
+                                                                                                                                                                   80.4
+
+     Accuracy
+                                                                                                                                                                          79.8
+                                                                  78.1             77.3
+                80                                        77.2            76.4
+                      75.4                                                                                                                    75.7          75.2
+                                     74.3                                                                                              74.1          74.8
+                             73.2           73.7
+                75                                                                                 72.5   71.9     71.3   71.6
+
+                70
+                              OriS                   OriS+RecS                                             OriS            OriS+RecS                                      OriS              OriS+RecS
+                                        No Decomposition                                                     Random Decomposition                                         Hierarchical Decomposition
+
+Fig. 17: Performance comparison of H-SemiS under different decomposition techniques (No Decomposition, Random Decomposition, and Hierarchical Decompo-
+sition) using original samples (OriS) and a combination of original and reconstructed samples (OriS+RecS).
+
+                                                                                                                           18
+                                   Table 9: Evaluation of H-SemiS generalizability across varied training and testing samples.
+
+
+Training                                                                                 Testing
+                                                                        Category-1: Multi-class Dataset
+                                      OAI                                                 DKXI                                              OAI + DKXI
+                   Acc          Pre         Rec          F1         Acc           Pre              Rec          F1          Acc            Pre          Rec               F1
+OAI                84.9        86.1         83.4        84.7        77.3         73.6              79.1        76.3         81.2          79.3          80.8             80.0
+DKXI               68.2        67.9         67.3        67.6        86.8         85.3              83.6        84.4         73.6          69.8          72.1             70.9
+OAI+DKXI           83.8        84.5         83.1        83.8        80.5         79.6              80.3        79.9         82.1          80.5          81.8             81.1
+                                                                            Category-2: Binary Dataset
+                                      OP                                                  KO                                                  OP + KO
+                   Acc          Pre         Rec          F1         Acc           Pre              Rec          F1          Acc            Pre          Rec               F1
+OP                 90.8        92.5         91.7        92.1        79.5         77.1              78.2        77.6         71.9          70.3          72.8             71.5
+KO                 88.2        89.3         90.2        89.7        92.3         94.6              92.8        93.7         85.3          83.2          84.9             84.0
+OP+KO              87.6        85.1         86.3        85.7        89.5         92.7              91.3        92.0         91.7          90.8          89.4             90.1
+
+
+
+
+     (a) ROC Curve on OP Dataset              (b) ROC Curve on KO Dataset                  (c) PR Curve on OP Dataset                    (d) PR Curve on KO Dataset
+
+                                        Fig. 18: Performance comparison: ROC and PR curves for OP and KO datasets.
+
+
+
+14.30 ms inference time, while Azizi et al. (2023) is more effi-                    Table 10: Comparative analysis of parameters and inference times for the H-
+                                                                                    SemiS framework against existing baselines
+cient with 95.15M parameters and 5.85 ms inference. Among
+semi-supervised approaches, Nguyen et al. (2020) achieves the
+                                                                                                 Methods                     Parameters (M)          Inference time (ms)
+fastest inference at 3.22 ms with 25.35M parameters, whereas
+Huo et al. (2022) shows higher latency at 9.94 ms despite fewer                     I            Nguyen et al. (2024)               97.40                      8.40
+                                                                                                 Lo and Lai (2023)                  81.36                      12.36
+parameters. In comparison, H-SemiS integrates hierarchical
+                                                                                                 Teoh et al. (2023)                110.40                      4.34
+semi-supervised learning with self-supervision, maintaining a                                    Hu et al. (2022)                  121.35                      5.49
+parameter count of 115.89M with an inference time of 4.09 ms,                       II           Wu et al. (2023)                  554.75                      14.30
+which is among the lowest for high-performing models. As                                         Azizi et al. (2023)                95.15                      5.85
+summarized in Table 10 and visualized in Fig. 19, H-SemiS                                        Cai et al. (2023)                  87.32                      6.59
+                                                                                                 Azizi et al. (2021)               102.35                      6.82
+achieves state-of-the-art performance while maintaining a bal-
+                                                                                    III          Berrimi et al. (2024)              81.58                      9.45
+ance between accuracy, model size, and inference efficiency.                                     Farooq et al. (2023)               35.87                      3.56
+                                                                                                 Huo et al. (2022)                  22.89                      9.94
+                                                                                                 Burton et al. (2020)               27.11                      5.38
+6. Discussion                                                                                    Nguyen et al. (2020)               25.35                      3.22
+                                                                                    Ours         H-SemiS                           115.89                      4.09
+    In this study, we propose a Hierarchical Semi-Supervised
+Framework with Self-Supervision (H-SemiS) for grading knee                                       I: Supervised-based Techniques; II: Self-Supervised-based Techniques;
+                                                                                                  III: Semi-Supervised-based Techniques; M: million; ms: millisecond
+osteoarthritis across five severity levels (KL0–KL4). H-SemiS
+integrates self-supervised and semi-supervised learning to im-
+prove severity grading under limited annotation. The frame-                         (Section 5.1.1) and state-of-the-art methods (Section 5.2). To
+work operates in three stages. First, an adversarial-inspired                       interpret model decisions, we apply XAI techniques, including
+self-supervised module generates reconstructed samples (Sec-                        Grad-CAM, Grad-CAM++, and Score-CAM (Section 5.1.2).
+tion 3.2). Second, these samples receive proxy labels through a                     We further conduct comprehensive ablation studies to quantify
+similarity-based labeling strategy (Section 3.3). Third, the im-                    the contribution of each component (Section 5.3) and assess
+balanced multi-class problem is decomposed into a hierarchy                         cross-dataset generalizability (Section 5.4). Finally, we analyze
+of binary classifiers using a rule-based scheme (Section 3.4.3).                    the computational characteristics of H-SemiS relative to exist-
+    We evaluate H-SemiS on two multi-class datasets (Section 4.1)                   ing approaches (Section 5.6).
+and show consistent improvements over competing baselines
+                                                                               19
+                                          600   E                                                                                                                              600        E
+
+
+
+
+  Parameters (in million)                                                                                                              Parameters (in million)
+                                          400                                                                                                                                  400
+
+
+
+                                          200                                                                                                                                  200
+                                                                                        D                             N                                                                                            D                                         N
+                                                                                                                                                                                                                                           I C
+                                                                           A                       J I                                                                                                              A              H               F
+                                                                                                      GH                                                                                                                             B             G
+                                                                                                 KL  BF
+                                                                                    M                   C                                                                                                    M            J               L           K
+                                           0                                                                                                                                    0
+                                                    60        65               70           75          80            85                                                             60          65           70              75          80            85
+                                                                                Accuracy                                                                                                                               Accuracy
+
+                                                                   (a) OAI Parameter                                                                                                                     (b) DKXI Paramater
+
+                                          15    E                                                                                                                              15         E
+
+
+
+
+        Inference time (in millisecond)                                                                                                      Inference time (in millisecond)
+                                                                                                          B                                                                                                                         B
+
+                                                                                                             K                                                                                                                                        K
+                                          10                                                     I                                                                             10                                                          I
+                                                                           A                                                                                                                                       A
+                                                                                                     GH                                                                                                                            H                G
+                                                                                        D                 LF                                                                                                       D                     L
+                                                                                                                                                                                                                                                  F
+                                                                                                                      N                                                                                                                                      N
+                                           5                                                                      C                                                             5                                                         C
+                                                                                    M            J                                                                                                          M            J
+
+
+                                                60            65               70           75         80             85                                                             60         65           70              75           80            85
+                                                                               Accuracy                                                                                                                            Accuracy
+
+                                                                (c) OAI Inference Time                                                                                                                (d) DKXI Inference Time
+                                                A: Nguyen et al. (2024)                 B: Lo and Lai (2023)                C: Teoh et al. (2023)                                                D: Hu et al. (2022)                 E: Wu et al. (2023)
+                                                 F: Azizi et al. (2023)                  G: Cai et al. (2023)               H: Azizi et al. (2021)                                            I: Berrimi et al. (2024)             J: Farooq et al. (2023)
+                                                    K: Huo et al. (2022)                L: Burton et al. (2020)            M: Nguyen et al. (2020)                                             N: H-SemiS (ours)
+
+
+Fig. 19: Comparative analysis of model parameters, inference time, and accuracy for the H-SemiS framework against existing baselines on benchmark datasets.
+The first row illustrates the comparison between accuracy (x-axis) and the number of parameters (y-axis) on the OAI and DKXI datasets. The second row depicts
+the comparison between accuracy (x-axis) and inference time (y-axis) on the same datasets.
+
+
+
+6.1. Feature visualization using t-SNE                                ture of internal structural variations, and integrating 3D imag-
+    We examine the feature distribution learned by the teacher        ing could provide richer anatomical information and improve
+framework (see Section 3.4.1) using t-distributed Stochastic Neigh- grading accuracy. Despite these limitations, H-SemiS delivers
+bor Embedding (t-SNE) (van der Maaten and Hinton, 2008).              reliable KOA severity grading with limited annotations, high-
+Fig. 20 shows the visualization for multi-class classification.       lighting its practical potential.
+Without quantum enhancement, features from different classes
+exhibit substantial overlap. With quantum enhancement, the            7. Conclusion
+embeddings form compact class-wise clusters with clearer sep-
+aration across all classes. This behavior indicates that the quantum-     In this work, we propose H-SemiS, a hierarchical semi-
+enhanced teacher captures class-specific structure more effec-        supervised framework with self-supervision for grading knee
+tively and supports reliable discrimination among multiple KOA        osteoarthritis (KOA) severity from knee X-ray (KXR) images.
+severity levels.                                                      The framework addresses data scarcity and multiclass imbal-
+                                                                      ance by combining limited labeled data with reconstructed sam-
+6.2. Limitation and Future Directions                                 ples. To handle imbalance, H-SemiS adopts a dual strategy.
+    Although H-SemiS achieves strong performance for KOA              First, it decomposes the multiclass problem into a hierarchy
+severity grading on KXR samples, several directions remain            of binary tasks using a rule-based design to promote balanced
+for future work. First, the current study focuses on KXR-based        learning across severity grades. Second, it introduces an adver-
+feature learning, and extending the framework to other imaging        sarial inspired self-supervised module to generate reconstructed
+modalities such as MRI and CT could further enhance diag-             samples, increasing feature diversity and improving data distri-
+nostic capability. Second, we use only anteroposterior views;         bution. We further integrate quantum learning within a teacher
+incorporating lateral and oblique views may improve scalabil-         student framework to capture complex nonlinear anatomical re-
+ity and robustness. Third, reliance on 2D scans limits the cap-       lationships and enhance fine-grained feature discrimination. Ex-
+                                                                                                                                20
+       5                                                                                    10
+
+
+
+       0                                                                                     0
+
+
+
+     −5
+                                                                                          −10
+
+           −10   −8    −6       −4       −2      0      2     4    6        8                     −15       −10         −5        0        5         10         15
+                  Class 0      Class 1        Class 2   Class 3   Class 4                                Class 0     Class 1    Class 2    Class 3        Class 4
+
+                            (a) Without quantum enhancement                                                        (b) With quantum enhancement
+
+Fig. 20: The t-SNE visualization comparing features (a) without quantum enhancement and (b) with quantum enhancement. The plot of quantum-enhanced features
+effectively visualizes the multi-class classification, showing distinct and well-separated clusters for each class.
+
+
+
+tensive experiments on multiclass imbalanced datasets demon-                           Chen, T., Kornblith, S., Norouzi, M., Hinton, G., 2020. A simple framework
+strate that H-SemiS consistently outperforms competing meth-                              for contrastive learning of visual representations, in: 37th International Con-
+                                                                                          ference on Machine Learning, ICML 2020, pp. 1597–1607. URL: https:
+ods across key metrics. Ablation studies confirm the contribu-                            //proceedings.mlr.press/v119/chen20j/chen20j.pdf. accessed 8
+tion of each component. These results establish H-SemiS as a                              March 2025.
+reliable and effective approach for grading KOA severity, par-                         Cubuk, E.D., Zoph, B., Shlens, J., Le, Q.V., 2020. Randaugment: Practi-
+ticularly in resource-constrained clinical settings.                                      cal automated data augmentation with a reduced search space, in: 2020
+                                                                                          IEEE/CVF Conference on Computer Vision and Pattern Recognition Work-
+                                                                                          shops (CVPRW), IEEE. pp. 702–703. doi:10.1109/cvprw50498.2020.
+References                                                                                00359.
+                                                                                       Dosovitskiy, A., Beyer, L., Kolesnikov, A., Weissenborn, D., Zhai, X., Un-
+Azizi, S., Culp, L., Freyberg, J., Mustafa, B., Baur, S., Kornblith, S., Chen,            terthiner, T., Dehghani, M., Minderer, M., Heigold, G., Gelly, S., Uszkoreit,
+  T., Tomasev, N., Mitrović, J., Strachan, P., Mahdavi, S.S., Wulczyn, E.,               J., Houlsby, N., 2021. An image is worth 16x16 words: Transformers for
+  Babenko, B., Walker, M., Loh, A., Chen, P.H.C., Liu, Y., Bavishi, P., McKin-            image recognition at scale, in: ICLR 2021 - 9th International Conference on
+  ney, S.M., Winkens, J., Roy, A.G., Beaver, Z., Ryan, F., Krogue, J., Etemadi,           Learning Representations, pp. 1–22. URL: https://openreview.net/
+  M., Telang, U., Liu, Y., Peng, L., Corrado, G.S., Webster, D.R., Fleet, D.,             forum?id=YicbFdNTTy. accessed 8 March 2025.
+  Hinton, G., Houlsby, N., Karthikesalingam, A., Norouzi, M., Natarajan,               Du, Y., Almajalid, R., Shan, J., Zhang, M., 2018. A novel method to pre-
+  V., 2023. Robust and data-efficient generalization of self-supervised ma-               dict knee osteoarthritis progression on mri using machine learning methods.
+  chine learning for diagnostic imaging. Nature Biomedical Engineering 7,                 IEEE Transactions on NanoBioscience 17, 228–236. doi:10.1109/tnb.
+  756–779. doi:10.1038/s41551-023-01049-7.                                                2018.2840082.
+Azizi, S., Mustafa, B., Ryan, F., Beaver, Z., Freyberg, J., Deaton, J., Loh,           Farooq, M.U., Ullah, Z., Khan, A., Gwak, J., 2023. Dc-aae: Dual channel
+  A., Karthikesalingam, A., Kornblith, S., Chen, T., Natarajan, V., Norouzi,              adversarial autoencoder with multitask learning for kl-grade classification
+  M., 2021. Big self-supervised models advance medical image classification,              in knee radiographs. Computers in Biology and Medicine 167, 107570.
+  in: 2021 IEEE/CVF International Conference on Computer Vision (ICCV),                   doi:10.1016/j.compbiomed.2023.107570.
+  IEEE. p. 3458–3468. doi:10.1109/iccv48922.2021.00346.                                Fei, Z., Fan, M., Zhu, L., Huang, J., Wei, X., Wei, X., 2023. Masked
+Benedetti, M., Lloyd, E., Sack, S., Fiorentini, M., 2019. Parameterized quan-             auto-encoders meet generative adversarial networks and beyond, in: 2023
+  tum circuits as machine learning models. Quantum Science and Technology                 IEEE/CVF Conference on Computer Vision and Pattern Recognition
+  4, 043001. doi:10.1088/2058-9565/ab4eb5.                                                (CVPR), IEEE. p. 24449–24459. doi:10.1109/cvpr52729.2023.02342.
+Berrimi, M., Hans, D., Jennane, R., 2024. A semi-supervised multiview-                 Ghosh, S., Kumar, S., Kumar, A., Verma, J., 2024. A closer look at consis-
+  mri network for the detection of knee osteoarthritis. Computerized Med-                 tency regularization for semi-supervised learning, in: Proceedings of the 7th
+  ical Imaging and Graphics 114, 102371. doi:10.1016/j.compmedimag.                       Joint International Conference on Data Science; Management of Data (11th
+  2024.102371.                                                                            ACM IKDD CODS and 29th COMAD), ACM. p. 10–17. doi:10.1145/
+Burton, W., Myers, C., Rullkoetter, P., 2020. Semi-supervised learning for au-            3632410.3632453.
+  tomatic segmentation of the knee from mri with convolutional neural net-             Goodfellow, I., Pouget-Abadie, J., Mirza, M., Xu, B., Warde-Farley, D., Ozair,
+  works. Computer Methods and Programs in Biomedicine 189, 105328.                        S., Courville, A., Bengio, Y., 2020. Generative adversarial networks. Com-
+  doi:10.1016/j.cmpb.2020.105328.                                                         munications of the ACM 63, 139–144. doi:10.1145/3422622.
+Cai, Y., Chen, H., Yang, X., Zhou, Y., Cheng, K.T., 2023. Dual-distribution            Gornale, S., Patravali, P., 2020. Digital knee x-ray images. doi:10.17632/
+  discrepancy with self-supervised refinement for anomaly detection in medi-              T9NDX37V5H.1.
+  cal images. Medical Image Analysis 86, 102794. doi:10.1016/j.media.                  Guo, J., Han, K., Wu, H., Tang, Y., Chen, X., Wang, Y., Xu, C.,
+  2023.102794.                                                                            2022. Cmt: Convolutional neural networks meet vision transformers, in:
+Chattopadhay, A., Sarkar, A., Howlader, P., Balasubramanian, V.N., 2018.                  2022 IEEE/CVF Conference on Computer Vision and Pattern Recognition
+  Grad-cam++: Generalized gradient-based visual explanations for deep con-                (CVPR), IEEE. p. 12165–12175. doi:10.1109/cvpr52688.2022.01186.
+  volutional networks, in: 2018 IEEE Winter Conference on Applications of              He, K., Chen, X., Xie, S., Li, Y., Dollar, P., Girshick, R., 2022. Masked au-
+  Computer Vision (WACV), IEEE. pp. 839–847. doi:10.1109/wacv.2018.                       toencoders are scalable vision learners, in: 2022 IEEE/CVF Conference on
+  00097.                                                                                  Computer Vision and Pattern Recognition (CVPR), IEEE. pp. 16000–16009.
+Chen, P., 2018. Knee osteoarthritis severity grading dataset. doi:0.17632/                doi:10.1109/cvpr52688.2022.01553.
+  56rmx5bjcr.1.                                                                        He, K., Zhang, X., Ren, S., Sun, J., 2016. Deep residual learning for image
+                                                                                          recognition, in: 2016 IEEE Conference on Computer Vision and Pattern
+
+                                                                                  21
+   Recognition (CVPR), IEEE. pp. 770–778. doi:10.1109/cvpr.2016.90.                         uation of class activation mapping for explainability: A novel metric and
+Hu, K., Wu, W., Li, W., Simic, M., Zomaya, A., Wang, Z., 2022. Adversar-                    experimental analysis, in: 2021 IEEE/CVF Conference on Computer Vi-
+   ial evolving neural network for longitudinal knee osteoarthritis prediction.             sion and Pattern Recognition Workshops (CVPRW), IEEE. pp. 2299–2304.
+   IEEE Transactions on Medical Imaging 41, 3207–3217. doi:10.1109/tmi.                     doi:10.1109/cvprw53098.2021.00260.
+   2022.3181060.                                                                         Prabhakar, C., Li, H., Yang, J., Shit, S., Wiestler, B., Menze, B., 2024.
+Huang, G., Liu, Z., Van Der Maaten, L., Weinberger, K.Q., 2017. Densely                     Vit-ae++: improving vision transformer autoencoder for self-supervised
+   connected convolutional networks, in: 2017 IEEE Conference on Computer                   medical image representations, in: Medical Imaging with Deep Learning,
+   Vision and Pattern Recognition (CVPR), IEEE. pp. 4700–4708. doi:10.                      PMLR. pp. 666–679. URL: https://proceedings.mlr.press/v227/
+   1109/cvpr.2017.243.                                                                      prabhakar24b/prabhakar24b.pdf. accessed 8 March 2025.
+Huang, S.C., Pareek, A., Jensen, M., Lungren, M.P., Yeung, S., Chaudhari,                Raghaw, C.S., Bhore, P.S., Rehman, M.Z.U., Kumar, N., 2024. An explain-
+   A.S., 2023. Self-supervised learning for medical image classification: a                 able contrastive-based dilated convolutional network with transformer for
+   systematic review and implementation guidelines. npj Digital Medicine 6.                 pediatric pneumonia detection. Applied Soft Computing 167, 112258.
+   doi:10.1038/s41746-023-00811-0.                                                          doi:10.1016/j.asoc.2024.112258.
+Huang, Z., Jin, X., Lu, C., Hou, Q., Cheng, M.M., Fu, D., Shen, X., Feng, J.,            Redmon, J., Farhadi, A., 2017. Yolo9000: Better, faster, stronger, in: 2017
+   2024. Contrastive masked autoencoders are stronger vision learners. IEEE                 IEEE Conference on Computer Vision and Pattern Recognition (CVPR),
+   Transactions on Pattern Analysis and Machine Intelligence 46, 2506–2517.                 IEEE. p. 6517–6525. doi:10.1109/cvpr.2017.690.
+   doi:10.1109/tpami.2023.3336525.                                                       Sam Chandra Bose, A., Srinivasan, C., Immaculate Joy, S., 2024. Optimized
+Huo, J., Ouyang, X., Si, L., Xuan, K., Wang, S., Yao, W., Liu, Y., Xu, J.,                  feature selection for enhanced accuracy in knee osteoarthritis detection and
+   Qian, D., Xue, Z., Wang, Q., Shen, D., Zhang, L., 2022. Automatic grad-                  severity classification with machine learning. Biomedical Signal Processing
+   ing assessments for knee mri cartilage defects via self-ensembling semi-                 and Control 97, 106670. doi:10.1016/j.bspc.2024.106670.
+   supervised learning with dual-consistency. Medical Image Analysis 80,                 Selvaraju, R.R., Cogswell, M., Das, A., Vedantam, R., Parikh, D., Batra, D.,
+   102508. doi:10.1016/j.media.2022.102508.                                                 2019. Grad-cam: Visual explanations from deep networks via gradient-
+Kellgren, J., Lawrence, J., 1957. Radiological assessment of osteo-arthrosis.               based localization. International Journal of Computer Vision 128, 336–359.
+   Annals of the Rheumatic Diseases 16, 494–502. doi:10.1136/ard.16.4.                      doi:10.1007/s11263-019-01228-7.
+   494.                                                                                  Shaw, D., 2024. Osteoarthritis. doi:10.21227/mszn-gr21.
+Laine, S., Aila, T., 2017. Temporal ensembling for semi-supervised learning,             Sohail, M., Azad, M.M., Kim, H.S., 2025. Knee osteoarthritis severity de-
+   in: 5th International Conference on Learning Representations, ICLR 2017                  tection using deep inception transfer learning. Computers in Biology and
+   - Conference Track Proceedings, pp. 1–17. URL: https://openreview.                       Medicine 186, 109641. doi:10.1016/j.compbiomed.2024.109641.
+   net/forum?id=BJ6oOfqge. accessed 8 March 2025.                                        Song, Z., Du, P., Yan, J., Li, K., Shou, J., Lai, M., Fan, Y., Xu, Y., 2024.
+Lindner, C., Thiagarajah, S., Wilkinson, J., Consortium, T., Wallis, G., Cootes,            Nucleus-aware self-supervised pretraining using unpaired image-to-image
+   T., 2013. Fully automatic segmentation of the proximal femur using ran-                  translation for histopathology images. IEEE Transactions on Medical Imag-
+   dom forest regression voting. IEEE Transactions on Medical Imaging 32,                   ing 43, 459–472. doi:10.1109/tmi.2023.3309971.
+   1462–1472. doi:10.1109/tmi.2013.2258030.                                              Tao, M., 2023. Osteoarthritis prediction. doi:10.21227/EWX7-B315.
+Lo, C.M., Lai, K.L., 2023. Deep learning-based assessment of knee sep-                   Tarvainen, A., Valpola, H., 2017. Mean teachers are better role models: Weight-
+   tic arthritis using transformer features in sonographic modalities. Com-                 averaged consistency targets improve semi-supervised deep learning results,
+   puter Methods and Programs in Biomedicine doi:10.1016/j.cmpb.2023.                       in: Proceedings of the 31st International Conference on Neural Information
+   107575.                                                                                  Processing Systems, p. 1195–1204.
+van der Maaten, L., Hinton, G., 2008. Visualizing data using t-sne. Journal              Teoh, Y.X., Othmani, A., Lai, K.W., Goh, S.L., Usman, J., 2023. Strati-
+   of Machine Learning Research 9. URL: https://jmlr.org/papers/                            fying knee osteoarthritis features through multitask deep hybrid learning:
+   volume9/vandermaaten08a/vandermaaten08a.pdf.                   accessed     8            Data from the osteoarthritis initiative. Computer Methods and Programs in
+   March 2025.                                                                              Biomedicine 242, 107807. doi:10.1016/j.cmpb.2023.107807.
+Manzari, O.N., Ahmadabadi, H., Kashiani, H., Shokouhi, S.B., Ayatollahi, A.,             Wang, F., Cao, Y., Lu, H., Pan, Y., Tao, Y., Huang, S., Wang, J., Huo, L., Wu,
+   2023. Medvit: A robust vision transformer for generalized medical image                  J., 2025. Osteoarthritis incidence trends globally, regionally, and nation-
+   classification. Computers in Biology and Medicine 157, 106791. doi:10.                   ally, 1990–2019: An age-period-cohort analysis. Musculoskeletal Care 23.
+   1016/j.compbiomed.2023.106791.                                                           doi:10.1002/msc.70045.
+Mari, A., Bromley, T.R., Izaac, J., Schuld, M., Killoran, N., 2020. Trans-               Wang, H., Wang, Z., Du, M., Yang, F., Zhang, Z., Ding, S., Mardziel, P., Hu,
+   fer learning in hybrid classical-quantum neural networks. Quantum 4, 340.                X., 2020. Score-cam: Score-weighted visual explanations for convolutional
+   doi:10.22331/q-2020-10-09-340.                                                           neural networks, in: 2020 IEEE/CVF Conference on Computer Vision and
+Nguyen, H.H., Blaschko, M.B., Saarakkala, S., Tiulpin, A., 2024. Clinically-                Pattern Recognition Workshops (CVPRW), IEEE. pp. 24–25. doi:10.1109/
+   inspired multi-agent transformers for disease trajectory forecasting from                cvprw50498.2020.00020.
+   multimodal data. IEEE Transactions on Medical Imaging 43, 529–541.                    Wang, Y., Song, D., Wang, W., Rao, S., Wang, X., Wang, M., 2022. Self-
+   doi:10.1109/tmi.2023.3312524.                                                            supervised learning and semi-supervised learning for multi-sequence medi-
+Nguyen, H.H., Saarakkala, S., Blaschko, M.B., Tiulpin, A., 2020. Semixup:                   cal image classification. Neurocomputing 513, 383–394. doi:10.1016/j.
+   In- and out-of-manifold regularization for deep semi-supervised knee os-                 neucom.2022.09.097.
+   teoarthritis severity grading from plain radiographs. IEEE Transactions on            Wu, W., Hu, K., Yue, W., Li, W., Simic, M., Li, C., Xiang, W., Wang, Z.,
+   Medical Imaging 39, 4346–4356. doi:10.1109/tmi.2020.3017007.                             2023. Self-supervised multimodal fusion network for knee osteoarthri-
+Ning, Z., Jiang, Z., Zhang, D., 2025. To combat multiclass imbalanced prob-                 tis severity grading, in: 2023 International Conference on Digital Im-
+   lems by aggregating evolutionary hierarchical classifiers. IEEE Transactions             age Computing: Techniques and Applications (DICTA), IEEE. p. 57–64.
+   on Neural Networks and Learning Systems 36, 5258–5272. doi:10.1109/                      doi:10.1109/dicta60407.2023.00017.
+   tnnls.2024.3383672.                                                                   Zagoruyko, S., Komodakis, N., 2016. Wide residual networks, in: Procedings
+Ovalle-Magallanes, E., Avina-Cervantes, J.G., Cruz-Aceves, I., Ruiz-Pinales,                of the British Machine Vision Conference 2016, British Machine Vision As-
+   J., 2022. Hybrid classical–quantum convolutional neural network for steno-               sociation. pp. 87.1–87.12. doi:10.5244/c.30.87.
+   sis detection in x-ray coronary angiography. Expert Systems with Applica-             Zhuang, Z., Si, L., Wang, S., Xuan, K., Ouyang, X., Zhan, Y., Xue, Z., Zhang,
+   tions 189, 116112. doi:10.1016/j.eswa.2021.116112.                                       L., Shen, D., Yao, W., Wang, Q., 2023. Knee cartilage defect assessment by
+Pan, J., Wu, Y., Tang, Z., Sun, K., Li, M., Sun, J., Liu, J., Tian, J., Shen, B.,           graph representation and surface convolution. IEEE Transactions on Medi-
+   2024. Automatic knee osteoarthritis severity grading based on x-ray images               cal Imaging 42, 368–379. doi:10.1109/tmi.2022.3206042.
+   using a hierarchical classification method. Arthritis Research & Therapy 26.
+   doi:10.1186/s13075-024-03416-4.
+Poppi, S., Cornia, M., Baraldi, L., Cucchiara, R., 2021. Revisiting the eval-
+
+
+                                                                                    22
+

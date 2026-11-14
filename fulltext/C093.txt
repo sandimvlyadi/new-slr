@@ -1,0 +1,1189 @@
+Applied Computer Systems
+ISSN 2255-8691 (online)
+2026, vol. 31, no. 1, pp. 187–205
+https://doi.org/10.2478/acss-2026-0016
+https://content.sciendo.com
+
+
+
+
+      Comparative Evaluation of Single CNN Models,
+    Test-Time Augmentation, and Weighted Ensembling
+       for Knee Osteoarthritis Severity Classification
+                                           Huseyin Coskun1*, Zekeriya Katılmış2
+              1,2
+                 Department of Computer Engineering, Kütahya Health Sciences University, Kütahya, Turkey
+                1,2
+                    Department of Medical Informatics, Kütahya Health Sciences University, Kütahya, Turkey
+
+
+   Abstract – Knee osteoarthritis (KOA) severity grading via the
+Kellgren–Lawrence (KL) system suffers from substantial inter-                                             I. INTRODUCTION
+rater variability, motivating automated deep learning approaches.
+This study presents a comparative framework combining                              Osteoarthritis (OA) is a chronic and progressive
+EfficientNet-B3 and ConvNeXt-Tiny, integrated through test-time                 musculoskeletal disorder characterised by the degeneration of
+augmentation (TTA), prediction averaging over augmented image                   articular cartilage and associated structural changes in the joint,
+views, and weighted probability-level ensembling, for four-class                including osteophyte formation and subchondral bone
+KOA severity classification (G0+G1, G2, G3, G4) from knee                       alterations [1], [2]. It is one of the most prevalent joint disorders
+radiographs. A total of 8260 X-ray images were processed through
+region-of-interest cropping, contrast-limited adaptive histogram                worldwide and represents an increasing public health burden,
+equalisation (CLAHE), and class-aware augmentation, with both                   particularly among older adults. According to reported
+learners trained independently using Focal Loss under class-                    epidemiological evidence, OA affects approximately 18.0 % of
+weighted and standard sampling. Contrary to the initial                         women and 9.6 % of men over 60 years of age [1]. Although
+hypothesis, ConvNeXt-Tiny alone achieved the highest or near-                   aging is one of the major risk factors, the development and
+highest accuracy (up to 83.8 %), while the weighted ensemble                    progression of OA are also associated with genetic
+(15 %/85 %) yielded indistinguishable, rather than superior,
+performance per bootstrap confidence intervals. TTA consistently
+                                                                                predisposition, obesity, previous joint injuries, and lifestyle-
+improved accuracy without requiring retraining or architectural                 related factors [3]. These factors, together with the increasing
+modification. Misclassifications were largely confined to adjacent              proportion of older individuals worldwide, have contributed to
+severity grades, yielding a quadratic weighted kappa of                         the growing clinical and socioeconomic impact of OA.
+approximately 0.857, indicating preservation of the ordinal KL                     Knee osteoarthritis (KOA) is one of the most common and
+grading structure – arguably more clinically relevant than raw                  clinically significant forms of OA, affecting the knee joint and
+accuracy. The Minimal (G2) class was the principal source of
+                                                                                consequently mobility and physical function. Recent evidence
+confusion      across   confusion-matrix,     receiver    operating
+characteristic (ROC), precision–recall (PR), t-distributed                      has reported a substantial global burden of KOA, while the
+stochastic neighbour embedding (t-SNE), and gradient-weighted                   disease burden is expected to increase substantially in the
+class activation mapping (Grad-CAM) analyses, reflecting genuine                coming decades [4]. KOA is commonly associated with pain,
+radiographic ambiguity rather than an architecture-specific                     stiffness, swelling, restricted joint movement, and progressive
+weakness. Beyond its clinical findings, the proposed dual-branch,               functional impairment, which can adversely affect patients’
+multi-resolution inference pipeline and TTA-based probability
+                                                                                daily activities and quality of life [2], [4]. In advanced cases,
+fusion offer a transferable design pattern for multimedia
+diagnostic decision-support systems reconciling heterogeneous                   the disease may result in substantial loss of mobility and
+visual encoders at inference time. These results suggest TTA yields             increased dependency. Therefore, accurate detection and
+more reliable returns than multi-model ensembling for this task.                severity assessment of KOA, particularly at earlier stages, are
+However, these findings are based on retrospective evaluation                   essential for appropriate clinical management and treatment
+using a single OAI-derived dataset, and their clinical applicability            planning.
+remains to be established through external validation and                          Radiographic imaging, particularly conventional X-ray
+prospective radiologist assessment.
+                                                                                imaging, remains one of the most widely used approaches for
+  Keywords – Deep learning, knee osteoarthritis, TTA, weighted                  KOA assessment because of its accessibility, relatively low
+ensemble, X-ray images.                                                         cost, and ability to reveal important structural abnormalities of
+                                                                                the knee joint [5], [6] Characteristic radiographic findings
+                                                                                include joint space narrowing (JSN), osteophyte formation,
+                                                                                subchondral sclerosis, and cystic changes [5], [6]. However,
+                                                                                radiographic abnormalities do not always correspond directly to
+
+Corresponding author’s e-mail: huseyin.coskun@ksbu.edu.tr
+*
+
+Article received 2026-08-20; accepted 2026-10-12
+
+©2026 Author(s). This is an open access article licensed under the Creative Commons Attribution License
+(http://creativecommons.org/licenses/by/4.0).
+                                                                                                                                                187
+                                         Applied Computer Systems
+_________________________________________________________________________________________________2026/31
+
+the severity of pain or functional impairment, and subtle                strategy under consistent experimental conditions and
+structural changes can be difficult to identify, particularly            examines their accuracy–complexity trade-offs.
+during the early stages of the disease [1], [6]. The assessment        • A comprehensive ordinal and error-oriented evaluation
+of KOA severity is commonly performed using the Kellgren–                framework is introduced for KOA severity classification.
+Lawrence (KL) grading system, which categorises radiographs              In addition to conventional classification metrics, the
+into five ordinal grades ranging from grade 0 (no radiographic           study jointly considers quadratic weighted kappa,
+evidence of OA) to grade 4 (severe OA) [7]. Despite its                  confusion patterns, ROC and precision–recall
+widespread use, KL grading is subject to inter-rater variability         characteristics, bootstrap confidence intervals, t-SNE
+because the radiographic differences between adjacent grades             feature representations, and Grad-CAM visualisations to
+can be subtle and their interpretation may depend on the                 assess severity ordering, class ambiguity, and model
+experience of the evaluating physician [8], [9]. This limitation         decision behaviour.
+is particularly important for distinguishing early or borderline       • The study provides empirical insights into the practical
+cases and may affect the consistency of clinical assessment.             limitations and benefits of multi-model inference for
+   The limitations of conventional radiographic assessment               radiographic KOA assessment. Particular attention is
+have encouraged the development of computer-aided                        given to the selection of an appropriate severity-class
+diagnostic approaches based on machine learning (ML) and                 formulation, the ambiguity of early-stage radiographic
+deep learning (DL). In particular, supervised learning                   findings, and the balance between predictive performance,
+approaches can provide objective decision-support mechanisms             inference robustness, and computational cost.
+for complex diagnostic tasks [10], while automated image
+analysis methods have demonstrated potential for KOA                                     II. LITERATURE REVIEW
+detection and grading [9]. These computational approaches can           Knee osteoarthritis (KOA) severity classification from
+reduce dependence on manually designed image features and            radiographic images has increasingly benefited from deep
+facilitate rapid, reproducible assessment of radiographic            learning and hybrid machine learning approaches, particularly
+abnormalities. Nevertheless, the classification of multiple KL       due to the subjectivity and inter-rater variability associated with
+grades remains challenging because of class imbalance,               conventional Kellgren–Lawrence (KL) grading. Recent studies
+variations in image quality, and the subtle visual differences       have focused not only on improving classification accuracy but
+between neighbouring severity levels.                                also on investigating the effects of pre-processing, class
+   Despite the progress achieved by individual CNN                   configuration, transfer learning, and data quality on automated
+architectures and hybrid learning approaches, further                KOA assessment.
+investigation is required to develop reliable multiclass KOA            In this context, several studies have investigated the
+classification systems that effectively combine image pre-           automated detection and severity classification of KOA using
+processing,      relevant       anatomical     information,    and   the Knee Osteoarthritis Severity Grading Dataset, originally
+complementary deep feature representations. In particular,           published through Mendeley Data [11]. Studies based on this
+integrating region-of-interest information with contrast             dataset and addressing the multiclass KL grading problem are
+enhancement and combining complementary deep learning                reviewed below, with particular emphasis on their
+architectures may provide a more robust representation of            methodological approaches and reported classification
+radiographic patterns associated with different KOA severity         performance.
+levels. Therefore, this study investigates a weighted ensemble          Ahmed and Mstafa [12] proposed a hybrid deep learning and
+deep learning framework for automated KOA severity                   machine learning framework, termed Deep Hybrid Learning
+classification from X-ray images, incorporating ROI-based pre-       (DHL), for automated KOA severity classification from X-ray
+processing, contrast enhancement, data augmentation, and             images. Their study investigated both binary and multiclass
+complementary CNN architectures. The proposed framework is           classification and examined how the number of severity classes
+evaluated against representative approaches reported in the          affected model performance. In the first framework, DHL-I, a
+literature to assess its effectiveness for multiclass KOA severity   pre-trained convolutional neural network (CNN) was employed
+classification. The main contributions of this study are             for feature extraction, followed by principal component
+summarised as follows:                                               analysis (PCA) for dimensionality reduction and a support
+   • A comparative deep learning framework is developed for          vector machine (SVM) for final classification. In the second
+      four-class knee osteoarthritis severity classification,        framework, DHL-II, transfer learning was employed by fine-
+      integrating EfficientNet-B3 and ConvNeXt-Tiny with             tuning the pre-trained CNN for different class configurations.
+      ROI-based pre-processing, CLAHE enhancement, class-            The experiments were conducted using 9786 X-ray images
+      aware augmentation, test-time augmentation, and                obtained from the OAI dataset. The authors reported accuracies
+      probability-level fusion.                                      of 88 % for four-class, 87 % for three-class, and 90.8 % for two-
+   • A systematic comparison of single-model inference, test-        class classification. Their findings demonstrated that reducing
+      time augmentation (TTA), and weighted probability-level        the number of severity categories substantially improved
+      ensembling is provided. Rather than assuming that              classification performance, with binary classification achieving
+      architectural ensembling is inherently beneficial, the study   the highest accuracy. The study also emphasised the potential
+      investigates the relative contribution of each inference
+
+
+
+                                                                                                                                   188
+                                         Applied Computer Systems
+_________________________________________________________________________________________________2026/31
+
+of hybrid DL–ML frameworks for supporting early KOA                         82.07 % for five-class KL grading, substantially outperforming
+diagnosis and reducing the progression of the disease.                      the previously reported 69 % accuracy obtained using
+   Mohammed et al. [13] investigated the effectiveness of                   ResNet101 on the same dataset. The class-wise analysis has
+several pre-trained deep neural network architectures for KOA               indicated strong discrimination between healthy and severe
+detection and severity classification using pre-processed X-ray             KOA cases, whereas the KL Grade 1 category has remained
+images. Their approach evaluated six pre-trained models,                    considerably more challenging due to its ambiguous
+namely VGG16, VGG19, ResNet101, MobileNetV2,                                radiographic characteristics. These findings demonstrate that
+InceptionResNetV2, and DenseNet121. The authors used the                    improving data quality and correcting label inconsistencies can
+OAI-based dataset containing 9786 images and introduced a                   be as important as selecting a more advanced network
+pre-processing stage involving knee-region segmentation and                 architecture for KOA severity classification.
+image equalisation to improve the visibility of diagnostically                 Overall, these studies demonstrate that automated KOA
+relevant regions. Three experimental datasets were                          classification performance is strongly influenced by the number
+subsequently constructed: a five-class dataset corresponding to             of classes, image pre-processing, network architecture, transfer
+the original KL grades, a binary dataset for KOA detection, and             learning strategy, and data quality. Ahmed and Mstafa [12]
+a three-class dataset for severity classification. Among the                showed the effectiveness of combining deep feature extraction
+evaluated architectures, ResNet101 achieved the best                        with PCA and SVM, particularly for reduced-class
+performance, obtaining accuracies of 69 % for five-class                    classification. Mohammed et al. [13] demonstrated that pre-
+classification, 83 % for binary classification, and 89 % for                trained CNN architectures can provide strong performance after
+three-class classification. The results demonstrated that the               segmentation and image equalization, while also showing the
+classification task became considerably easier when adjacent or             difficulty of five-class KL classification. Momenpour and Abu
+clinically related classes were combined. The authors therefore             Mallouh [14], in contrast, demonstrated the importance of data-
+suggested a multistage diagnostic strategy in which KOA                     centric processing through outlier removal and CleanLab-based
+presence is first determined, and disease severity is                       label correction, achieving 82.07 % accuracy for the
+subsequently classified.                                                    challenging five-class problem. Despite these advances, the
+   More recently, Momenpour and Abu Mallouh [14] have                       comparatively lower performance observed in five-class
+addressed the five-class KOA severity classification problem                classification and the persistent difficulty of distinguishing
+from a data-centric perspective. Unlike approaches that                     neighbouring KL grades indicate that further improvements in
+primarily focus on changing the network architecture, their                 pre-processing, feature representation, and model combination
+study has emphasised improving the quality of the training data             remain necessary. These observations provide the motivation
+before model optimisation. An EfficientNetB5 model initialised              for investigating an alternative framework that integrates
+through ImageNet-based transfer learning has been trained                   effective image pre-processing, region-of-interest information,
+using 9786 knee X-ray images. The pre-processing pipeline has               data augmentation, and ensemble deep learning models for
+incorporated outlier removal and, importantly, CleanLab-based               more reliable KOA severity classification. In order to overcome
+label correction to identify and correct potentially mislabelled            these shortcomings in the literature, the process carried out in
+samples. Following this data-cleaning process, the                          this study is presented in Fig. 1.
+EfficientNetB5 model has achieved an overall accuracy of
+
+
+
+
+             Fig. 1. Schematic overview of the dual-branch weighted ensemble pipeline with Grad-CAM and confidence interval evaluation.
+
+
+
+
+                                                                                                                                          189
+                                         Applied Computer Systems
+_________________________________________________________________________________________________2026/31
+
+                    III. MATERIAL AND METHODS                                grade 2 (minimal), grade 3 (moderate), and grade 4 (severe). All
+                                                                             images had a spatial resolution of 224×224 pixels.
+   A. Dataset
+                                                                                The dataset exhibits a notable class imbalance.
+   The experiments were conducted using the publicly available               Approximately 39.38 % of the images belong to grade 0,
+Osteoarthritis Initiative (OAI) knee X-ray dataset. The OAI is a             18.1 % to grade 1, 26.33 % to grade 2, 13.15 % to grade 3, and
+large-scale, multicentre, longitudinal study designed to                     slightly more than 3.04 % to grade 4 (Table II). This
+investigate the development and progression of knee                          imbalanced distribution reflects the heterogeneous severity
+osteoarthritis.                                                              distribution of KOA and represents an important consideration
+   The dataset with Severity Grading is a labelled medical                   in the development and evaluation of multiclass classification
+image dataset designed to automatically determine the severity               models. The dataset was selected because it provides a
+of osteoarthritis from X-ray images of the knee joint. Its                   relatively large number of labelled knee X-ray images covering
+primary task is to classify images into five grades (0–4)                    all five KL severity grades and was used extensively in previous
+according to the Kellgren–Lawrence (KL) grading system                       KOA classification studies [11], [12].
+presented in Table I [11].
+                                                                                B. Data Pre-processing and Augmentation
+                                TABLE I
+               KELLGREN–LAWRENCE GRADING SYSTEM                                 Before being presented to the deep learning models, the knee
+                                                                             X-ray images underwent a standardised pre-processing
+ KL Grade     Class             Description
+                                Healthy knee without signs of
+                                                                             procedure designed to emphasise the anatomically relevant
+ 0            Healthy                                                        knee region and improve the visibility of radiographic patterns
+                                osteoarthritis
+ 1            Doubtful
+                                Suspected joint space narrowing and          associated with osteoarthritis. First, each RGB image was
+                                possible osteophytic protrusions             cropped to a predefined knee region of interest (ROI), removing
+                                Significant osteophytes and possible joint
+ 2            Minimal
+                                space narrowing                              peripheral image areas that were not directly relevant to KOA
+ 3            Moderate
+                                Multiple osteophytes, significant joint      assessment. Specifically, the vertical range from 12 % to 88 %
+                                space narrowing, and mild sclerosis          of the image height and the horizontal range from 8 % to 92 %
+                                Large osteophytes, advanced joint space
+ 4            Severe
+                                narrowing, and significant sclerosis         of the image width was retained. Following ROI extraction, the
+                                                                             image was converted to grayscale and contrast enhancement
+   The original OAI cohort included 4796 participants aged                   was performed using Contrast Limited Adaptive Histogram
+45–79 years, with radiographic assessments and Kellgren–                     Equalisation (CLAHE). CLAHE was applied with a clip limit
+Lawrence (KL) grades available for both knees. The                           of 2.0 and an 8×8 tile grid [15]. The enhanced grayscale image
+radiographic data include bilateral posterior–anterior (PA)                  was subsequently converted back to three channels to maintain
+fixed-flexion knee X-ray images. The original dataset is                     compatibility with the pre-trained CNN architectures.
+publicly accessible through the OAI data repository [11]. It                    To address the ambiguity between normal and doubtful
+includes radiographic X-ray images of the knee joint. The                    radiographic findings, the original five KL grades were
+images typically show a cropped view of either the right or left             reorganised into four classification categories: G0+G1, G2, G3,
+knee joint area. In studies, images are mostly reported as                   and G4. Class imbalance was addressed separately through
+224×224 pixels, 8-bit grayscale. The number of images per                    weighted random sampling during model training. Grades 0 and
+class in the dataset is presented in Table II.                               1 were combined because of their similar radiographic
+                                                                             characteristics and the ambiguity commonly associated with
+                                TABLE II
+                                                                             distinguishing normal and doubtful findings. Grades 2, 3, and 4
+                      DATASET CLASS DISTRIBUTION
+                                                                             were retained as individual categories representing minimal,
+ Section    Train      Validation    Test     Sum       Percentage (%)       moderate, and severe KOA, respectively.
+ Grade 0    2286       328           639       3253     39.38                   This four-class formulation was used consistently for both
+ Grade 1    1046       153           296       1495     18.1
+                                                                             individual models and the ensemble framework. It should be
+                                                                             emphasised that this grouping reformulates the original five-
+ Grade 2    1516       212           447       2175     26.33                grade KL classification problem into a four-category task. In
+ Grade 3    757        106           223      1086      13.15                particular, the model is not required to distinguish KL0 from
+ Grade 4    173        27            51       251       3.04
+ Sum        5778       826           1656     8260      100                  KL1, thereby removing one of the subtle decision boundaries of
+                                                                             the original grading system. Consequently, the performance
+   For the present study, the Knee Osteoarthritis Severity                   reported for the present four-class formulation should not be
+Grading Dataset, derived from the OAI and subsequently                       interpreted as directly equivalent to, or directly compared with,
+distributed through Chen’s dataset [11], was used. To ensure                 performance obtained for full five-class KL grading. As a
+that each image had a corresponding severity label, only X-ray               supplementary experiment, a three-class configuration
+images for which KL grades were available for the respective                 comprising G0+G1, G2+G3, and G4 was evaluated using the
+knee were retained. Following this selection, a total of 8.260               standard-training ensemble with fixed fusion weights of
+knee X-ray images were included in the experiments (Table II).               0.15/0.85. This experiment was included to examine the effect
+The images were categorised into five severity levels according              of merging adjacent severity categories and was not considered
+to the KL grading system: grade 0 (healthy), grade 1 (doubtful),             directly equivalent to the primary four-class classification task.
+
+
+
+
+                                                                                                                                           190
+                                         Applied Computer Systems
+_________________________________________________________________________________________________2026/31
+
+   Data augmentation was applied only to the training data. For      subsequently fine-tuned for the four-class KOA classification
+both architectures, horizontal flipping (p = 0.5), sharpening        task (Table III).
+(p = 0.3), random brightness and contrast adjustment (p = 0.5),         EfficientNet-B3 was selected as the first base learner because
+gamma         adjustment      (p = 0.3),      shift-scale-rotation   of its compound scaling strategy, which jointly considered
+transformation (p = 0.5), and coarse dropout (p = 0.4) were          network depth, width, and input resolution [19]. In the
+employed [16], [17]. The models used different input                 implemented model, the pre-trained EfficientNet-B3
+resolutions: 384×384 pixels for EfficientNet-B3 and 288×288          architecture was adapted to produce four output classes. A
+pixels for ConvNeXt-Tiny. Finally, pixel values were                 dropout rate of 0.4 and a drop-path rate of 0.2 were employed
+normalised using the ImageNet mean and standard deviation            to reduce overfitting. ConvNeXt-Tiny was employed as the
+values before conversion to tensors. For each architecture,          second base learner to provide a complementary feature
+separate training runs were conducted under Standard and             representation [20]. The pre-trained model was modified by
+Class-weighted training regimes, resulting in four                   replacing its original classifier with a dropout layer followed by
+independently trained model configurations. In this study, the       a fully connected layer producing four class logits. The dropout
+term “class-weighted training” refers specifically to inverse-       probability was set to 0.4. The two architectures were
+frequency weighted random sampling rather than the                   intentionally maintained as independent learners and were
+application of additional class-dependent weights to the loss        trained separately. Their predictions were subsequently
+function. The standard training regime used conventional             combined at the probability level through the proposed
+sampling without class-dependent sample weights, whereas the         weighted ensemble mechanism.
+class-weighted         training         regime          employed
+                                                                        D. Model Training and Loss Function
+WeightedRandomSampler to increase the sampling probability
+of minority-class observations. Both regimes used the same              Both models were trained using the AdamW optimiser with
+model architectures, Focal Loss objective, and training              an initial learning rate of 1 × 10−4 and a weight decay
+configuration. The validation and test sets remained unchanged       coefficient of 1 × 10−2 [21]. Training was performed for 15
+in both regimes.                                                     epochs with a batch size of 16. The learning rate was
+   Because of the substantial imbalance among the four target        dynamically reduced using a cosine annealing schedule [22],
+classes, a WeightedRandomSampler was employed during                 with Tmax = 15 and a minimum learning rate of 1 × 10−6. The
+training. For each class c, a sampling weight inversely              model state corresponding to the highest validation accuracy
+proportional to its number of training samples was assigned as       was saved separately for each architecture and subsequently
+                                                                     used for test-time prediction.
+                                      1                                 To address the class imbalance and focus the optimisation on
+                            𝑤𝑤𝑐𝑐 =        ,                          difficult samples, Focal Loss was used as the training
+                                     𝑁𝑁𝑐𝑐
+                                                                     objective [23]. For a sample with true class y, the loss is defined
+where Nc denotes the number of training samples belonging to         as
+class c. Each training sample was then assigned the weight of
+its corresponding class, and sampling was performed with                                    ℒFL = −α(1 − 𝑝𝑝𝑡𝑡 )γ log (𝑝𝑝𝑡𝑡 ),
+replacement. This strategy increased the probability of selecting
+samples from minority classes during training [18]. It is            where pt denotes the predicted probability of the true class,
+important to emphasise that the WeightedRandomSampler was            α = 1, and the focusing parameter was set to γ = 2. The factor
+applied exclusively to the training data loader. Neither the         (1−pt)γ reduces the contribution of easily classified samples and
+validation set nor the test set were resampled or reweighted at      increases the relative contribution of difficult examples during
+any stage; both retained their original, naturally imbalanced        optimisation.
+class distribution as summarised in Table II. Consequently, the         The term (1−pt)γ drives the loss contribution of samples
+class-weighted training strategy influenced only the frequency       correctly classified with high confidence (pt → 1) toward zero,
+with which minority-class samples were presented to the model        while retaining a relatively high contribution from misclassified
+during gradient updates, without altering the composition or         or ambiguous samples. This property enables clinically
+size of the evaluation datasets. This design ensures that the        overlapping and ambiguous cases, particularly those at the G1–
+reported performance metrics for both the class-weighted and         G2 and G2–G3 boundaries, to receive greater weight during
+standard training models reflect their generalisation ability        model training. The complete set of model and training
+under the same, unmodified, clinically representative test           parameters used for both architectures is summarised in
+distribution, thereby avoiding any risk of evaluation bias arising   Table III.
+from artificial class rebalancing at inference time.                                                   TABLE III
+                                                                                        MODEL AND TRAINING PARAMETERS
+  C. Deep Learning Models
+                                                                      Parameter                 EfficientNet-B3            ConvNeXt-Tiny
+  Two complementary pre-trained convolutional neural                  Pre-trained weights       Yes                        Yes
+network architectures, EfficientNet-B3 and ConvNeXt-Tiny,             Number of output          4                          4
+were employed as the base learners of the proposed framework.         classes
+                                                                      Input size                384×384                    288×288
+Both networks were initialised using pre-trained weights and          Dropout                   0.40                       0.40
+                                                                      Drop path                 0.20                       –
+
+
+
+
+                                                                                                                                           191
+                                         Applied Computer Systems
+_________________________________________________________________________________________________2026/31
+
+ Optimizer               AdamW                        AdamW                 optimisation and were not adjusted according to test-set
+ Initial learning rate   1 × 10−4                     1 × 10−4              performance. For comparison, an additional fixed configuration
+ Weight decay            1 × 10−2                     1 × 10−2
+ LR scheduler            Cosine                       Cosine                (0.55 for EfficientNet-B3 and 0.45 for ConvNeXt-Tiny) was
+                         Annealing                    Annealing             also evaluated. These two configurations represent a limited
+ Tmax                    15                           15                    comparison of alternative fusion settings rather than a
+ Minimum LR              1 × 10−6                     1 × 10−6
+ Epochs                  15                           15
+                                                                            systematic search for optimal ensemble weights. In both
+ Batch size              16                           16                    configurations, the coefficients were applied exclusively during
+ Loss function           Focal Loss                   Focal Loss            inference to combine the TTA-averaged softmax probabilities
+ Focal γ                 2.0                          2.0                   of the independently trained models. Therefore, the fusion
+ Focal α                 1.0                          1.0
+ Sampling strategy       Standard/                    Standard/             weights did not affect model training, gradient updates, or the
+                         WeightedRandom               WeightedRandom        class-weighted sampling procedure.
+                         Sampler                      Sampler
+ Note: Each architecture was trained separately under Standard and Class-      F. Test-Time Augmentation (TTA)
+ weighted training regimes. WeightedRandomSampler was applied only in
+                                                                               To enhance the generalisation performance of the trained
+ the Class-weighted regime.
+                                                                            models without requiring additional training or architectural
+                                                                            modification, Test-Time Augmentation (TTA) was employed at
+   E. Weighted Ensemble Framework                                           the inference stage. For a given input tensor x, the model fθ was
+   The final classification was obtained using a weighted                   queried twice: once on the original image and once on its
+probability-level ensemble of EfficientNet-B3 and ConvNeXt-                 horizontally flipped counterpart, obtained via a flip along the
+Tiny [24], [25]. Rather than directly combining the discrete                width dimension:
+class labels produced by the two networks, the softmax
+probability distributions generated by the models were first                                    𝑥𝑥flip = flip(𝑥𝑥, dim = 3).
+obtained. To improve prediction stability, test-time
+augmentation (TTA) was also employed. For each test image,                    Each variant was independently passed through the model,
+the original image and its horizontally flipped version were                and a softmax operation was applied to the resulting logits to
+separately passed through each model, and their softmax                     obtain two class probability distributions:
+probability vectors were averaged [26]:
+                                                                              𝑝𝑝orig = softmax�𝑓𝑓θ (𝑥𝑥)�,         𝑝𝑝flip = softmax �𝑓𝑓θ �𝑥𝑥flip ��.
+          1
+    𝐩𝐩𝑚𝑚 = [Softmax (𝑓𝑓𝑚𝑚 (𝑥𝑥)) + Softmax (𝑓𝑓𝑚𝑚 (Flip (𝑥𝑥)))],
+          2                                                                    The final TTA-aggregated probability distribution �p was
+                                                                            computed as the simple arithmetic mean of these two
+Where fm denotes the output of model m. The final ensemble                  distributions:
+probability vector was then calculated as
+                                                                                                            𝑝𝑝orig + 𝑝𝑝flip
+                                                                                                    𝑝𝑝̅ =                   .
+                         𝐩𝐩ens = 𝑤𝑤𝐸𝐸 𝐩𝐩𝐸𝐸 + 𝑤𝑤𝐶𝐶 𝐩𝐩𝐶𝐶 ,                                                           2
+
+where 𝐩𝐩𝐸𝐸 and 𝐩𝐩𝐶𝐶 represent the TTA-averaged probability                     This horizontal-flip-based augmentation was selected as a
+vectors of EfficientNet-B3 and ConvNeXt-Tiny, respectively.                 clinically valid, label-preserving strategy, given the anatomical
+The ensemble weights were set to                                            left-right symmetry of knee radiographs; combining predictions
+                                                                            from both orientations allows the model to reach a decision that
+                  𝑤𝑤𝐸𝐸 = 0.55, 0.15, 𝑤𝑤𝐶𝐶 = 0.45, 0.85,                     is partially invariant to orientation-related bias, without
+                                                                            requiring more computationally expensive augmentation
+with wE + wC = 1. Thus, the ConvNeXt-Tiny prediction                        schemes.
+contributed 85 % and the EfficientNet-B3 prediction                            TTA was applied independently to both base learners,
+contributed 15 % to the final decision. The predicted class was             EfficientNet-B3 and ConvNeXt Tiny, each receiving its own
+determined according to the maximum value of the resulting                  resolution-specific pre-processed input (384×384 for
+ensemble probability vector:                                                EfficientNet-B3, 288×288 for ConvNeXt Tiny) generated in
+                                                                            parallel for every test sample via a dedicated dual-branch
+                         𝑦𝑦� = arg max 𝑝𝑝ens,𝑐𝑐 .                           dataset structure (BatchedEnsembleDataset). For each test
+                                         𝑐𝑐
+                                                                            image, this structure produced two pre-processed tensors, xeff
+   The ensemble framework employed fixed probability-level                  and xconv, sharing the same ROI-cropped and CLAHE-enhanced
+fusion weights rather than learned coefficients. The primary                source image but resized and normalised according to each
+weighting configuration was specified as 0.15 for EfficientNet-             backbone’s respective input requirements.
+B3 and 0.85 for ConvNeXt-Tiny before examining the test-set                    The TTA-averaged probability distribution of each model
+results. This asymmetric configuration was heuristically                    was obtained as:
+defined to assign greater influence to ConvNeXt-Tiny while
+retaining a smaller contribution from EfficientNet-B3. The                         𝑝𝑝̅EffNet = TTA(𝑓𝑓EffNet, 𝑥𝑥eff ), 𝑝𝑝̅ConvNeXt
+coefficients were not obtained through validation-based                                             = TTA(𝑓𝑓ConvNeXt, 𝑥𝑥conv ).
+
+
+
+
+                                                                                                                                                 192
+                                         Applied Computer Systems
+_________________________________________________________________________________________________2026/31
+
+  The final ensemble probability distribution was then                    evaluated models. The final block of the last convolutional
+constructed as a weighted linear combination of the two TTA-              stage, features [7] [−1].block, was selected as the target layer,
+averaged outputs:                                                         because it encodes the most abstract and class-discriminative
+                                                                          semantic information while still retaining sufficient spatial
+  𝑝𝑝ensemble = 𝑤𝑤EffNet ⋅ 𝑝𝑝̅EffNet + 𝑤𝑤ConvNeXt ⋅ 𝑝𝑝̅ConvNeXt ,          resolution. The activation maps 𝐴𝐴𝑘𝑘 ∈ ℝ𝑢𝑢×𝑣𝑣 (where k denotes
+                                                                          the channel index and u×v the spatial dimensions) obtained
+where the fusion coefficients are fixed and satisfy the constraint        during the forward pass, together with the gradients obtained
+that their sum equals one. As described in the Weighted                   during the backward pass, were captured via PyTorch’s
+Ensemble Framework section, the primary coefficients                      forward_hook and full_backward_hook mechanisms.
+(0.15/0.85) were specified before examining test-set                         The partial derivative of the output score yc for the target
+performance and were not determined through a test-set-based              class c with respect to the k-th channel activation of the target
+optimisation procedure.                                                   layer was computed, and the resulting gradients were global-
+   The final predicted class ŷ for each test sample was obtained         average-pooled over the spatial dimensions to obtain the
+by selecting the class associated with the highest probability in         importance weight α𝑐𝑐𝑘𝑘 , representing each channel’s contribution
+the ensemble distribution:                                                to the classification decision:
+                     𝑦𝑦ˆ = arg max; 𝑝𝑝ensemble,𝑐𝑐 .                                                                𝑢𝑢   𝑣𝑣
+                                   𝑐𝑐                                                                          1        ∂𝑦𝑦 𝑐𝑐
+                                                                                                   α𝑐𝑐𝑘𝑘 =           � � 𝑘𝑘 .
+   By combining test-time augmentation at the individual model                                               𝑢𝑢 ⋅ 𝑣𝑣    ∂𝐴𝐴𝑖𝑖𝑖𝑖
+                                                                                                                  𝑖𝑖=1 𝑗𝑗=1
+level with weighted probability fusion at the ensemble level,
+this pipeline leverages complementary sources of predictive                  The classification score yc was taken as the pre-softmax logit
+stability: TTA reduces single-view-induced variance for each              corresponding to the target class, and backpropagation was
+backbone, while the weighted ensemble exploits the differing              triggered using a one-hot vector in which the position
+architectural inductive biases of EfficientNet-B3 and                     corresponding to the target class was set to 1 and all other
+ConvNeXt Tiny, jointly contributing to the overall robustness             positions to 0.
+of the four-class KL severity classification. The parameter of               The computed channel weights α𝑐𝑐𝑘𝑘 were used to form a
+ensemble approach is given in Table IV.                                   weighted linear combination of the activation maps Ak,
+                                                                          followed by a ReLU activation function to retain only the
+                              TABLE IV
+                                                                          regions that positively influence the classification decision:
+                   ENSEMBLE PARAMETERS WITH TTA
+ Parameter                  Setting
+ Ensemble type              Weighted probability-level ensemble              𝐿𝐿𝑐𝑐Grad-CAM = ReLU �� α𝑐𝑐𝑘𝑘 𝐴𝐴𝑘𝑘 � = max �0, � α𝑐𝑐𝑘𝑘 𝐴𝐴𝑘𝑘 �.
+ Base model 1               EfficientNet-B3                                                                  𝑘𝑘                        𝑘𝑘
+
+ Base model 2               ConvNeXt-Tiny
+                                                                             The ReLU operation retains positive contributions to the
+ EfficientNet-B3 weight     0.15 (15 %)                                   target-class score while suppressing negative contributions. The
+ ConvNeXt-Tiny weight       0.85 (85 %)                                   resulting activation map provides a qualitative visualisation of
+ Weight sum                 1.00                                          model sensitivity but does not independently establish the
+ TTA                        Horizontal flip                               anatomical or clinical relevance of the highlighted regions.
+                                                                             The raw map 𝐿𝐿𝑐𝑐Grad-CAM was first shifted to a zero baseline by
+ TTA prediction             Average of original + flipped probabilities
+                                                                          subtracting its minimum value, and then normalised to the [0,1]
+ Final decision             arg max (pens)
+                                                                          range by dividing by its maximum value:
+
+   G. Model Explainability via Class Activation Mapping (Grad-                                     𝐿𝐿𝑐𝑐Grad-CAM − min(𝐿𝐿𝑐𝑐Grad-CAM )
+                                                                                        𝐿𝐿ˆ 𝑐𝑐 =                                       .
+      CAM)                                                                                              max�𝐿𝐿𝑐𝑐Grad-CAM � + ϵ
+   Grad-CAM was employed to qualitatively visualise the
+image regions associated with the classification outputs of                 This low-resolution map was then upsampled to the model’s
+ConvNeXt-Tiny. The resulting activation maps were examined                input resolution (288×288 pixels) using bilinear interpolation,
+to identify responses overlapping the tibiofemoral joint region           converted into an RGB heatmap using the JET colourmap, and
+or extending toward peripheral image areas [27]. This method              overlaid onto the CLAHE-pre-processed original image via
+generates a heatmap that highlights the regions of the input              weighted alpha blending:
+image most influential to the classification decision by
+                                                                                    𝐼𝐼overlay = 0.6 ⋅ 𝐼𝐼preprocessed + 0.4 ⋅ 𝐻𝐻color ,
+weighting the feature maps of the last convolutional layer
+according to the gradients computed with respect to the target
+                                                                          where Ipreprocessed denotes the CLAHE-enhanced knee
+class output score.
+                                                                          radiograph and Hcolor denotes the colour-mapped, normalised
+   Visualisation was performed on the ConvNeXt Tiny
+                                                                          activation map.
+architecture, which achieved the highest overall accuracy and
+                                                                            For qualitative visualisation, one representative test-set
+exhibited the most stable learning dynamics among the
+                                                                          sample from each of the four KL severity categories (G0+G1,
+
+
+
+                                                                                                                                            193
+                                         Applied Computer Systems
+_________________________________________________________________________________________________2026/31
+
+G2, G3, and G4) was selected separately for the standard-              Acc1 , Acc2 , … , AccB . Iterations in which the resampled subset
+sampling and weighted-sampling ConvNeXt-Tiny models,                   represented only a single class (a degenerate case, precluding a
+resulting in eight illustrative examples. Each selected sample         meaningful accuracy computation) were excluded from the
+was subjected to knee-specific region-of-interest (ROI)                distribution.
+cropping and CLAHE-based contrast enhancement before                      The lower and upper bounds corresponding to the 95 %
+being processed by the corresponding trained model to obtain           confidence level were determined using the percentile method
+the predicted class and Grad-CAM activation map. The original          applied to the bootstrap distribution. With a confidence level of
+ROI-cropped radiograph, CLAHE-enhanced image, and Grad-                CI = 95, the two-tailed significance level is defined as:
+CAM overlay were displayed together. The activation maps                                           100 − CI
+were qualitatively examined to identify highlighted regions                                  α=             = 2.5,
+                                                                                                      2
+overlapping the tibiofemoral joint and those extending toward
+peripheral or potentially non-anatomical image areas. The              and the confidence interval was computed as the α-th and
+Grad-CAM visualizations were interpreted alongside                     (100−α)-th percentiles of the bootstrap distribution:
+quantitative performance metrics, including class-wise recall,
+AUC, and confusion matrices, to provide additional context for                       CI95 = [, P2.5 (Acc𝑏𝑏 ), P97.5 (Acc𝑏𝑏 ), ].
+model behaviour. However, this qualitative analysis was not
+                                                                         As a point estimate, the mean of the bootstrap distribution
+intended to establish the clinical reliability or anatomical
+                                                                       was reported:
+validity of the model’s predictions.
+                                                                                                           𝐵𝐵
+     H. t-SNE Visualisation of the Feature Space                                                    1
+                                                                                               Acc = � A cc𝑏𝑏 .
+     To qualitatively assess the discriminative capacity of the                                     𝐵𝐵
+                                                                                                          𝑏𝑏=1
+trained models’ high-dimensional feature representations
+across the four KL severity classes, t-Distributed Stochastic             This procedure was applied independently to three models:
+Neighbour Embedding (t-SNE) was employed for                           (i) the TTA (Test-Time Augmentation)-based predictions of
+dimensionality reduction and visualisation. t-SNE is a non-            EfficientNet-B3 alone, (ii) the TTA-based predictions of
+linear manifold learning technique that maps high-dimensional          ConvNeXt Tiny alone, and (iii) the ensemble predictions
+data into a low-dimensional (typically 2D) space while                 obtained from the weighted probability fusion of the two
+preserving local neighbourhood structure. t-SNE was applied to         models. For each model, 1000 bootstrap iterations were
+the concatenated (d1 + d2)-dimensional feature matrix with             performed with a fixed random seed (random_seed=42) to
+ncomponents = 2, perplexity = 30 , 1000 iterations, and a fixed        ensure reproducibility. The resulting bootstrap distributions
+random seed (random_state=42) for reproducibility. Each point          were visualised for each model using histograms with kernel
+in the resulting 2D embedding was colored according to its             density estimation (KDE) overlays, with vertical reference lines
+ground-truth four-class KL label (G0+G1, G2, G3, G4),                  marking the mean accuracy value along with the 2.5-th and
+enabling qualitative inspection of class separability in the           97.5-th percentile bounds. This analysis enables an assessment
+ensemble’s learned feature space and highlighting overlap              of whether the observed point-estimate differences between
+regions associated with clinically ambiguous, adjacent KL              models are statistically meaningful in light of sampling
+grades (e.g., the G2–G3 boundary).                                     variability: the degree of overlap between confidence intervals
+     Here, ncomponents = 2 was chosen because the result was           provides a qualitative indication of whether the observed
+visualised as a 2D scatter plot (x-axis: t-SNE 1, y-axis: t-SNE        performance difference reflects genuine differences in model
+2). In other words, each high-dimensional feature vector               performance or is attributable to random sampling effects.
+𝑓𝑓combined ∈ ℝ𝑑𝑑1+𝑑𝑑2 is reduced by t-SNE to a two-value point            J. Model Evaluation Metrics
+𝑦𝑦𝑖𝑖 ∈ ℝ2 . (𝑑𝑑1 + 𝑑𝑑2 ) represents the total dimensionality of the       Models were assessed with multi-class confusion matrices,
+concatenated feature vector. While d1 is the dimensionality of         ROC and PR curves. Accuracy (A) measures the proportion of
+the feature vector produced by EfficientNet-B3 after global            correctly classified samples, effective for balanced datasets but
+average pooling (feat_eff), d2 is the dimensionality of the            limited for imbalanced ones. Recall (R)/Sensitivity assesses
+feature vector produced by ConvNeXt Tiny after avgpool +               true positive identification, reducing false negatives. Specificity
+flatten (feat_conv).                                                   (S) evaluates true negatives, critical for datasets with fewer
+   I. Bootstrap-Based 95 % Confidence Interval Analysis                negatives. Precision (P) reflects the accuracy of positive
+   To assess the statistical reliability of the point-estimate         predictions, minimising false positives. F1 Score (F), the
+accuracy values reported for each model and to quantify the            harmonic mean of precision and sensitivity, is ideal for
+sampling variability arising from the finite size of the test set, a   imbalanced data. Kappa Statistic (K) adjusts classification
+non-parametric bootstrap resampling method was applied. This           accuracy for randomness, indicating model consistency, with
+approach enables the empirical estimation of the sampling              values from −1 (disagreement) to 1 (agreement). These metrics,
+distribution of the accuracy metric directly from the data,            summarised in Table V, provide comprehensive model
+without requiring knowledge of the underlying distribution.            evaluation.
+   This procedure was repeated for B = 1000 iterations, yielding
+an empirical bootstrap distribution of the accuracy metric
+
+
+
+                                                                                                                                     194
+                                         Applied Computer Systems
+_________________________________________________________________________________________________2026/31
+
+
+                                                                           TABLE V
+                                                             FORMULAS OF MODEL EVALUATION METRICS
+                                 Formula                                                                           Formula
+ tp: the number of instances that the model predicts to belong to a    fp: refers to the number of instances that the model predicts to belong to a positive class
+             positive class and that are actually positive.                                               but are actually negative.
+   tn: refers to the number of instances that the model predicts to    fn: refers to the number of instances that the model predicts to belong to a negative class
+         belong to a negative class and are actually negative.                                            but are actually positive.
+                                    𝑡𝑡𝑡𝑡 + 𝑡𝑡𝑡𝑡                                                                           𝑡𝑡𝑡𝑡
+                       𝐴𝐴 =                                                                                     𝑆𝑆 =
+                            𝑡𝑡𝑡𝑡 + 𝑡𝑡𝑡𝑡 + 𝑓𝑓𝑓𝑓 + 𝑓𝑓𝑓𝑓                                                                𝑓𝑓𝑓𝑓 + 𝑡𝑡𝑡𝑡
+                                         𝑡𝑡𝑡𝑡                                                                             𝑡𝑡𝑡𝑡
+                              𝑃𝑃 =                                                                              𝑅𝑅 =
+                                    𝑡𝑡𝑡𝑡 + 𝑓𝑓𝑓𝑓                                                                      𝑡𝑡𝑡𝑡 + 𝑓𝑓𝑓𝑓
+                                  [𝐴𝐴 − 𝑃𝑃(𝐸𝐸)]                                             [(𝑡𝑡𝑡𝑡 + 𝑓𝑓𝑓𝑓) × (𝑡𝑡𝑡𝑡 + 𝑓𝑓𝑓𝑓) + (𝑡𝑡𝑡𝑡 + 𝑓𝑓𝑓𝑓) × (𝑡𝑡𝑡𝑡 + 𝑓𝑓𝑓𝑓)]
+                           𝐾𝐾 =                                                    𝑃𝑃(𝐸𝐸) =                                                                ,
+                                  [1 − 𝑃𝑃(𝐸𝐸)]                                                                               𝑁𝑁 2
+                                                                                                           𝑁𝑁 = num. of samples
+                                    𝑡𝑡𝑡𝑡         𝑡𝑡𝑡𝑡
+                          2�              ��            �                                                     (𝑡𝑡𝑡𝑡 × 𝑡𝑡𝑡𝑡) − (𝑓𝑓𝑓𝑓 × 𝑓𝑓𝑓𝑓)
+                               𝑡𝑡𝑡𝑡 + 𝑓𝑓𝑓𝑓 𝑡𝑡𝑡𝑡 + 𝑓𝑓𝑓𝑓
+                   𝐹𝐹 =                                                                  MCC =
+                                𝑡𝑡𝑡𝑡              𝑡𝑡𝑡𝑡                                            �(𝑡𝑡𝑡𝑡 + 𝑓𝑓𝑓𝑓)(𝑡𝑡𝑡𝑡 + 𝑓𝑓𝑓𝑓)(𝑡𝑡𝑡𝑡 + 𝑓𝑓𝑓𝑓)(𝑡𝑡𝑡𝑡 + 𝑓𝑓𝑓𝑓)
+                          �              �+�             �
+                           𝑡𝑡𝑡𝑡 + 𝑓𝑓𝑓𝑓       𝑡𝑡𝑡𝑡 + 𝑓𝑓𝑓𝑓
+
+
+                                                                                   osteoarthritis do not represent the same disease level. Therefore,
+                   IV. RESULTS AND DISCUSSION                                      the results of the four-class approach were examined in the
+   In this study, deep learning models were trained with Class-                    findings.
+weighted training and Standard (unweighted) training. Results                         The confusion matrix in Fig. 2a shows that the four-class
+were obtained using ConvNeXt, EfficientNetB3, and an                               ensemble model, without class compensation, correctly
+ensemble approach combining these two models. Weighting                            classified 1,366 out of 1,656 test images, achieving an accuracy
+ratios of 15 %–85 % and 55 %–45 % were preferred when                              of 82.5 %. The model provided one of the highest class-based
+creating the ensemble model. The results for all methods and                       correct classification rates with a sensitivity of 91.23 % in the
+models used in the study are presented.                                            Healthy/Doubtful (G0+G1) class. However, the Minimal (G2)
+   The results of the standard and class-weighted training                         class was the most difficult class, with a sensitivity of 63.31 %
+regimes are presented separately to distinguish the effects of                     and an F1 score of 68.19 %.
+training-time sampling. For both regimes, the trained models                          The fact that 129 of the G2 images, or 28.9 %, were assigned
+were evaluated on the same unmodified test set. Test-time                          to the Healthy/Doubtful class indicates that the model tends to
+augmentation and weighted ensemble fusion were applied                             under-grade early osteoarthritis findings. Sensitivities of
+during inference and were evaluated independently of the                           84.75 % and 80.39 % were obtained in the Moderate (G3) and
+training-time sampling strategy.                                                   Severe (G4) classes, respectively. The fact that all 10 erroneous
+   The confusion matrix of the results is presented in Fig. 2.                     predictions in the G4 class shifted to the neighbouring G3 class,
+Examining the confusion matrices, the three-class approach                         and that no severe cases were assigned to the Healthy/Doubtful
+with standard training (Fig. 2a) consistently produced a higher                    or G2 class, shows that the model largely preserves the ordinal
+accuracy rate than the four-class formulation across all                           structure at advanced disease levels. Indeed, 95.9 % of all
+evaluated architectures. This improvement can primarily be                         erroneous predictions occurred only between neighbouring
+attributed to the combination of KL grades 2 and 3, and                            classes, and 99.28 % of the predictions were at most one degree
+confusion between adjacent advanced osteoarthritis grades. In                      away from the true class. This structure is also supported by a
+the three-class setting, the EfficientNetB3–ConvNeXt Tiny                          quadratic weighted kappa value of approximately 0.857. When
+ensemble achieved the highest accuracy at 84.5 %, outpacing                        these results are examined, G2 class represents the main
+ConvNeXt Tiny by 0.60 points and EfficientNetB3 by                                 classification challenge. The shift of this class to the
+3.99 points. However, in the four-class setting, ConvNeXt Tiny                     Healthy/Doubtful (G0+G1) category may be more important
+alone achieved the best accuracy at 82.5 %, while the ensemble                     clinically than the mixing of advanced classes. This is because
+yielded a result of 82.07 %. This finding suggests that model                      the model underclassifies potential osteoarthritis findings.
+combination does not provide a consistent advantage, and the                       While the high precision (91.11 %) and F1-score (85.42 %) in
+relatively weaker EfficientNetB3 predictions may have slightly                     the G4 class are positive, it should be noted that there are only
+diminished the performance of the stronger ConvNeXt Tiny                           51 test samples in this class. This result is promising in an
+model. Therefore, while the three-class ensemble appears more                      unadjusted dataset, but it needs to be validated in a larger G4
+suitable for a broader severity-based screening, the four-class                    test group.
+ConvNeXt Tiny model preserves more clinical detail by                                 When comparing the confusion matrices for the 15 %– 85 %
+defining KL grades 3 and 4 separately.                                             and 55 %–45 % weighting combinations in Fig. 2b, it is seen
+   The four-class formulation is clinically closer to the specific                 that the accuracy of the G2 class increased to 75.8 % in the
+Kellgren–Lawrence grading system and preserves disease                             scenario where the ConvNeXt Tiny weighting was increased
+severity in greater detail. The separate assessment of G3 and G4                   (15 %–85 %), while this value decreased to 68.7 % in the
+is particularly important clinically, as moderate and severe                       scenario where the EfficientNet-B3 weighting was increased
+
+
+
+                                                                                                                                                               195
+                                         Applied Computer Systems
+_________________________________________________________________________________________________2026/31
+
+(55 %–45 %). However, the second scenario shows a slight                     clear that this simplification leads to a loss of information in
+advantage in the G0+G1 and G3 classes. It should be noted that               terms of clinical decision support. Therefore, the 3-class result
+the primary 0.15/0.85 weighting configuration was specified                  is only an “upper limit reference,” and the results with actual
+before examining test-set performance; therefore, the observed               clinical value come from the 4-class models. Among the 4-class
+differences between the two configurations should be                         models, the 15 %–85 % ensemble scenario shows the strongest
+interpreted as an exploratory comparison rather than the                     and most balanced performance in terms of MCC (0.7141),
+outcome of systematic weight optimisation. This cross-effect                 Cohen’s Kappa (0.7134), and F1-Score (0.8193). Because
+reveals that the two underlying architectures have different                 MCC and Kappa are metrics that account for chance, this result
+discriminatory powers across different disease severity classes,             signifies not only high accuracy but also a reliable classification
+with the 15 %–85 % weighting that yields the highest overall                 resistant to class distribution with Class-weighted training
+accuracy prioritising gain in G2, the most critical and difficult-           model. This result is strong evidence that directly aligns with
+to-discriminate class. In both scenarios, the consistent tendency            the research goal of creating a Class-weighted training model
+of misclassifications to shift to adjacent severity classes points           and that this goal has been achieved. Beyond these standard
+to a clinically plausible error pattern consistent with the ordinal          classification metrics, the ordinal structure of the KL grading
+nature of the Kellgren-Lawrence grading system. Table VI                     system has been explicitly assessed using quadratic weighted
+shows that the 3-class formulation exhibits the highest                      kappa (QWK), which penalises misclassifications in proportion
+performance across most metrics (Accuracy: 84.5 %, F1:                       to their distance from the true class rather than treating all errors
+0.8226), which is an expected result because combining G2 and                as equally severe. For the best-performing four-class
+G3 eliminates the most ambiguous inter-class transition region               configuration (15 %–85 % ensemble, standard training), QWK
+in the dataset. However, given the fundamental clinical                      reached approximately 0.857, substantially exceeding the
+motivation of this study, that moderate (G3) and severe (G4)                 corresponding unweighted Cohen’s Kappa (0.698) and MCC
+osteoarthritis require different treatment approaches                        (0.700) values.
+(conservative treatment vs. surgical/prosthetic evaluation), it is
+
+
+
+
+                                Fig. 2. Confusion matrices of models for Standard (a) and Class-weighted (b) training.
+
+   This gap is clinically meaningful: it indicates that although             provides a more clinically faithful summary of model reliability
+the model does not always predict the exact KL grade, its errors             for an inherently ordinal diagnostic task such as KL grading,
+are overwhelmingly confined to adjacent, clinically similar                  and arguably constitutes a more appropriate primary agreement
+severity levels rather than being distributed arbitrarily across             metric than accuracy or unweighted Kappa for this class of
+the ordinal scale. Given that the standard (unweighted) Cohen's              problem. The fact that the 55 %–45 % scenario has the lower
+Kappa and MCC treat a G0+G1↔G2 confusion identically to a                    overall performance on most metrics among the four-class
+G0+G1↔G4 confusion, the substantially higher QWK value                       models (Accuracy: 82.07 %, MCC/Kappa: ~0.694)
+
+
+
+                                                                                                                                             196
+                                         Applied Computer Systems
+_________________________________________________________________________________________________2026/31
+
+quantitatively confirms that the high weight given to                 instability exhibited by EfficientNet-B3 in early epochs (val
+EfficientNet-B3 systematically weakens the overall consistency        accuracy dropping to 62 %) seen in previous training curves.
+of the model. This finding can be directly related to the
+                                                                 TABLE VI
+                                                         CLASSIFICATION RESULTS
+                                              Recall     Precision       Specificity          F1-Score                     Cohen’s          MR*
+ Model         Dataset             Accuracy                                                                      MCC
+                                              (Macro)    (Macro)         (Macro)              (Macro)                      Kappa            (%)
+ %15–%85       3 Class, Standard
+                                   84.50      82.89      82.02           89.53                82.26              0.6990    0.6957           15.52
+ Ensemble      training
+ %1–%85        4 Class, Standard
+                                   82.50      79.92      82.64           92.26                81.06              0.6997    0.6980           17.51
+ Ensemble      training
+ %15–%85       4 Class, Class-
+                                   83.00      81.26      82.81           93.05                81.94              0.7141    0.7135           17.03
+ Ensemble      weighted training
+ %55–%45       4 Class, Class-
+                                   82.07      79.80      81.63           92.34                80.66              0.6946    0.6946           17.93
+ Ensemble      weighted training
+ MR: Misclassification Rate
+
+   The fact that Specificity values (0.895–0.931) were                weighted training model (Fig. 3b) shows that ConvNeXt Tiny
+systematically higher than Recall/Precision values in all four        exhibits faster and less noisy convergence compared to
+scenarios indicates that the models are quite reliable in their       EfficientNet-B3 in the early stages of training. In the epoch-
+“not this class” decisions, but struggle more in positive class       based validation curves, EfficientNet-B3 shows significant
+differentiation (especially in G2). The relatively high specificity   instability, especially in the second epoch, with its accuracy
+values indicate that the models were generally effective at           dropping to 62 %, indicating that the model is unstable in the
+rejecting non-target classes within the evaluated test set,           initial stages of the optimisation process. The fact that the
+whereas the identification of positive cases, particularly G2,        ensemble curve closely follows the ConvNeXt Tiny curve in
+remained more challenging. However, these retrospective               both metrics confirms that the high weighting given to
+classification results do not establish whether the models could      ConvNeXt Tiny in the ensemble weighting (85 %) is reflected
+reduce unnecessary referrals or improve clinical screening            in the validation prediction dynamics, and it is observed that all
+decisions in practice. Figure 3 shows the time-dependent              models stabilize in the 80–83 % accuracy range after the sixth
+variation of batch-based training loss for the EfficientNetB3         epoch.
+and ConvNeXt Tiny models, and the changes in validation loss
+and validation accuracy over 15 epochs. For the standard
+training model (Fig. 3a), both models showed a rapid decrease
+in loss values at the beginning of training and a slower
+convergence trend in subsequent steps. While ConvNeXt Tiny
+showed a lower and more stable loss profile from the initial
+stage, EfficientNetB3 produced higher loss values and more
+pronounced fluctuations, especially in the first part of training.
+The fact that both models reached low loss levels towards the
+end of training indicates that the optimisation process
+successfully converged. However, the sudden increases in loss
+observed at the batch level may be related to class imbalance
+and mini-batch variability caused by data augmentation
+operations. Although the validation loss value of
+EfficientNetB3 decreased in the first epoch, it increased again
+after approximately the fifth or sixth epoch, and the validation
+accuracy values showed significant fluctuations. This suggests
+that an early overfitting tendency began in EfficientNetB3.
+ConvNeXt Tiny reached its lowest validation loss around the
+sixth epoch and subsequently achieved more stable accuracy in
+the range of approximately 80–82 % in later epochs. The
+validation accuracy values of the ensemble model fell between
+the two individual models and did not surpass the highest
+validation performance of ConvNeXt.
+   These results demonstrate that ConvNeXt Tiny offers both
+higher and more stable generalization performance in the four-
+class problem. In these two graphs, the ensemble validation loss
+and accuracy were calculated by combining the validation              Fig. 3. Batch-loss trends, validation loss, and validation accuracy for Standard-
+probabilities of the two models at each epoch. The Class-             sampling (a) and class-weighted-sampling (b) training.
+
+
+
+
+                                                                                                                                                  197
+                                         Applied Computer Systems
+_________________________________________________________________________________________________2026/31
+
+   ROC curves show the model’s ability to distinguish classes                classes, respectively. Consistent with the ROC analysis, the
+(ranking/discrimination), while the Precision-Recall (PR) curve              Minimal class yielded the lowest PR-AUC value, confirming
+demonstrates its success in correctly identifying positive classes           that it is the most difficult category to accurately identify early-
+with the standard training model. The one-vs-rest ROC analysis               stage osteoarthritis. In contrast, both the moderate and severe
+for the standard-training model shown in Fig. 4a indicates that              classes maintained high sensitivity across a wide range of recall
+the ensemble model provides strong discrimination across all                 values, demonstrating reliable identification of advanced
+four classes. AUC values for Healthy/Doubtful, Minimal,                      osteoarthritis despite class imbalance.
+Moderate, and Severe classes were calculated as 0.94, 0.90,                     Because PR analysis is particularly informative for
+0.98, and 1.00, respectively, with an arithmetic mean AUC of                 evaluating class-specific performance in imbalanced datasets,
+0.955 across the classes. This value indicates a very high ability           these results provide additional insight into the model’s
+of the model to distinguish classes. The lowest AUC value                    performance across the four severity categories.
+observed in class G2 is consistent with the low G2 sensitivity in               The ROC analysis of the class-weighted training model
+the confusion matrix, suggesting that separating this class from             shown in Fig. 4(b) yielded high AUC values across all classes
+G0+G1 constitutes the main classification difficulty.                        (G0+G1: 0.95; G2: 0.91; G3: 0.98; G4: 1.00), indicating strong
+   In contrast, the high AUC values in classes G3 and G4                     overall class discrimination. However, the PR-AUC for the G2
+suggest that advanced osteoarthritis levels are distinguished                class (0.79) was substantially lower than those of the other
+from other classes by more distinct characteristics. However,                classes (0.90–0.96).
+the AUC value of 1.00 obtained for the G4 class should be                       While ROC-AUC tends to overly reflect performance under
+interpreted cautiously, as the class only contains 51 test                   class imbalance conditions, the precision-recall curve is more
+samples. Figure 4 also presents the Precision–Recall (PR)                    sensitive to positive class detection. Therefore, this finding
+curves of the proposed ensemble model. The PR-AUC values                     numerically confirms that the G2 class is the most critical
+are 0.95, 0.76, 0.91, and 0.94 for the Healthy/Doubtful                      clinical weakness of the model.
+(G0+G1), Minimal (G2), Moderate (G3), and Severe (G4)
+
+
+
+
+                      Fig. 4. Ensemble approach ROC and Precision-Recall graph for Standard (a) and Class-weighted (b) training.
+
+   Figure 5a shows the two-dimensional t-SNE projection of the               structure of this class, which includes both G0 and G1 images.
+high-dimensional features learned by the ensemble model with                 G2 samples formed a transitional distribution between the
+standard training.                                                           G0+G1 and G3 clusters, showing a significant overlap,
+   The wide and partially subdivided distribution of the                     particularly with G0+G1 samples. This observation visually
+healthy/doubtful class can be explained by the heterogeneous                 supports the frequent prediction of the G2 class as G0+G1 in
+
+
+
+                                                                                                                                            198
+                                         Applied Computer Systems
+_________________________________________________________________________________________________2026/31
+
+the confusion matrix. In contrast, G3 samples clustered in a                   A. Model Explainability
+more limited region, while G4 samples formed a relatively                      Figure 6 presents representative Grad-CAM visualizations
+compact and disjointed group at the extreme end of the                      for the four KOA severity categories under standard-sampling
+distribution. The overall distribution suggests that disease                and weighted-sampling training. All illustrated examples were
+severity forms an ordinal feature space that is continuous from             correctly classified by their respective models. In both panels,
+G0+G1 to G4. In t-SNE plot (Fig. 5b), which visualises the end-             activation partially overlaps the tibiofemoral joint region but
+layer feature representations of the ensemble model with class-             also extends toward peripheral image areas, particularly in the
+weighted training by reducing them to two dimensions, it is                 G0+G1, G2, and G3 examples. Notably, both G2 examples
+observed that class G4 forms a completely separate and tightly              were correctly classified despite showing prominent activation
+clustered group from other classes, while class G3 is clustered             near the image boundary. This observation indicates that correct
+in a relatively distinct region. In contrast, the samples belonging         classification does not necessarily correspond to activation
+to classes G0+G1 and G2 are largely nested in the feature space,            exclusively within anatomically relevant regions. In contrast,
+and there is no sharp dividing line between them, indicating that           the G4 examples exhibit relatively localized activation
+these two classes cannot be sufficiently separated from each                overlapping the joint region. However, because the two panels
+other even at the representation level learned by the model.                contain different radiographs and only a limited number of
+                                                                            examples were examined, the observed differences cannot be
+                                                                            attributed directly to the training strategy or generalised across
+                                                                            severity classes. Overall, the Grad-CAM results provide
+                                                                            qualitative insight into model behaviour but do not establish
+                                                                            reliable anatomical localisation or confirm that predictions are
+                                                                            consistently based on clinically relevant radiographic features.
+                                                                               B. Confidence Intervals Analysis
+                                                                               Figure 7a shows the 95 % confidence intervals for the
+                                                                            accuracy performance of the models with standard training
+                                                                            models. The mean accuracy for EfficientNetB3 was 79.2%,
+                                                                            with a confidence interval of 77.2–81.2 %; for ConvNeXt, it
+                                                                            was 83.1 % and 81.3–84.9 %; and for the ensemble model, it
+                                                                            was 82.5 % and 80.6–84.4 %. In terms of point predictions,
+                                                                            ConvNeXt Tiny had the highest accuracy, while the ensemble
+                                                                            model lagged behind ConvNeXt Tiny by 0.6 percentage points.
+                                                                            The significant overlap between the confidence intervals of
+                                                                            ConvNeXt Tiny and the ensemble model suggests that the small
+                                                                            performance difference between the two methods may be due
+                                                                            to sampling variability. In contrast, the accuracy distribution of
+                                                                            EfficientNetB3 generally fell within a lower region. Figure 7b
+                                                                            shows the statistical uncertainty in the accuracy performance of
+                                                                            the three models, obtained with bootstrap sampling of N =1000
+                                                                            replicates for class-weighted model, using 95 % confidence
+                                                                            intervals. EfficientNet-B3 has an average accuracy of 80.37 %,
+                                                                            ranging from 78.50 % to 82.19 %, ConvNeXt Tiny has an
+Fig. 5. t-SNE Distribution of Ensemble method for standard (a) and class-
+weighted (b) training.
+                                                                            average accuracy of 82.85 %, ranging from 81.10 % to
+                                                                            84.66 %, and weighted ensemble has an average accuracy of
+  This visual finding directly shows the representational reason            82.92 %, ranging from 81.22 % to 84.72 %. The significant
+underlying the low performance in class G2 identified in the                overlap in confidence intervals between ConvNeXt Tiny and
+confusion matrix and precision-recall analyses and provides                 ensemble models indicates that the ensemble strategy does not
+independent evidence of the model’s difficulty in distinguishing            provide a significant performance improvement compared to
+minimal osteoarthritis findings.                                            ConvNeXt. However, the significantly different distribution of
+                                                                            EfficientNet-B3 and its wider variance suggest that this model
+                                                                            alone produces more variable and less reliable estimates.
+
+
+
+
+                                                                                                                                          199
+                                         Applied Computer Systems
+_________________________________________________________________________________________________2026/31
+
+
+
+
+Fig. 6. Representative ROI-cropped knee radiographs (left), CLAHE-enhanced images (middle), and ConvNeXt-Tiny Grad-CAM overlays (right) for four KOA
+severity categories under (a) standard-sampling and (b) weighted-sampling training. All illustrated examples were correctly classified. The activation maps provide
+qualitative information about model responses, including activation extending toward peripheral image regions, and do not establish anatomically validated
+localisation.
+
+
+
+
+       Fig. 7. Overall classification performance of the standard (a) and class-weighted (b) training model with bootstrap-based 95 % confidence intervals.
+
+
+
+
+                                                                                                                                                              200
+                                         Applied Computer Systems
+_________________________________________________________________________________________________2026/31
+
+   C. TTA Comparisons                                                       additional computational cost and therefore could be used as a
+   Figure 8a illustrates the effect of using test-time                      standard component in the proposed pipeline.
+augmentation (TTA) on the accuracy performance of the                          D. Model Efficiency
+models with standard training. Applying TTA improved the
+                                                                               Fig. 9a compares models with standard training in terms of
+accuracy of EfficientNetB3 from 77.8 % to 79.2 %, an increase
+                                                                            parameter number, training time, model file size, and prediction
+of 1.4 percentage points; ConvNeXt Tiny from 82.9 % to
+                                                                            time per image. EfficientNetB3, despite being the most compact
+83.1 %, an increase of 0.2 percentage points; and ensemble
+                                                                            architecture with 10.7 million parameters and a model size of
+from 81.4 % to 82.5 %, an increase of 1.1 percentage points.
+                                                                            41.4 MB, achieved an accuracy of 79.2 %. ConvNeXt, with
+The highest absolute gain was achieved in the EfficientNetB3
+                                                                            27.8 million parameters and a file size of 106.2 MB, was the
+model, while ConvNeXt Tiny showed stable performance even
+                                                                            fastest model with a training time of 28.7 min and a prediction
+without TTA and benefited only to a limited extent from it. The
+                                                                            time of 11.2 ms, achieving the highest accuracy at 83.1%. The
+1.1 percentage point improvement in the ensemble model
+                                                                            ensemble architecture reached a total of 38.5 million
+indicates that averaging the estimates obtained from different
+                                                                            parameters, a file size of 147.6 MB, a training time of 61.0
+test transformations can reduce the variability of the
+                                                                            minutes, and a prediction time of 36.7 ms (the sum of the two
+predictions. Fig. 8b compares the effect of applying TTA to the
+                                                                            models). However, the fact that the ensemble accuracy
+model with class-weighted training. While an increase in
+                                                                            remained at 82.5 % indicates that the increased computational
+accuracy is observed in all models, the magnitude of this
+                                                                            and memory costs did not translate into performance gains. The
+increase varies from model to model. In EfficientNet-B3, TTA
+                                                                            ensemble model has approximately 38.5 % more parameters,
+provided the highest relative gain (+1.2 points), increasing
+                                                                            2.13 times the training time, approximately 39 % larger file
+accuracy from 78.4 % to 79.6 %, while ConvNeXt Tiny showed
+                                                                            size, and 3.28 times the prediction time compared to
+a similar improvement from 82.6% to 83.8 % (+1.2 points) and
+                                                                            ConvNeXt; however, its accuracy is 0.6 percentage points
+the ensemble model from 82.0 % to 83.0 % (+1.0 point).
+                                                                            lower.
+                                                                               Therefore, in the four-class implementation, ConvNeXt Tiny
+                                                                            offers the best cost-performance balance. Using the ensemble
+                                                                            model does not seem defensible in terms of computational cost
+                                                                            with the current results. Fig. 9a reveals that the increase in the
+                                                                            number of model parameters does not show a linear relationship
+                                                                            with accuracy. EfficientNetB3 achieved 79.2% accuracy with
+                                                                            10.7 million parameters, while ConvNeXt’s accuracy increased
+                                                                            to 83.1% with 27.8 million parameters. However, increasing the
+                                                                            number of parameters to 38.5 million in the ensemble structure
+                                                                            did not provide further improvement in accuracy, and the result
+                                                                            decreased to 82.5%. This finding shows that increasing model
+                                                                            capacity alone does not necessarily lead to better generalization.
+                                                                            The results further indicate that ensemble performance depends
+                                                                            on the diversity of errors between component models,
+                                                                            probability calibration, and the adopted fusion strategy. Figure
+                                                                            9b, comparing the model with class-weighted in terms of
+                                                                            parameter number, training time, model size, and inference
+                                                                            time, shows that ConvNeXt Tiny, despite having 2.6 times more
+                                                                            parameters (27.8M vs. 10.7M) than EfficientNet-B3, provides
+                                                                            a shorter inference time (54.6 ms vs. 133.3 ms) and higher
+                                                                            accuracy; this indicates that the ConvNeXt Tiny architecture is
+                                                                            advantageous in terms of hardware efficiency compared to
+                                                                            EfficientNet’s scaling strategy. The disproportionate increase in
+                                                                            parameter number and inference time (38.5M parameters, 187.9
+Fig. 8. TTA Comparisons of models for standard (a) and class-weighted (b)   ms inference) in the transition to the ensemble model, while the
+training.
+                                                                            accuracy gain remains marginal, is considered a finding that
+                                                                            needs to be questioned in terms of the cost-benefit balance of
+   Although EfficientNet-B3 had the lowest absolute accuracy
+                                                                            the ensemble approach in the context of clinical applicability.
+from TTA, its proportional benefit suggests that its single-pass
+predictions are noisier and that increasing test time partially
+compensates for this noise; in contrast, ConvNeXt Tiny and
+ensemble models have relatively more stable baseline
+predictions, resulting in limited benefits from TTA. This
+finding supports the idea that TTA offers a consistent
+performance increase across all architectures despite the
+
+
+
+                                                                                                                                          201
+                                         Applied Computer Systems
+_________________________________________________________________________________________________2026/31
+
+
+
+
+                         Fig. 9. Model efficiency and training time of models for standard (a) and class-weighted (b) training.
+
+                                                                              sensitivity versus transformer-like global context modelling)
+   E. Contribution to Multimedia-Based Diagnostic Decision
+                                                                              must be reconciled at inference time.
+   Support
+                                                                                 Notably, the systematic evaluation of computational cost
+   Beyond its clinical findings, the proposed framework offers                (parameter count, training time, model size, and inference
+a methodological contribution relevant to multimedia-based                    latency; Fig. 9) alongside accuracy positions this study within
+diagnostic systems. The pipeline implements a multi-                          the broader multimedia systems literature concerned with the
+resolution,       dual-branch        inference       architecture             efficiency–accuracy trade-off of multi-stream inference
+(BatchedEnsembleDataset, Section 3.6) that concurrently                       pipelines. The finding that the dual-branch ensemble incurred a
+generates and processes two independently resized, backbone-                  3.28× inference-time cost relative to the best single-stream
+specific representations of the same source image (384×384 for                model without a corresponding accuracy benefit provides a
+EfficientNet-B3 and 288×288 for ConvNeXt-Tiny) from a                         concrete, quantified case study of diminishing returns in multi-
+single ROI-cropped, CLAHE-enhanced radiograph. This dual-                     encoder multimedia fusion – an outcome with direct
+resolution strategy allows heterogeneous convolutional                        implications for the design of real-time or resource-constrained
+architectures with different native input requirements to be                  multimedia diagnostic tools, such as point-of-care or edge-
+fused at the probability level without requiring a shared pre-                deployed radiograph screening systems.
+processing resolution, a design consideration directly relevant
+to multimedia systems that must reconcile multiple,                                                        V. CONCLUSION
+architecturally incompatible visual encoders operating on a
+single data stream.                                                              This study proposed a weighted ensemble deep learning
+   Furthermore, the combination of test-time augmentation                     framework, combining EfficientNet-B3 and ConvNeXt-Tiny,
+(TTA) with weighted probability fusion provides a two-stage                   for automated multiclass classification of knee osteoarthritis
+inference strategy that may be relevant to the future                         (KOA) severity from radiographic images, based on a pre-
+development of multimedia-based diagnostic decision-support                   processing pipeline that integrates region-of-interest (ROI)
+systems.                                                                      cropping, CLAHE-based contrast enhancement, class-aware
+   This two-stage robustness strategy – variance reduction at the             data augmentation, and test-time augmentation (TTA).
+single-model level followed by complementary-bias                                Contrary to the initial hypothesis that combining
+exploitation at the multi-model level – is a general-purpose                  complementary CNN architectures would consistently
+pattern applicable beyond KOA grading, to any multimedia                      outperform their individual base learners, the results
+classification task in which multiple visual feature extractors               demonstrated that ConvNeXt-Tiny alone achieved the highest
+with distinct inductive biases (e.g., CNN-based texture                       or near-highest accuracy across nearly all evaluated
+
+
+
+
+                                                                                                                                          202
+                                         Applied Computer Systems
+_________________________________________________________________________________________________2026/31
+
+configurations, with the weighted ensemble providing                   unverified. Furthermore, no prospective evaluation involving
+comparable but not superior performance.                               radiologists or clinicians was conducted, and the models were
+   The bootstrap-based 95 % confidence intervals showed                not assessed within a real clinical workflow. Therefore, the
+substantial overlap between ConvNeXt-Tiny and the ensemble             reported classification performance does not establish clinical
+model, suggesting that the observed performance differences            reliability, diagnostic utility, or potential benefits for patient
+may be attributable to sampling variability rather than a              management. Second, the evaluation was conducted using a
+consistent advantage of the ensemble approach.                         single train/validation/test partition rather than k-fold cross-
+   In contrast, TTA consistently improved accuracy across all          validation or repeated stratified splits, which limits the ability
+architectures at negligible additional computational cost,             to fully characterize the variance of the reported performance
+supporting its adoption as a standard inference-time component         estimates beyond the bootstrap-based confidence intervals
+regardless of the base architecture chosen.                            presented. Third, the severe (G4) class was represented by only
+   The four-class formulation (G0+G1, G2, G3, and G4)                  51 test samples, and although the model demonstrated high
+provided a practical balance between classification complexity         precision and near-perfect AUC for this category, such metrics
+and the preservation of radiographic severity information. The         are inherently unstable under small sample sizes and require
+ConvNeXt-Tiny model achieved an accuracy of 83.1 %, which              validation on larger, independent G4 cohorts before clinical
+was numerically higher than the five-class classification              conclusions can be drawn.
+accuracies of 69 % and 82.07 % reported in previous studies               Fourth, although the primary ensemble weights (0.15/0.85)
+[13], [14]. However, these results were obtained using different       were specified before examining the test-set results, they were
+class definitions and experimental protocols, and therefore do         selected heuristically rather than through systematic
+not establish the superiority of the proposed four-class               optimization on a separate validation set. Therefore, the
+formulation over the original five-grade KL system. By                 selected coefficients cannot be considered optimal, and the
+combining KL0 and KL1 while preserving KL2, KL3, and KL4               evaluation of only two fixed weighting configurations does not
+as separate categories, the proposed formulation reduces               establish the sensitivity or stability of ensemble performance
+ambiguity between normal and doubtful radiographic findings            across a broader range of fusion weights. Future studies should
+while retaining distinctions among more advanced severity              investigate validation-based weight selection and assess the
+grades. The G2 category showed the greatest confusion with             resulting ensemble configuration on an independent test set.
+G0+G1 in the quantitative analyses. The t-SNE visualisation               Fifth, model comparisons relied on the overlap of bootstrap
+suggested overlapping feature representations, whereas the             confidence intervals rather than a paired statistical test (e.g.,
+selected Grad-CAM maps revealed variable activation patterns,          McNemar’s test), which would more appropriately account for
+including responses extending toward peripheral image regions.         the fact that all models were evaluated on the same, non-
+These qualitative findings do not establish the causes of              independent test samples. In addition, the Grad-CAM–based
+misclassification or the anatomical validity of model                  explainability analysis was restricted to a small number of
+predictions.       Importantly,       misclassifications      were     qualitatively selected representative cases per class, and while
+overwhelmingly confined to adjacent severity grades (>95 % of          informative, this analysis should be extended to a larger and
+all errors), and the resulting quadratic weighted kappa (~0.857)       more systematic sample to draw firmer conclusions regarding
+indicates that the model preserves the ordinal structure of the        the anatomical regions driving model decisions, particularly for
+KL grading system even when exact-class agreement is                   the clinically critical and error-prone G2 category.
+imperfect – a property that may be more clinically relevant than          An additional limitation concerns the combination of KL0
+raw accuracy alone. Although the findings demonstrate the              and KL1 into the G0+G1 category. Although this grouping
+feasibility of automated KOA severity classification using the         reduces ambiguity between radiographically normal and
+evaluated deep learning architectures, the results should be           doubtful cases and allows greater emphasis on the transition
+interpreted within the limitations of a retrospective, single-         toward more evident radiographic abnormalities, it also
+source dataset. The proposed framework has not undergone               simplifies the original five-grade KL classification problem.
+external validation or prospective evaluation involving                Removing the KL0–KL1 decision boundary may increase
+radiologists. Therefore, its clinical reliability and potential role   apparent classification performance relative to a full five-class
+in diagnostic decision support remain to be established through        setting. Therefore, the reported metrics should be interpreted
+further validation studies.                                            specifically within the proposed four-category formulation.
+                                                                       Future work should evaluate the same inference strategies while
+   A. Limitations
+                                                                       retaining KL0 and KL1 as separate ordinal categories.
+   Despite these promising results, several limitations should be
+acknowledged. First, the dataset originates from a single source          B. Future Work
+(the OAI-derived Knee Osteoarthritis Severity Grading                     Building on these findings, several directions merit further
+dataset), and all training, validation, and testing were performed     investigation. External validation on independent, multi-
+on data sharing the same acquisition protocol and demographic          institutional knee radiograph datasets – ideally acquired with
+characteristics; consequently, the generalizability of the             different imaging protocols and patient populations – is needed
+proposed framework to radiographs obtained from different              to establish the robustness and generalizability of the proposed
+imaging equipment, populations, or clinical settings remains           framework beyond the OAI-derived cohort. Given that the
+
+
+
+
+                                                                                                                                     203
+                                         Applied Computer Systems
+_________________________________________________________________________________________________2026/31
+
+primary performance bottleneck lies in distinguishing early-                                        REFERENCES
+stage findings (G0+G1 versus G2), future work should explore        [1]  Y. Badshah et al., “Genetic markers of osteoarthritis: Early diagnosis in
+data-centric strategies analogous to CleanLab-based label                susceptible Pakistani population,” J. Orthop. Surg. Res., vol. 16, Feb.
+                                                                         2021, Art. no. 124. https://doi.org/10.1186/s13018-021-02230-x
+correction, targeted oversampling or synthetic augmentation of
+                                                                    [2] S. K. Das and A. Farooqi, “Osteoarthritis,” Best Pract. Res. Clin.
+borderline cases, and ordinal-regression-aware loss                      Rheumatol., vol. 22, no. 4, pp. 657–675, Aug. 2008.
+formulations that explicitly model the graded, non-nominal               https://doi.org/10.1016/j.berh.2008.07.002
+structure of the KL scale rather than treating it as an unordered   [3] M. N. Iqbal, F. R. Haidri, B. Motiani, and A. Mannan, “Frequency of
+                                                                         factors associated with knee osteoarthritis,” J. Pak. Med. Assoc., vol. 61,
+categorical problem. The marginal and non-significant benefit            no. 8, pp. 786–789, 2011.
+of the ensemble relative to ConvNeXt-Tiny alone suggests that       [4] K. Maiese, “Picking a bone with WISP1 (CCN4): New strategies against
+future ensemble strategies should move beyond fixed,                     degenerative joint disease,” J. Transl. Sci., vol. 2, no. 1, pp. 83–85, 2016.
+                                                                         https://doi.org/10.15761/JTS.1000120
+heuristically specified probability weighting toward learned,       [5] S. S. Gornale, P. U. Patravali, and R. R. Manza, “Detection of
+input-conditioned fusion mechanisms (e.g., a lightweight meta-           osteoarthritis using knee X-ray image analyses: A machine vision based
+learner or attention-based gating network) that can dynamically          approach,” Int. J. Comput. Appl., vol. 145, no. 1, pp. 20–26, July 2016.
+                                                                         https://doi.org/10.5120/ijca2016910544
+emphasise the more reliable base learner on a per-sample basis,     [6] T. Neogi, “The epidemiology and impact of pain in osteoarthritis,”
+potentially recovering complementary information that a fixed-           Osteoarthritis Cartilage, vol. 21, no. 9, pp. 1145–1153, Sep. 2013.
+weight scheme fails to exploit – particularly in the ambiguous           https://doi.org/10.1016/j.joca.2013.03.018
+G2 region where the two architectures were shown to exhibit         [7] J. H. Kellgren and J. S. Lawrence, “Radiological assessment of osteo-
+                                                                         arthrosis,” Ann. Rheum. Dis., vol. 16, no. 4, pp. 494–502, Dec. 1957.
+distinct    error    patterns.    Additionally,     incorporating        https://doi.org/10.1136/ard.16.4.494
+complementary clinical information (e.g., patient age, body         [8] D. Schiphof, M. Boers, and S. M. A. Bierma-Zeinstra, “Differences in
+mass index, or symptom scores) in a multimodal framework                 descriptions of Kellgren and Lawrence grades of knee osteoarthritis,”
+                                                                         Ann. Rheum. Dis., vol. 67, no. 7, pp. 1034–1036, July 2008.
+may help resolve cases where radiographic appearance alone is            https://doi.org/10.1136/ard.2007.079020
+insufficient to accurately delineate KL grade boundaries.           [9] D. Saini, T. Chand, D. K. Chouhan, and M. Prakash, “A comparative
+Finally, prospective clinical validation studies involving               analysis of automatic classification and grading methods for knee
+                                                                         osteoarthritis focussing on X-ray images,” Biocybern. Biomed. Eng.,
+radiologist-in-the-loop evaluation are necessary to assess               vol. 41, no. 2, pp. 419–444, Apr.–June 2021.
+whether the proposed framework can meaningfully augment,                 https://doi.org/10.1016/j.bbe.2021.03.002
+rather than merely approximate, expert-level KOA severity           [10] S. Roy, T. Meena, and S.-J. Lim, “Demystifying supervised learning in
+                                                                         healthcare 4.0: A new reality of transforming diagnostic medicine,”
+assessment in real-world diagnostic workflows.
+                                                                         Diagnostics, vol. 12, no. 10, Oct. 2022, Art. no. 2549.
+                                                                         https://doi.org/10.3390/diagnostics12102549
+                        DECLARATIONS                                [11] P. Chen. (2018). Knee Osteoarthritis Severity Grading Dataset. [Online}.
+                                                                         Available: https://data.mendeley.com/datasets/56rmx5bjcr/1
+   Ethics approval and consent to participate                       [12] S. M. Ahmed and R. J. Mstafa, “Identifying severity grading of knee
+                                                                         osteoarthritis from X-ray images using an efficient mixture of deep
+   This study used publicly available, anonymized                        learning and machine learning models,” Diagnostics, vol. 12, no. 12, Nov.
+Osteoarthritis Initiative knee X-ray dataset. No new human               2022, Art. no. 2939. https://doi.org/10.3390/diagnostics12122939
+subjects research was conducted. The study did not involve          [13] A. S. Mohammed, A. A. Hasanaath, G. Latif, and A. Bashar, “Knee
+                                                                         osteoarthritis detection and severity classification using residual neural
+direct patient participation and therefore did not require ethics
+                                                                         networks on preprocessed X-ray images,” Diagnostics, vol. 13, no. 8, Apr.
+committee approval. All data were handled in accordance with             2023, Art. no. 1380. https://doi.org/10.3390/diagnostics13081380
+the principles of the Declaration of Helsinki.                      [14] T. Momenpour and A. A. Mallouh, “Optimizing CNN-based diagnosis of
+                                                                         knee osteoarthritis: Enhancing model accuracy with CleanLab
+   Availability of data and material                                     relabeling,” Diagnostics, vol. 15, no. 11, pp. 1332–1349, May 2025.
+                                                                         https://doi.org/10.3390/diagnostics15111332
+   The data and code materials supporting the findings of this      [15] K. Zuiderveld, “Contrast limited adaptive histogram equalization,” in
+study are available in the following online repository:                  Graphics Gems, P. S. Heckbert, Ed., Academic Press, 1994, pp. 474–485.
+   https://drive.google.com/drive/folders/18_Ii7qpgA35PsSx-              https://doi.org/10.1016/B978-0-12-336156-1.50061-6
+                                                                    [16] C. Shorten and T. M. Khoshgoftaar, “A survey on image data
+vsdctCfbqmnrSgbh                                                         augmentation for deep learning,” J. Big Data, vol. 6, no. 60, July 2019,
+                                                                         Art. no. 60. https://doi.org/10.1186/s40537-019-0197-0
+   Competing interests
+                                                                    [17] T. He, Z. Zhang, H. Zhang, Z. Zhang, J. Xie, and M. Li, “Bag of tricks for
+   The authors declare that there are no known competing                 image classification with convolutional neural networks,” in Proceedings
+financial interests or personal relationships that could have            of the IEEE/CVF Conference on Computer Vision and Pattern
+                                                                         Recognition (CVPR), Long Beach, CA, USA, June 2019, pp. 558–567.
+appeared to influence the work reported in this paper.                   https://doi.org/10.1109/CVPR.2019.00065
+                                                                    [18] J. M. Johnson and T. M. Khoshgoftaar, “Survey on deep learning with
+   Funding                                                               class imbalance,” J. Big Data, vol. 6, Mar. 2019, Art. no. 27.
+   The authors did not receive support from any organization             https://doi.org/10.1186/s40537-019-0192-5
+                                                                    [19] M. Tan and Q. V Le, “EfficientNet: Rethinking model scaling for
+for the submitted work.                                                  convolutional neural networks,” in Proceedings of the 36th International
+  Author contributions                                                   Conference on Machine Learning, 2019, pp. 6105–6114.
+                                                                    [20] Z. Liu, H. Mao, C.-Y. Wu, C. Feichtenhofer, T. Darrell, and S. Xie, “A
+  Huseyin Coskun: Writing – original draft, review & editing,            ConvNet for the 2020s,” in Proceedings of the IEEE/CVF Conference on
+methodology, investigation, supervision, data curation,                  Computer Vision and Pattern Recognition, New Orleans, LA, USA, June
+                                                                         2022, pp. 11976–11986.
+validation. Zekeriya Katılmış: Writing – original draft,                 https://doi.org/10.1109/CVPR52688.2022.01167
+methodology, investigation, data curation, validation, review &
+editing.
+
+
+
+                                                                                                                                                 204
+                                         Applied Computer Systems
+_________________________________________________________________________________________________2026/31
+
+[21] I. Loshchilov and F. Hutter, “Decoupled weight decay regularization,” in                               Huseyin Coskun (Member, IEEE), received the B.S,
+     7th International Conference on Learning Representations, ICLR 2019,                                   M.S. and Ph.D. degrees in computer engineering from
+     New Orleans: International Conference on Learning Representations,                                     Süleyman Demirel University in Isparta, Turkey. He is
+     ICLR, May 2017. Accessed: Oct. 04, 2026. [Online]. Available:                                          currently Assist. Prof. at the Department of Computer
+     https://arxiv.org/abs/1711.05101v3                                                                     Engineering, Kütahya Health Sciences University and
+[22] I. Loshchilov and F. Hutter, “SGDR: Stochastic Gradient Descent with                                   head of medical informatics department. His research
+     Warm Restarts,” in 5th International Conference on Learning                                            interests include medical informatics, machine learning,
+     Representations, ICLR 2017 - Conference Track Proceedings,                                             audio processing, computer vision, quality control,
+     International Conference on Learning Representations, ICLR, Aug. 2016.          biomedical signals, and mobile programming.
+     Accessed: Oct. 04, 2026. [Online].                                              E-mail: huseyin.coskun@ksbu.edu.tr
+     Available: https://arxiv.org/abs/1608.03983v5                                   ORCID iD: https://orcid.org/0000-0002-8380-245X
+[23] T.-Y. Lin, P. Goyal, R. Girshick, K. He, and P. Dollár, “Focal loss for
+     dense object detection,” in Proceedings of the IEEE international                                     Zekeriya Katılmış, received the Ph.D. degrees in
+     conference on computer vision, Venice, Italy, Oct. 2017, pp. 2980–2988.                               computer engineering from Bilecik Şeyh Edebali
+     https://doi.org/10.1109/ICCV.2017.324                                                                 University in Bilecik, Turkey. He is currently Assist.
+[24] T. G. Dietterich, “Ensemble methods in machine learning,” in Multiple                                 Prof. at the Department of Computer Engineering,
+     Classifier Systems, vol. 1857, J. Kittler and F. Roli, Eds., in Lecture Notes                         Kütahya Health Sciences University. His research
+     in Computer Science, vol. 1857. Springer, 2000, pp. 1–15.                                             interests include medical informatics, machine learning,
+     https://doi.org/10.1007/3-540-45014-9_1                                                               computer vision, biomedical signals, and data science.
+[25] Z.-H. Zhou, Ensemble Methods: Foundations and Algorithms. CRC                                         E-mail: zekeriya.katilmis@ksbu.edu.tr
+     Press, June 2012. https://doi.org/10.1201/b12207                                ORCID iD: https://orcid.org/0000-0002-2095-5483
+[26] I. Kandel and M. Castelli, “Improving convolutional neural networks
+     performance for image classification using test time augmentation: A case
+     study using MURA dataset,” J. Med. Syst., vol. 45, no. 7, July2021, Art.
+     no. 84. https://doi.org/10.1007/s10916-021-01757-0
+[27] R. R. Selvaraju, M. Cogswell, A. Das, R. Vedantam, D. Parikh, and
+     D. Batra, “Grad-cam: Visual explanations from deep networks via
+     gradient-based localization,” in Proceedings of the IEEE international
+     conference on computer vision, Venice, Italy, Oct. 2017, pp. 618–626.
+     https://doi.org/10.1109/ICCV.2017.74
+
+
+
+
+                                                                                                                                                               205
+

@@ -1,0 +1,741 @@
+Journal of Imaging Informatics in Medicine (2026) 39:2136–2149
+https://doi.org/10.1007/s10278-025-01636-x
+
+
+
+
+Comparative Evaluation of Deep Learning and Foundation Model
+Embeddings for Osteoarthritis Feature Classification in Knee
+Radiographs
+Mohammadreza Chavoshi1 · Hari Trivedi1 · Janice Newsome1 · Aawez Mansuri1 · Frank Li1 · Theo Dapamede1 ·
+Bardia Khosravi2 · Judy Gichoya1
+
+Received: 25 April 2025 / Revised: 24 July 2025 / Accepted: 28 July 2025 / Published online: 2 September 2025
+© The Author(s) under exclusive licence to Society for Imaging Informatics in Medicine 2025
+
+
+Abstract
+Foundation models (FM) offer a promising alternative to supervised deep learning (DL) by enabling greater flexibility and
+generalizability without relying on large, labeled datasets. This study investigates the performance of supervised DL models
+and pre-trained FM embeddings in classifying radiographic features related to knee osteoarthritis. We analyzed 44,985 knee
+radiographs from the Osteoarthritis Initiative dataset. Two convolutional neural network models (ResNet18 and ConvNeXt-
+Small) were trained to classify osteophytes, joint space narrowing, subchondral sclerosis, and Kellgren-Lawrence grades
+(KLG). These models were compared against two FM: BiomedCLIP, a multimodal vision-language model pre-trained on
+diverse medical images and text, and RAD-DINO vision transformer model pre-trained exclusively on chest radiographs.
+We extracted image embeddings from both FMs and used XGBoost classifiers to perform downstream classification. Perfor-
+mance was assessed using a comprehensive classification metrics appropriate for binary and multi-class classification tasks.
+DL models outperformed FM-based approaches across all tasks. ConvNeXt achieved the highest performance in predicting
+KLG, with a weighted Cohen’s kappa of 0.880 and higher AUC in binary tasks. BiomedCLIP and RAD-DINO performed
+similarly, and BiomedCLIP's prior exposure to knee radiographs during pretraining led to only slight improvements. Zero-
+shot classification using BiomedCLIP correctly identified 91.14% of knee radiographs, with most failures associated with low
+image quality. Grad-CAM visualizations revealed DL models, particularly ConvNeXt, reliably focused on clinically relevant
+regions. While FMs offer promising utility in auxiliary imaging tasks, supervised DL remains superior for fine-grained
+radiographic feature classification in domains with limited pretraining representation, such as musculoskeletal imaging.
+
+Keywords Deep learning · Foundation models · Knee osteoarthritis · Self-supervised learning
+
+
+Introduction                                                                  modalities, and the ability to extract meaningful patterns
+                                                                              without extensive annotations [2]. One common approach
+Foundation models (FM) are large neural networks pre-                         is to extract embeddings, feature representations learned
+trained on extensive datasets using self-supervised learning                  by a pretrained FM, and use them as inputs to a separate
+to extract generalizable representations from unlabeled data,                 classifier. This method enables efficient knowledge trans-
+in contrast to supervised deep learning (DL) approaches that                  fer and supports strong generalization across different ana-
+rely on task-specific labeled data [1]. This offers several                   tomical regions [3]. Additionally, FMs support multimodal
+advantages in radiology, including adaptation to diverse clin-                integration of images with clinical data, help standardize
+ical applications, enhanced generalizability across imaging                   interpretations, and reduce inter-reader variability, thereby
+                                                                              alleviating the burden of expert annotation [4–6]. The gen-
+                                                                              eralization of FMs in medical imaging significantly depends
+* Judy Gichoya                                                                on the size and diversity of their training data [7]. However,
+  judywawira@emory.edu
+                                                                              these large-scale datasets predominantly feature chest, brain,
+1
+    Department of Radiology, Emory University, Atlanta, GA,                   and cardiac imaging, leading to a long-tailed distribution
+    USA                                                                       challenge similar to task-specific DL limitations regarding
+2
+    Department of Radiology, Mayo Clinic, Rochester, MN, USA                  other anatomical structures [8–10]. Nevertheless, the broad
+
+
+Vol:.(1234567890)
+Journal of Imaging Informatics in Medicine (2026) 39:2136–2149                                                           2137
+
+
+pretraining of FMs allows them to learn more generalizable        injury [18]. Knee osteoarthritis is a highly prevalent joint
+feature representations, which, when paired with effective        disease and a leading cause of pain and disability [19].
+fine-tuning techniques, can enhance performance even in           Diagnosing and grading the severity of knee osteoarthri-
+underrepresented anatomical regions [11].                         tis from radiographs, however, poses significant chal-
+   FMs often learn from weak labels or reports; hence, sub-       lenges. Radiographic assessment typically relies on the
+tle distinctions are not well evaluated. In medical imaging,      Kellgren-Lawrence grading (KLG) system, which is used
+reports frequently describe conditions with overlapping           to inform management decisions. Yet the classification of
+clinical or radiographic features, so even unmatched image-       osteoarthritis features on X-rays is often subjective and
+text pairs may contain shared diagnostic information. For         inconsistent, with moderate inter-observer agreement for
+example, a knee X-ray showing osteoarthritis with joint           KLG scores between different readers evaluating the same
+space narrowing and a report describing joint space (with-        images [20]. DL models have been developed to auto-
+out explicitly mentioning osteoarthritis) both relate to a key    matically detect radiographic features of osteoarthritis
+osteoarthritis feature. Treating such pairs as entirely unre-     and to predict KLG from knee X-rays. Notably, some AI
+lated during model training risks overlooking this shared         algorithms now perform on par with expert radiologists
+characteristic, potentially impairing the model’s ability to      in assessing knee osteoarthritis severity on radiographs
+associate key radiographic signs with the corresponding           with accuracy and weighted kappa of 70.85% and 0.91,
+pathology. Thus, recognizing and leveraging these com-            respectively [21]. Another study using ensemble model
+monalities is essential for enhancing the model’s diagnostic      achieved actuary and weighted kappa of 98% and 0.99,
+accuracy in specialized tasks [12]. A recent study introduced     respectively [22]. However, these models are limited by
+a challenging medical “visual question answering” bench-          their reliance on large labeled datasets and their inability
+mark that revealed multimodal large language models per-          to adapt beyond the specific task they were trained for.
+formed below random guessing when presented with visu-            FMs offer a promising alternative by reducing depend-
+ally dissimilar image pairs that medical experts could easily     ence on labeled data, enabling broader adaptability, and
+distinguish [13]. This finding raises serious concerns about      supporting integrated, interpretable outputs aligned with
+the reliability of existing FMs for healthcare applications,      clinical workflows.
+demonstrating that despite their apparent sophistication,             Given the limited availability of annotated musculo-
+these models lack fundamental visual reasoning capabili-          skeletal imaging data, developing a dedicated FM for knee
+ties required for medical imaging assessment.                     radiography remains a significant challenge. Therefore,
+   While multimodal FMs incorporate diverse medi-                 knee radiographs are underrepresented in the training
+cal imaging to create more generalizable representations          datasets of most multimodal FMs, making them an ideal
+[14, 15], their performance has rarely been evaluated on          case for evaluating the generalizability of these models to
+less-common tasks or anatomical regions, such as knee             less common imaging tasks. In this study, we investigate
+osteoarthritis. Many FM benchmarks use popular datasets           whether embeddings derived from pre-trained FMs can
+representing areas with abundant training and test data. Con-     reliably capture diagnostic information for knee osteoar-
+sequently, there is less evidence for how FMs handle uncom-       thritis. We selected two complementary FMs for evalua-
+mon imaging types (like musculoskeletal radiographs) and          tion: BiomedCLIP, a multimodal model that includes knee
+rare pathologies. Current studies validating FMs tend to          radiographs in its diverse medical imaging training data,
+focus on common conditions and well-represented imaging           and RAD-DINO, a model exclusively trained on chest
+modalities, leaving gaps in our knowledge of performance          radiographs [23, 24]. This selection allows us to assess
+on rare diseases and specialty domains. Despite their impres-     whether a FM with exposure to the specific anatomy of
+sive performance across general computer vision tasks,            interest (BiomedCLIP) outperforms one trained solely
+FMs demonstrate significant limitations for specialized           on radiographic imaging techniques but from a different
+radiographic feature classification, likely due to their train-   anatomical region (RAD-DINO). We hypothesized that
+ing approach and datasets [16]. For instance, one general         RAD-DINO can potentially capture generalizable radio-
+radiology FM achieved impressive overall accuracy across          graphic features and semantic anatomical patterns trans-
+five different tasks (modality recognition, disease diagno-       ferable across different body structures, despite never
+sis, medical visual question answering, report generation,        being explicitly trained on knee images. We compare the
+and rationale diagnosis) but failed to detect some infrequent     performance of these FM-based approaches with super-
+abnormalities like apical pleural thickening on an unseen         vised DL methods using transfer learning (Resnet18 and
+chest X-ray dataset entirely [17].                                ConvNeXt small variants), with the goal of determining
+   Knee radiography is one of the most performed mus-             if these embeddings offer a viable alternative in scenarios
+culoskeletal imaging studies in clinical practice, serving        where dedicated training data are scarce.
+as the standard first-line tool for evaluating knee pain or
+2138                                                                     Journal of Imaging Informatics in Medicine (2026) 39:2136–2149
+
+
+Methods
+
+Study Design and Data Source
+
+In this retrospective study, we utilized knee radiographs
+from the Osteoarthritis Initiative (OAI), a 10-year pro-
+spective observational study of osteoarthritis sponsored
+by the National Institutes of Health (NIH) [25]. The ini-
+tial dataset comprised 55,179 radiographic readings cor-
+responding to 24,546 bilateral knee images from 4796
+patients. Following OAI guidelines, duplicate readings
+were removed by keeping only the most recent evaluation
+for each image, followed by excluding the exams with-
+out Kellgren-Lawrence grade (KLG) reports resulting in
+45,486 unique readings. Of these, 45,092 images (from
+24,058 bilateral knee examinations for 4508 patients) were
+available through the AWS repository as of February 28,
+2025 (Fig. 1).
+
+
+Image Preprocessing
+
+We processed all knee radiographs using our in-house
+pipeline to ensure consistent and high-quality images for
+analysis. The original DICOM files were first converted to
+PNG format using a 2nd to 98th percentile intensity scal-
+ing approach. This method was essential because many OAI
+DICOM files lacked reliable metadata for lookup tables,
+window width, and window center, leading to inconsisten-
+cies in image rendering. Standard DICOM conversion tech-
+niques, such as VOI or modality LUT transformations and
+fixed window/level settings, resulted in substantial variation
+in brightness and contrast, rendering the images unsuitable
+for consistent analysis. Supplementary Fig. 1 shows a sam-
+ple of different-approach results on a single image. The per-
+centile scaling method offered a robust solution by mapping
+the intensity values between the 2nd and 98th percentiles
+of each image to the full dynamic range of the PNG for-
+mat. This approach effectively standardized image appear-
+ance across the dataset regardless of the original acquisition
+parameters or metadata inconsistencies.
+   After conversion, we applied a validated knee segmenta-
+tion algorithm (DUKE model) to automatically crop each
+image to focus on the knee joint region [21]. This cropping
+step successfully processed 44,985 unilateral knee images,
+removing irrelevant background elements and standardizing
+the anatomical region of interest. As a final enhancement,
+we applied contrast limited adaptive histogram equalization
+(CLAHE) to improve the visibility of subtle joint space and
+bone margin features critical for osteoarthritis assessment,
+while also implementing random horizontal flipping during
+training for data augmentation.                                  Fig. 1  Patient selection flowchart
+Journal of Imaging Informatics in Medicine (2026) 39:2136–2149                                                               2139
+
+
+Radiographic Feature Assessment                                    [27]. The ResNet18 architecture utilized a standard imple-
+                                                                   mentation with 18 layers featuring residual connections
+We utilized radiographic features from the OAI dataset,            (11.7 million parameters), while the ConvNeXt-Small
+which originally provided severity grades for several osteo-       model employed a more modern design with improved fea-
+arthritis characteristics based on the Osteoarthritis Research     ture extraction capabilities (50.2 million parameters). We
+Society International (OARSI) grading system. The source           specifically selected the ConvNeXt-Small variant to balance
+data included osteophytes (graded 0–3) and subchondral             computational requirements with the enhanced representa-
+sclerosis (graded 0–3) assessed separately for the medial and      tional capacity of the ConvNeXt architecture. Both models
+lateral compartments of both the femoral and tibial regions,       were initialized with weights pre-trained on ImageNet and
+joint space narrowing (JSN) (graded 0–3) evaluated inde-           then fine-tuned on our radiographic dataset.
+pendently for the medial and lateral compartments, and over-          For binary classification tasks, we trained the models
+all osteoarthritis severity determined using the KLG scale         using binary cross-entropy with Logits loss (BCEWithLogit-
+(graded 0–4). All the labels were made by two experienced          Loss), which is particularly effective for dealing with imbal-
+musculoskeletal radiologists.                                      anced datasets as it combines a sigmoid layer with binary
+   To facilitate robust analysis, we converted all ordinal radi-   cross-entropy in a numerically stable way. To further address
+ographic features into binary classification targets, defining     class imbalance, we implemented class weighting inversely
+a feature as present if its severity grade was ≥ 2 (moderate       proportional to class frequency in the training dataset. For
+to severe), consistent with clinical significance. We defined      multi-class KLG classification, we employed cross-entropy
+binary features for the medial and lateral compartments as         loss, the standard choice for multi-class problems where
+follows:                                                           each sample belongs to exactly one class. All models were
+                                                                   trained using the Adam optimizer with an initial learning
+• Osteophytes: Present if either femoral or tibial osteo-          rate of ­1e−4 and a batch size of 32. We applied early stopping
+   phytes in the respective compartment had a grade ≥ 2.           based on validation set performance with a patience of 10
+• Subchondral sclerosis: Present if either femoral or tibial       epochs to prevent overfitting.
+  subchondral sclerosis in the respective compartment had
+  a grade ≥ 2.
+• JSN: Present if JSN in the respective compartment had a          Foundation Models
+  grade ≥ 2.
+• Osteoarthritis: Present if any feature (osteophytes, sub-        To date, no musculoskeletal radiography-specific FMs has
+  chondral sclerosis, or JSN) in the respective compartment        been developed. Thus, we leveraged two complementary
+  had a grade ≥ 2.                                                 pre-trained FMs to extract image embeddings. First, we
+                                                                   utilized BiomedCLIP, a multimodal FM trained on diverse
+   Representative examples of each binary-defined feature          medical images paired with text descriptions. BiomedCLIP
+are provided in Supplementary Fig. 2 to illustrate the visual      provides 512-dimensional embeddings and offers the advan-
+characteristics of joint space narrowing, subchondral scle-        tage of exposure to a wide range of medical imaging modali-
+rosis, and osteophytes.                                            ties including knee radiographs during its training [23]. This
+   All models were trained and evaluated on these binary           breadth of training data enables BiomedCLIP to capture gen-
+classification tasks, except for KLG prediction, which was         eral medical imaging features. However, its heterogeneous
+treated as a multi-class classification task due to its 0–4        training dataset, which includes non-radiographic images,
+grading scale.                                                     potentially introduces representation variance that might
+                                                                   affect performance for specific radiographic tasks.
+Dataset Partitioning                                                  As a complementary approach, we employed RAD-
+                                                                   DINO, a vision transformer model specifically trained on
+We split our dataset into three patient-level subsets: training    chest radiographs (CXR) that generates 768-dimensional
+(80%), validation (10%), and test (10%). Stratified randomi-       embeddings. While RAD-DINO was not explicitly trained
+zation by target variable and KLG ensured consistent class         on knee radiographs, its exclusive focus on radiographic
+and KLG distributions across all subsets, enabling fair model      imaging creates potentially valuable feature representations
+comparisons.                                                       [24]. The technical similarity between chest and knee radi-
+                                                                   ography, both being projection radiography techniques with
+Deep Learning Models                                               similar image characteristics, contrast properties, and bone-
+                                                                   soft tissue interfaces, suggests that features learned from
+We implemented two convolutional neural network architec-          chest radiographs may transfer effectively to knee radio-
+tures for comparison: ResNet18 [26] and ConvNeXt-Small             graph analysis. This radiography-specific training provides
+2140                                                                     Journal of Imaging Informatics in Medicine (2026) 39:2136–2149
+
+RAD-DINO with potentially advantageous inductive biases           evaluated: A) image embeddings only from BiomedCLIP, B)
+for our task despite the difference in anatomical regions.        image embeddings only from RAD-DINO, and C) combined
+   By comparing these two FMs, we aimed to evaluate               image and text embeddings from BiomedCLIP.
+whether the broad medical domain knowledge of Biomed-                Text embeddings can enhance image embeddings by cap-
+CLIP or the radiography-specific features of RAD-DINO             turing multifaceted feature assessment. We used text embed-
+would prove more beneficial for osteoarthritis feature detec-     dings from BiomedCLIP exclusively for KLG prediction due
+tion. We extracted embeddings from the final layer of both        to its clinical importance and complex nature. KLG grading
+models’ image encoders without further fine-tuning the FMs        integrates multiple radiographic features, joint space nar-
+themselves. This embedding-based approach substantially           rowing, osteophytes, and subchondral sclerosis, into a single
+reduces computational complexity compared to training full        severity score (0–4), reflecting a radiologist’s expert judg-
+DL models [28].                                                   ment. To avoid increasing input dimensionality by concat-
+                                                                  enating text and image embeddings, we updated the image
+Text Embedding Generation                                         embeddings with text embeddings, preserving the original
+                                                                  embedding size while enhancing their representation for
+To leverage the BiomedCLIP model’s text encoder, we               KLG prediction.
+needed radiological reports for the OAI knee radiography             We initially explored three approaches for integrating
+dataset, but none were originally provided. Instead, we cre-      image and text embeddings:
+ated structured reports through template-based report gen-
+eration. For each knee X-ray image, we designed a fixed             Contrastive learning: We trained models to align image
+template and filled it with details from the OAI’s tabular data     and text embeddings in a shared feature space, achieving
+(feature annotations, such as severity grades for joint space       moderate performance.
+narrowing, osteophytes, and subchondral sclerosis). These           Cross-attention: We implemented cross-attention mech-
+reports were organized into the following sections:                 anisms between image and text embeddings, which
+                                                                    improved performance.
+• Joint space narrowing: Medial/lateral location and sever-         Teacher-student knowledge distillation: This approach
+   ity.                                                             yielded the best results and became our focus for further
+• Osteophytes: Location and severity.                               development.
+• Subchondral sclerosis: Location and severity.
+• Additional findings: Notes on issues like chondrocalci-            When using both image and text embeddings from
+  nosis, if present.                                              BiomedCLIP, the combined input would be 1024-dimen-
+• Impression: Overall severity and affected areas, without        sional (512 from images + 512 from text). However, this
+  explicitly mentioning the KLG scores.                           would create a mismatch with the deployment scenario
+                                                                  where only 512-dimensional image embeddings would be
+   Severity was described as none, mild, moderate, or severe      available. The teacher-student framework addressed our core
+(corresponding to grades 0–3), with anatomical locations          challenge by distilling knowledge from a model with access
+(medial/lateral, femoral/tibial) specified. A sample report       to both image and text information (teacher) into a model
+is provided in Supplementary Fig. 5. These reports were           that only requires image input (student). For the teacher
+processed by the BiomedCLIP text encoder to generate              model, we trained XGBoost classifiers using concatenated
+512-dimensional text embeddings for each image.                   image (512-dimensional) and text (512-dimensional) embed-
+                                                                  dings from BiomedCLIP, producing a 1024-dimensional
+Zero‑Shot Evaluation of BiomedCLIP                                input vector. This model generated soft targets, probabil-
+                                                                  ity distributions across the KLG classes, which served as
+To assess BiomedCLIP’s ability to capture global features         enriched supervision signals.
+of knee radiographs, we performed a zero-shot classification         Next, we developed a neural network student model that
+task by prompting the model with “Is this a knee XR?” with-       accepted only the image embeddings (512-dimensional) as
+out fine-tuning. This evaluation tested the model’s baseline      input. This student was trained using the soft targets from
+capability to recognize knee radiographs, a prerequisite for      the teacher and ground truth hard labels (KLG scores). The
+effective performance in downstream related tasks.                loss function combined Kullback–Leibler divergence for soft
+                                                                  targets and cross-entropy for hard labels, balanced using a
+XGBoost Classifiers                                               temperature parameter of 7 and alpha value of 0.8, which
+                                                                  were empirically selected for optimal performance. This
+We trained XGBoost classifiers using embeddings extracted         approach enabled the student model to benefit from mul-
+from the FMs. Three embedding configurations were                 timodal knowledge captured by the teacher model, while
+Journal of Imaging Informatics in Medicine (2026) 39:2136–2149                                                              2141
+
+ensuring compatibility with deployment settings where only           For multi-class KLG classification, we employed
+radiographic images are available, and structured reports         weighted Cohen’s kappa coefficient as our primary metric,
+may not exist. Our training process pipeline is shown in          which accounts for the ordinal nature of KLG and the pos-
+Fig. 2.                                                           sibility of chance agreement. We also reported classification
+                                                                  accuracy.
+Model Evaluation                                                     We employed gradient-weighted class activation mapping
+                                                                  (Grad-CAM) to qualitatively visualize regions of the radio-
+We evaluated our models using appropriate metrics for each        graphs that most influenced the predictions of our DL mod-
+classification task. For binary classification of radiographic    els. These visualizations served as an interpretability tool to
+features (presence/absence of osteophytes, subchondral            assess whether models focused on clinically relevant ana-
+sclerosis, and joint space narrowing), we computed the area       tomical regions during prediction. No quantitative overlap
+under the receiver operating characteristic curve (AUC),          or radiologist annotation-based validation was performed;
+accuracy, sensitivity, specificity, precision, and F1 score.      the evaluation was limited to visual inspection.
+To compare model performance across classification tasks,
+we computed 95% confidence intervals (CIs) for each evalu-
+ation metric using bootstrap resampling with 1000 iterations.     Results
+Differences in performance were considered not statistically
+significant if their confidence intervals overlapped. This non-   Dataset Characteristics
+parametric approach allowed us to estimate the variability
+of each model’s performance without assuming a specific           Our final dataset comprised 44,985 knee radiographs
+underlying distribution.                                          with a mean patient age of 63.5 ± 9.3 years and BMI of
+
+
+Fig. 2  Training process pipeline
+2142                                                                           Journal of Imaging Informatics in Medicine (2026) 39:2136–2149
+
+28.4 ± 4.9 kg/m2. The dataset included 19,146 (42.6%)                   summarizes the demographic characteristics and feature
+images from male patients and 25,839 (57.4%) from female                prevalence in our dataset.
+patients. Regarding osteoarthritis severity, 18,282 (40.6%)
+images were classified as KLG 0, 8709 (19.4%) as KLG                    Zero‑Shot Performance of BiomedCLIP
+1, 10,478 (23.3%) as KLG 2, 5839 (13.0%) as KLG 3, and
+1677 (3.7%) as KLG 4.                                                   The model correctly identified 91.14% of images as knee
+   Feature prevalence was higher in the medial compartment              radiographs with confidence scores above 0.5. Visual assess-
+across all radiographic findings. Medial joint space narrow-            ment of false predictions revealed that most misclassified
+ing was present in 5825 (12.9%) images compared to 1826                 images had poor contrast or quality issues (Supplementary
+(4.1%) for lateral joint space narrowing. Similarly, medial             Fig. 3).
+osteophytes were identified in 7364 (16.4%) images versus
+5195 (11.5%) for lateral osteophytes. Subchondral sclerosis             Comparison of Deep Learning vs. Foundation
+showed the lowest prevalence with 4190 (9.3%) images for                Models
+medial and 1202 (2.7%) for lateral compartments. Overall,
+medial compartment osteoarthritis (20.9%) was more com-                 When comparing DL models to FM, we observed distinct
+mon than lateral compartment involvement (12.5%). Table 1               performance patterns across different classification tasks.
+                                                                        For KLG classification, DL approaches substantially out-
+                                                                        performed FMs. ConvNeXt achieved the highest weighted
+                                                                        kappa (0.880) and accuracy (0.704), followed closely by
+Table 1  Demographic and feature prevalence of the cohort               ResNet18 (0.874 kappa, 0.694 accuracy). In contrast, FMs
+Characteristic                                       Value              showed significantly lower performance, with BiomedCLIP
+                                                                        (image + text) reaching only 0.551 kappa and 0.512 accu-
+Total images (patients)                              44,985 (4508)
+                                                                        racy, while RAD-DINO achieved 0.521 kappa and 0.488
+Age (years)                                          63.5 ± 9.3
+                                                                        accuracy (Table 2).
+BMI (kg/m2)                                          28.4 ± 4.9
+                                                                           Analysis of the confusion matrices revealed consistent
+Sex                                                  19,146 (42.6%)
+Male                                                 25,839 (57.4%)
+                                                                        misclassification patterns across models, though with vary-
+Female                                                                  ing severity. DL models demonstrated stronger diagonal
+KLG:                                                 18,282 (40.6%)     patterns in the confusion matrix, indicating better overall
+0                                                    8709 (19.4%)       accuracy. All models showed higher accuracy for KLG 0
+1                                                    10,478 (23.3%)     and KLG 4, with most misclassifications occurring between
+2                                                    5839 (13.0%)
+3                                                    1677 (3.7%)
+                                                                        adjacent grades. However, FMs exhibited more pronounced
+4                                                                       misclassification, overall downgrading disease severity by
+Joint space narrowing                                5825 (12.9%)       classifying KLG 1 as KLG 0 and KLG 3 as KLG 2. The
+Medial                                               1826 (4.1%)        teacher-student approach showed improvement over image
+Lateral                                                                 only FMs but still performed significantly below the DL
+Osteophytes                                          7364 (16.4%)       approaches (Fig. 3).
+Medial                                               5195 (11.5%)
+Lateral
+                                                                           The addition of text embeddings to image embeddings
+Subchondral sclerosis                                4190 (9.3%)
+                                                                        in the BiomedCLIP model resulted in modest performance
+Medial                                               1202 (2.7%)        improvements. For KLG classification, the image + text
+Lateral                                                                 approach improved weighted kappa from 0.524 to 0.551
+Osteoarthritis                                       9389 (20.9%)       and accuracy from 0.498 to 0.512. While both models dem-
+Medial                                               5602 (12.5%)       onstrated similar patterns of misclassification, particularly
+Lateral
+
+
+
+
+Table 2  KLG classification performance comparison between all models
+
+Metric                        ResNet18           ConvNeXt             BiomedCLIP (image) BiomedCLIP                     RAD-DINO (image)
+                                                                                         (image + text)
+
+Weighted kappa (95%           0.874 (0.864–0.882) 0.880 (0.871–0.889) 0.524 (0.473–0.512)   0.551 (0.5266–0.5740)       0.521 (0.498–0.543)
+ CI)
+Accuracy (95% CI)             0.694 (0.681–0.707) 0.704 (0.692–0.718) 0.498 (0.483–0.507)   0.512 (0.4982–0.5267)       0.488 (0.474–0.503)
+
+The highest values are bold
+Journal of Imaging Informatics in Medicine (2026) 39:2136–2149                                                                                 2143
+
+
+
+
+Fig. 3  Confusion matrices for predicting Kellgren-Lawrence grades          based approaches show less concentrated diagonal patterns, indicat-
+of osteoarthritis severity on the test set. Each cell represents the        ing higher confusion between adjacent grades especially for KLG 1.
+percentage of true class instances (rows) predicted as a given class        BiomedCLIP (image + text) performs slightly better than Biomed-
+(columns), with rows summing to 100%. Both DL models exhibit                CLIP (image only), but both models frequently misclassify KLG 2
+strong diagonal patterns, indicating high classification accuracy, espe-    and KLG 3 cases as KLG 1. RAD-DINO showed substantial confu-
+cially for KLG 0 and KLG 4. ConvNeXt demonstrates better class              sion across all classes, particularly underperforming in correctly iden-
+separation, particularly for mid-range grades (KLG 2 and KLG 3),            tifying KLG 4
+with fewer misclassifications into adjacent classes. In contrast, FM-
+
+
+with adjacent KLG grades, the overall accuracy remained                     Comparison Between Foundation Models
+substantially lower than DL approaches.
+    For binary classification tasks, the performance gap                    We compared the performance of BiomedCLIP and RAD-
+between approaches was less pronounced. As shown in                         DINO across eight binary classification tasks. Both models
+Fig. 4, DL models generally achieved higher AUC values                      demonstrated similar overall performance patterns, but with
+for most tasks, particularly for medial compartment features.               notable differences in specific tasks. For medial compart-
+FMs performed more competitively for lateral feature detec-                 ment features, BiomedCLIP slightly outperformed RAD-
+tion, where the positive sample size was limited for training.              DINO, achieving higher AUC values for medial JSN (0.817
+Interestingly, while DL models demonstrated superior over-                  vs. 0.806) and medial osteophytes (0.824 vs. 0.815). Con-
+all performance, they also showed greater variance between                  versely, RAD-DINO showed marginal advantages in detect-
+medial and lateral compartment detection. Although with                     ing lateral compartment features, particularly for lateral sub-
+significantly lower performance, FMs exhibited more con-                    chondral sclerosis (0.799 vs. 0.787) and lateral JSN (0.802
+sistent performance across compartments (Table 3).                          vs. 0.794). However, confidence interval analysis revealed
+
+
+
+
+Fig. 4  Radar charts comparing model performance across eight               eral compartment features, particularly in recall. ConvNeXt demon-
+binary osteoarthritis classification tasks. Each chart illustrates a dif-   strated the most balanced performance across all metrics and tasks,
+ferent metric: a AUC, b recall, and c specificity. ConvNeXt and             while FMs showed lower recall but more consistent specificity across
+ResNet18 consistently outperform BiomedCLIP and RAD-DINO                    compartments
+across all metrics. The performance gap was most pronounced for lat-
+2144                                                                                 Journal of Imaging Informatics in Medicine (2026) 39:2136–2149
+
+Table 3  Evaluation metrics for all models and tasks (confidence intervals)
+Anatomical         Model           Accuracy           Precision          Recall             Specificity        F1 score           AUC​
+location
+
+Lateral joint   BioMedCLIP         0.89 (0.88–0.90)   0.20 (0.17–0.24)   0.55 (0.47–0.62) 0.90 (0.89–0.91)      0.29 (0.25–0.34) 0.83 (0.80–0.87)
+  space narrow- RAD-DINO           0.94 (0.93–0.95)   0.36 (0.30–0.41)   0.53 (0.46–0.59) 0.96 (0.95–0.96)      0.42 (0.36–0.48) 0.89 (0.86–0.91)
+  ing
+                ConvNeXt           0.99 (0.98–0.99)   0.87 (0.83–0.92)   0.78 (0.73–0.83) 1.00 (0.99–1.00)      0.82 (0.78–0.86) 0.97 (0.96–0.98)
+                Resnet18           0.99 (0.99–0.99)   0.86 (0.81–0.90)   0.81 (0.77–0.86) 0.99 (0.99–1.00)      0.83 (0.80–0.87) 0.99 (0.98–0.99)
+Lateral         BioMedCLIP         0.85 (0.84–0.86)   0.43 (0.40–0.47)   0.65 (0.61–0.69) 0.88 (0.87–0.89)      0.52 (0.49–0.55) 0.86 (0.84–0.87)
+osteophytes     RAD-DINO           0.88 (0.87–0.89)   0.54 (0.50–0.57)   0.61 (0.56–0.65) 0.92 (0.92–0.93)      0.57 (0.54–0.60) 0.88 (0.87–0.90)
+                ConvNeXt           0.93 (0.92–0.93)   0.69 (0.66–0.72)   0.71 (0.68–0.74) 0.96 (0.95–0.96)      0.70 (0.68–0.73) 0.95 (0.94–0.96)
+                Resnet18           0.93 (0.92–0.93)   0.68 (0.65–0.71)   0.73 (0.70–0.76) 0.95 (0.95–0.96)      0.70 (0.68–0.73) 0.94 (0.94–0.95)
+Lateral         BioMedCLIP         0.95 (0.94–0.96)   0.21 (0.15–0.27)   0.38 (0.29–0.48) 0.96 (0.96–0.97)      0.27 (0.20–0.33) 0.87 (0.84–0.90)
+subchondral     RAD-DINO           0.96 (0.95–0.97)   0.29 (0.22–0.36)   0.47 (0.37–0.56) 0.97 (0.97–0.98)      0.36 (0.28–0.42) 0.91 (0.87–0.93)
+  sclerosis
+                ConvNeXt           0.99 (0.99–0.99)   0.76 (0.70–0.83)   0.78 (0.72–0.85) 0.99 (0.99–1.00)      0.77 (0.72–0.82) 0.98 (0.97–0.99)
+                Resnet18           0.99 (0.99–0.99)   0.87 (0.81–0.93)   0.69 (0.61–0.76) 1.00 (1.00–1.00)      0.77 (0.71–0.82) 0.98 (0.96–0.99)
+Lateral         BioMedCLIP         0.84 (0.83–0.85)   0.44 (0.41–0.47)   0.66 (0.62–0.69) 0.87 (0.86–0.88)      0.53 (0.50–0.56) 0.85 (0.83–0.86)
+osteoarthritis  RAD-DINO           0.84 (0.83–0.85)   0.17 (0.14–0.20)   0.72 (0.65–0.78) 0.84 (0.83–0.85)      0.28 (0.24–0.31) 0.89 (0.86–0.90)
+                ConvNeXt           0.93 (0.92–0.93)   0.72 (0.69–0.76)   0.67 (0.64–0.70) 0.96 (0.96–0.97)      0.70 (0.67–0.72) 0.95 (0.94–0.96)
+                Resnet18           0.93 (0.93–0.94)   0.76 (0.73–0.79)   0.69 (0.66–0.71) 0.97 (0.96–0.97)      0.72 (0.70–0.74) 0.95 (0.94–0.96)
+Medial joint    BioMedCLIP         0.82 (0.81–0.83)   0.40 (0.37–0.43)   0.72 (0.68–0.75) 0.83 (0.82–0.85)      0.52 (0.48–0.54) 0.86 (0.85–0.88)
+  space narrow- RAD-DINO           0.85 (0.84–0.86)   0.46 (0.43–0.50)   0.61 (0.57–0.65) 0.89 (0.88–0.90)      0.53 (0.49–0.56) 0.86 (0.85–0.88)
+  ing
+                ConvNeXt           0.96 (0.96–0.96)   0.87 (0.85–0.90)   0.84 (0.81–0.86) 0.98 (0.98–0.98)      0.85 (0.84–0.87) 0.99 (0.99–0.99)
+                Resnet18           0.96 (0.96–0.96)   0.86 (0.84–0.88)   0.85 (0.82–0.87) 0.98 (0.97–0.98)      0.85 (0.84–0.87) 0.99 (0.98–0.99)
+Medial          BioMedCLIP         0.83 (0.82–0.85)   0.52 (0.48–0.55)   0.68 (0.64–0.71) 0.87 (0.86–0.88)      0.59 (0.56–0.61) 0.85 (0.83–0.86)
+osteophytes     RAD-DINO           0.83 (0.82–0.84)   0.51 (0.48–0.54)   0.71 (0.68–0.74) 0.86 (0.85–0.87)      0.59 (0.57–0.62) 0.86 (0.85–0.88)
+                ConvNeXt           0.91 (0.91–0.92)   0.72 (0.70–0.74)   0.82 (0.79–0.84) 0.93 (0.93–0.94)      0.77 (0.75–0.78) 0.95 (0.95–0.96)
+                Resnet18           0.91 (0.91–0.92)   0.74 (0.71–0.76)   0.78 (0.76–0.81) 0.94 (0.94–0.95)      0.76 (0.74–0.78) 0.95 (0.94–0.96)
+Medial          BioMedCLIP         0.86 (0.85–0.87)   0.38 (0.35–0.41)   0.69 (0.64–0.73) 0.88 (0.87–0.89)      0.49 (0.45–0.53) 0.88 (0.86–0.90)
+subchondral     RAD-DINO           0.88 (0.87–0.89)   0.42 (0.38–0.45)   0.62 (0.57–0.66) 0.91 (0.90–0.92)      0.50 (0.46–0.53) 0.87 (0.86–0.89)
+  sclerosis
+                ConvNeXt           0.95 (0.95–0.96)   0.76 (0.73–0.79)   0.77 (0.73–0.80) 0.97 (0.97–0.98)      0.76 (0.74–0.79) 0.97 (0.97–0.98)
+                Resnet18           0.95 (0.95–0.96)   0.75 (0.72–0.78)   0.79 (0.76–0.82) 0.97 (0.97–0.97)      0.77 (0.74–0.79) 0.97 (0.96–0.97)
+Medial osteoar- BioMedCLIP         0.81 (0.80–0.82)   0.56 (0.53–0.59)   0.68 (0.65–0.71) 0.85 (0.84–0.86)      0.61 (0.59–0.64) 0.84 (0.82–0.86)
+  thritis       RAD-DINO           0.79 (0.78–0.81)   0.52 (0.49–0.55)   0.69 (0.66–0.72) 0.82 (0.81–0.83)      0.59 (0.57–0.62) 0.84 (0.83–0.86)
+                ConvNeXt           0.93 (0.92–0.93)   0.82 (0.80–0.84)   0.84 (0.82–0.86) 0.95 (0.94–0.96)      0.83 (0.82–0.85) 0.96 (0.96–0.97)
+                Resnet18           0.92 (0.91–0.93)   0.82 (0.80–0.84)   0.81 (0.79–0.83) 0.95 (0.94–0.96)      0.81 (0.80–0.83) 0.95 (0.95–0.96)
+
+Bold entries highlight the top performing values
+
+
+
+no statistically significant differences between the models                   slightly higher weighted kappa (0.880 vs. 0.874) and accu-
+for any feature (Table 3).                                                    racy (0.704 vs. 0.694). Examining the confusion matrices
+   Both models showed substantial performance gaps com-                       reveals that ConvNeXt showed better performance in classi-
+pared to dedicated DL approaches, particularly for KLG                        fying KLG 2, which represents a clinically important thresh-
+classification. Neither FM approached the performance                         old for diagnosing radiographic osteoarthritis. For binary
+of ConvNeXt or ResNet18, suggesting that despite their                        classification tasks, ConvNeXt generally outperformed
+pre-training on large datasets, their embeddings failed to                    ResNet18 across most metrics. The performance gap was
+capture the full complexity of radiographic osteoarthritis                    most pronounced for challenging features like subchondral
+assessment.                                                                   sclerosis detection, where ConvNeXt achieved higher AUC
+                                                                              values for both medial (0.892 vs. 0.880) and lateral (0.865
+Comparison Between Deep Learning Models                                       vs. 0.852) compartments.
+                                                                                 Grad-CAM visualizations revealed important differences
+ConvNeXt and ResNet18 both demonstrated strong perfor-                        in how these models interpret radiographic features. Con-
+mance for KLG classification, with ConvNeXt achieving                         vNeXt consistently focused on anatomically relevant regions
+Journal of Imaging Informatics in Medicine (2026) 39:2136–2149                                                                            2145
+
+when making predictions. For example, when classifying                      Despite the rapid progress of FMs in medical imaging,
+lateral subchondral sclerosis, ConvNeXt’s attention maps                 our results demonstrate that supervised learning remains
+highlighted the correct anatomical compartment. In contrast,             essential for radiology tasks where FMs lack sufficient train-
+ResNet18 occasionally focused on irrelevant areas of the                 ing data, such as musculoskeletal radiography. This limita-
+image despite making correct predictions (Fig. 5). This sug-             tion was particularly evident in the classification of severe
+gests that while both models achieved similar quantitative               osteoarthritis grades. A recent meta-analysis supports this,
+performance, ConvNeXt’s predictions were more reliably                   showing that DL models achieve high sensitivity (> 50%)
+based on clinically relevant features.                                   for classifying KLG scores, especially in severe cases [31].
+                                                                         The models perform better at identifying higher KLG scores
+                                                                         (sensitivity of 90.3%, 86.74%, and 84.76% for grades 4, 3,
+                                                                         and 2, respectively), while showing lower performance
+Discussion                                                               for milder cases (64.00% and 75.03% for grades 1 and 2,
+                                                                         respectively) [31]. Despite some successful applications of
+Existing validation studies on multimodal FMs have focused               unsupervised domain adaptation techniques for phenotype
+predominantly on common pathologies rather than compre-                  classification in knee osteoarthritis, such as distinguishing
+hensively assessing performance across the full spectrum                 between cartilage, meniscus, and subchondral bone involve-
+of medical imaging [29, 30]. In this study, we compared the              ment [32], current FMs may underperform due to limited
+performance of supervised DL models and FM embeddings                    representation of those data in pretraining corpora. This
+for classifying osteoarthritis-related features in knee radio-           aligns with recent studies showing that FMs may struggle
+graphs as an underrepresented pathology in FMs. Our find-                with fine-grained or localized feature recognition in under-
+ings showed that DL models consistently outperformed FM-                 represented anatomical domains [33, 34]. This gap arises
+based approaches across all tasks, with the most substantial             because such fine-grained abnormalities were relatively
+gap observed in the multi-class classification of KLG. Con-              rare or not explicitly learned during pretraining. Similarly,
+vNeXt achieved the highest weighted kappa (0.880), high-                 in pathology imaging, current FMs are primarily validated
+lighting its ability to integrate subtle radiographic features           on image-level tasks, while their ability to recognize region-
+necessary for accurate osteoarthritis grading. Among DL                  level, fine-grained visual concepts remains uncertain ​[35].
+models, ConvNeXt also demonstrated greater anatomical                    These reports underscore that without targeted data, FMs
+specificity, particularly for more complex tasks such as lat-            may miss localized findings, underperforming compared to
+eral subchondral sclerosis detection. Grad-CAM visualiza-                specialized models or human experts on fine-detail tasks.
+tions further supported ConvNeXt’s superior anatomical                   Fine-tuning a FM on a targeted dataset (or training a dedi-
+interpretability, as it reliably attended to clinically relevant         cated model from scratch) can significantly boost perfor-
+regions such as joint space and bone margins.                            mance in such niche tasks [36].
+
+
+
+
+Fig. 5  Grad-CAM visualizations for the lateral subchondral sclerosis    sclerosis. A Original cropped image with lateral subchondral sclerosis
+classification task. While both models predicted correctly, ConvNeXt     (red box, the arrow shows high linear density in tibia articular sur-
+focused more precisely on the lateral compartment. Note that co-         face along with severe joint space narrowing). B Despite correct pre-
+occurring features (e.g., joint space narrowing, osteophytes) may also   diction Resnet18 mostly focus on the wrong medial compartment. C
+influence model attention due to their correlation with subchondral      ConvNeXt is correctly focusing on the lateral compartment
+2146                                                                      Journal of Imaging Informatics in Medicine (2026) 39:2136–2149
+
+   In our study, BiomedCLIP and RAD-DINO showed                    without fine-tuning, FMs may underperform on fine-grained
+similarly limited performance across most classification           tasks where domain-specific representation is essential.
+tasks, despite substantial differences in their training data.        The limited performance gains from adding text embed-
+BiomedCLIP was trained on a diverse collection of medical          dings to BiomedCLIP’s image representations further high-
+images and associated text reports, including some exposure        light the challenges of leveraging multimodal information for
+to knee radiographs [23], whereas RAD-DINO was trained             detailed radiographic classification. While radiology reports
+exclusively on chest X-rays using a self-supervised learning       contain structured assessments, simple fusion of image and
+framework [24]. The comparable performance of these mod-           text embeddings may not be sufficient. Several factors may
+els suggests that modality-specific inductive biases, such as      explain this: 1) redundancy, where report content overlaps
+those learned from projection radiography, may general-            with visual features already learned by the image encoder;
+ize more effectively across anatomies than broad, modal-           2) noise or mismatch in report detail, which may not align
+ity-diverse pretraining. Chest and knee radiographs share          well with local image features; and 3) architectural limita-
+common low-level visual features like grayscale intensity          tions in FM design, where fusion layers may not effectively
+distributions, bone-soft tissue contrast, and edge-focused         integrate fine-resolution text-image correspondences [42].
+patterns, which may facilitate feature transfer across ana-        In our case, the teacher-student distillation approach yielded
+tomical regions. This observation is consistent with prior         only modest improvements in performance, suggesting that
+findings showing that X-ray models trained on one region           text-derived signal was not effectively transferred to the stu-
+(e.g., chest) can perform well on others (e.g., limbs or spine),   dent model trained only on image embeddings. Future work
+due to shared modality features rather than anatomical over-       should explore more advanced fusion techniques or richer
+lap [37, 38]. In contrast, multimodal training, as used in         clinical documentation to incorporate the full potential of
+BiomedCLIP, may dilute radiography-specific representa-            multimodal integration.
+tions, limiting performance on tasks that depend on modal-            Our zero-shot evaluation of BiomedCLIP showed that the
+ity-specific cues. Supporting this, studies have shown that        model correctly identified 91.14% of knee radiographs when
+models pretrained on mixed-modality data (e.g., CT, MRI,           prompted with “Is this a knee X-ray?”. While this result
+ultrasound) achieve weaker gains on X-ray-specific tasks           supports baseline anatomical awareness, it also revealed a
+compared to those pretrained on radiographs alone [39, 40].        non-trivial failure rate (8.8%). Visual inspection showed that
+These findings highlight the value of modality-consistent          most misclassified images had poor contrast or resolution,
+pretraining for specialized radiographic tasks, particularly       suggesting that image quality can significantly impair FM
+in anatomical regions with limited labeled data. In such set-      performance, even for general recognition tasks [43, 44].
+tings, FMs trained on radiographs from other body parts may        This underscores the need to either train models with image
+provide transferable representations, allowing for effective       degradation scenarios or pair them with image quality con-
+downstream adaptation. A promising strategy may involve            trol systems to ensure robust deployment in clinical prac-
+using general radiographic projections, such as those from         tice. This should be particularly noted when FMs are being
+chest or extremity X-rays, to pretrain a modality-specific         used in auxiliary roles like modality recognition, anatomical
+FM, which can then be fine-tuned on a smaller number of            localization, image quality assessment, and workflow triage,
+target-specific images (e.g., knees) to capture the granular       tasks that benefit from general visual reasoning rather than
+features required for diagnosis.                                   disease-specific specialization [45, 46].
+   Although both BiomedCLIP and RAD-DINO were                         In our study, ConvNeXt consistently outperformed
+trained using self-supervised methods, FMs differ from tra-        ResNet18 across most tasks, particularly in terms of pre-
+ditional self-supervised models in scale, generalizability,        cision and specificity. This difference was most notable in
+and training objectives. FMs are typically pre-trained on          lateral compartment features, such as subchondral sclerosis
+diverse datasets across multiple modalities or domains, ena-       and osteophytes, which are both underrepresented and more
+bling them to extract broad, transferable features. In contrast,   difficult to localize. ConvNeXt’s enhanced performance in
+self-supervised models developed for musculoskeletal imag-         these settings may reflect its stronger capacity for capturing
+ing are usually trained on domain-specific datasets with con-      fine-grained spatial patterns and resisting overcalling in low-
+trastive or reconstruction-based objectives, yielding features     prevalence classes. Additionally, Grad-CAM visualizations
+that may be more directly aligned with radiographic anatomy        showed more anatomically focused attention in ConvNeXt,
+[41]. While these task-specific self-supervised models may         suggesting it learned more localized and clinically relevant
+offer better interpretability and localization for a given task,   representations compared to ResNet18. Although Grad-
+FMs are easier to apply across different clinical settings and     CAM was applied for models trained on specific classifica-
+imaging tasks because they are trained to be more flexible         tion tasks, the resulting heatmaps may reflect overlapping
+and broadly applicable. However, our findings suggest that         signals from co-occurring radiographic features, especially
+Journal of Imaging Informatics in Medicine (2026) 39:2136–2149                                                                              2147
+
+in osteoarthritis, where subchondral sclerosis often presents      FM pretraining corpora and the challenge of capturing fine-
+alongside joint space narrowing and osteophyte formation.          grained radiographic features with generalized embeddings.
+   A key distinction between DL and FM approaches in               From a clinical standpoint, DL models like ConvNeXt pro-
+our study was interpretability. ConvNeXt, for example,             vide high diagnostic accuracy and interpretable predictions
+often focused on anatomically relevant areas, closely align-       that can support radiologists in grading disease severity and
+ing with radiologists’ diagnostic reasoning. This form of          monitoring progression. FMs, while not yet suitable for
+visual explanation, typically provided by saliency maps or         standalone diagnosis, offer practical advantages for clinical
+attention heatmaps, is widely used in radiology to support         deployment, including reduced computational demands and
+clinical trust in DL models, as it allows users to verify that     potential for report generation through multimodal integra-
+the model’s decisions are based on meaningful image fea-           tion. These characteristics may enable broader adoption in
+tures. In contrast, FMs, particularly vision-language and          healthcare systems with limited resources, particularly for
+other multimodal architectures, typically produce high-            triage, quality control, or assistive decision support. Mov-
+dimensional feature embeddings that are not directly asso-         ing forward, hybrid strategies combining the scalability of
+ciated with specific spatial locations in the input image. As      FMs with the precision of task-specific DL may offer the
+a result, it becomes challenging to localize the source of a       most clinically feasible and impactful solutions for AI in
+prediction or to understand which image regions influenced         radiology.
+the model’s decision [47]. These concerns are especially
+                                                                   Supplementary Information The online version contains supplemen-
+pressing in clinical settings, where decisions must be sup-        tary material available at https://​doi.​org/​10.​1007/​s10278-​025-​01636-x.
+ported by clear and verifiable reasoning [48]. Furthermore,
+FMs remain vulnerable to encoding or amplifying biases             Author Contribution All authors contributed to the study concep-
+present in the data [49, 50]. Without mechanisms to trace          tion and design. Data extraction was performed by Mohammadreza
+                                                                   Chavoshi and Aawez Mansuri. Material preparation and analysis were
+and evaluate the reasoning behind predictions, such biases         performed by Mohammadreza Chavoshi and Theo Dapamede. The first
+may go undetected, potentially undermining clinical trust          draft of the manuscript was written by Mohammadreza Chavoshi, and
+and patient safety. While emerging techniques, such as atten-      all authors commented on previous versions of the manuscript. All
+tion visualization, feature attribution, and embedding space       authors read and approved the final manuscript.
+analysis, offer some avenues for interpretation, they are often    Funding Dr. Gichoya is a 2022 Robert Wood Johnson Foundation Har-
+less spatially explicit and less mature than the tools available   old Amos Medical Faculty Development Program and declares sup-
+for conventional DL models and thus require further devel-         port from Lacuna Fund (#67), Gordon and Betty Moore Foundation,
+opment and validation for reliable use in clinical practice.       NIH (NIBIB) MIDRC grant under contracts 75N92020C00008 and
+                                                                   75N92020C00021, NHLBI Award Number R01HL167811, and NIH
+   This study has several limitations. First, we evaluated         common fund award 1R25OD039834-01.
+only two FMs, one multimodal (BiomedCLIP) and one
+unimodal (RAD-DINO). While representative of their cat-            Data Availability Data is available from the NIH Osteoarthritis Ini-
+egories, these models do not capture the full spectrum of          tiative at https://​www.​niams.​nih.​gov/​grants-​fundi​ng/​funded-​resea​rch/​
+                                                                   osteo​arthr​itisi​nitia​tive.
+FM strategies being explored in current research. Second,
+regarding the interpretability for FMs, we did not implement       Declarations
+any decoding or attention visualization strategies to map
+their high-dimensional embeddings back to image regions.           Ethics Approval This project used retrospective and anonymized
+Third, despite using a rigorously curated clinical trial data-     patient images of Osteoarthritis Initiative publicly available dataset.
+set, label noise was observed in several cases, particularly       Consent to Participate Not applicable.
+in false positive and false negative predictions revealed
+through Grad-CAM (Supplementary Fig. 4). This highlights           Consent for Publication Not applicable.
+the importance of label auditing in future studies and may
+have affected model performance metrics. Finally, while            Conflict of interest The authors declare no competing interests.
+radiographs may underestimate early osteophyte formation
+or subtle bony changes, the use of expert-annotated features
+from the OAI trial provides a strong reference standard for
+                                                                   References
+model evaluation.
+   In conclusion, our results show that while FMs bring             1. Bommasani R, Hudson DA, Adeli E, Altman R, Arora S, Arx S
+promising capabilities for zero-shot learning and auxiliary            von, et al. On the Opportunities and Risks of Foundation Models.
+imaging tasks, supervised DL models currently offer supe-              arXiv; 2022. Available from: http://​arxiv.​org/​abs/​2108.​07258
+                                                                    2. Paschali M, Chen Z, Blankemeier L, Varma M, Youssef A,
+rior performance for specialized radiographic assessments
+                                                                       Bluethgen C, et al. Foundation Models in Radiology: What, How,
+like knee osteoarthritis grading. This gap likely stems from           Why, and Why Not. Radiology. https://​doi.​org/​10.​1148/​radiol.​
+limited representation of musculoskeletal radiographs in               240597, Feb 2025.
+2148                                                                                      Journal of Imaging Informatics in Medicine (2026) 39:2136–2149
+
+ 3. Truong T, Mohammadi S, Lenga M. How Transferable are Self-                   19. Leifer VP, Katz JN, Losina E. The burden of OA-health services
+    supervised Features in Medical Image Classification Tasks? In:                   and economics. Osteoarthritis Cartilage. https://​doi.​org/​10.​1016/J.​
+    Proceedings of Machine Learning for Health. PMLR; p. 54–74,                      JOCA.​2021.​05.​007, Jan 2022.
+    2021. Available from: https://​proce​edings.​mlr.​press/​v158/​truon​        20. Köse Ö, Acar B, Çay F, Yilmaz B, Güler F, Yüksel HY. Inter- and
+    g21a.​html                                                                       Intraobserver Reliabilities of Four Different Radiographic Grading
+ 4. Moor M, Banerjee O, Abad ZSH, Krumholz HM, Leskovec                              Scales of Osteoarthritis of the Knee Joint. J Knee Surg. https://​
+    J, Topol EJ, et al. Foundation models for generalist medical                     doi.​org/​10.​1055/s-​0037-​16022​49, May 1 2017.
+    artificial intelligence. Nature. https://​doi.​org/​10.​1038/​s41586-​       21. Swiecicki A, Li N, O’Donnell J, Said N, Yang J, Mather RC, et al.
+    023-​05881-4, Apr 2023.                                                          Deep learning-based algorithm for assessment of knee osteoarthri-
+ 5. Pai S, Bontempi D, Prudente V, Hadzic I, Sokač M, Chaunzwa                       tis severity in radiographs matches performance of radiologists.
+    TL, et al. Foundation Models for Quantitative Biomarker Dis-                     Comput Biol Med. https://​doi.​org/​10.​1016/j.​compb​iomed.​2021.​
+    covery in Cancer Imaging. medRxiv. https://​doi.​org/​10.​1101/​                 104334, June 2021. Available from: https://​pubmed.​ncbi.​nlm.​nih.​
+    2023.​09.​04.​23294​952, Sept 5 2023.                                            gov/​33823​398/
+ 6. Xu L, Ni Z, Sun H, Li H, Zhang S. A foundation model for                     22. Tariq T, Suhail Z, Nawaz Z. Knee Osteoarthritis Detection and
+    generalizable disease diagnosis in chest X-ray images. arXiv;                    Classification Using X-Rays. IEEE Access. https://​doi.​org/​10.​
+    2024. Available from: http://​arxiv.​org/​abs/​2410.​08861                       1109/​ACCESS.​2023.​32768​10, 2023.
+ 7. Azad B, Azad R, Eskandari S, Bozorgpour A, Kazerouni A,                      23. Zhang S, Xu Y, Usuyama N, Xu H, Bagga J, Tinn R, et al.
+    Rekik I, et al. Foundational Models in Medical Imaging: A                        BiomedCLIP: a multimodal biomedical foundation model pre-
+    Comprehensive Survey and Future Vision. arXiv; 2023. Avail-                      trained from fifteen million scientific image-text pairs. 2023.
+    able from: http://​arxiv.​org/​abs/​2310.​18689                                  Available from: https://​arxiv.​org/​abs/​2303.​00915​v3
+ 8. Zhang S, Metaxas D. On the challenges and perspectives of                    24. Pérez-García F, Sharma H, Bond-Taylor S, Bouzid K, Salvatelli V,
+    foundation models for medical image analysis. Med Image Anal.                    Ilse M, et al. Exploring scalable medical image encoders beyond
+    https://​doi.​org/​10.​1016/j.​media.​2023.​102996, Jan 1 2024.                  text supervision. Nat Mach Intell. https://​doi.​org/​10.​1038/​s42256-​
+ 9. Huang SC, Pareek A, Jensen M, Lungren MP, Yeung S, Chaud-                        024-​00965-w, Jan 2024. Available from: http://​arxiv.​org/​abs/​2401.​
+    hari AS. Self-supervised learning for medical image classifica-                  10815 https://​doi.​org/​10.​1038/​s42256-​024-​00965-w
+    tion: a systematic review and implementation guidelines. Npj                 25. Nevitt, Felson, Lester M D, G. The osteoarthritis initiative. Pro-
+    Digit Med. https://​doi.​org/​10.​1038/​s41746-​023-​00811-0, Apr                tocol for the cohort study. 2006. Available from: http://​nda.​nih.​
+    26 2023.                                                                         gov.​s3.​amazo​naws.​com/​cms/​prod/​Study​Desig​nProt​ocolA​ndApp​
+10. Huang SC, Jensen M, Yeung-Levy S, Lungren MP, Poon H,                            endic​es.​pdf
+    Chaudhari AS. Multimodal Foundation Models for Medical                       26. He K, Zhang X, Ren S, Sun J. Deep Residual Learning for Image
+    Imaging - A Systematic Review and Implementation Guidelines.                     Recognition. arXiv; 2015. Available from: http://​arxiv.​org/​abs/​
+    medRxiv; p. 2024.10.23.24316003, 2024. Available from: https://                  1512.​03385
+    www.medrxiv.org/content/https://​doi.​org/​10.​1101/​2024.​10.​23.​          27. Liu Z, Mao H, Wu CY, Feichtenhofer C, Darrell T, Xie S. A
+    24316​003v1                                                                      ConvNet for the 2020s. arXiv; 2022. Available from: http://​arxiv.​
+11. Bian Y, Li J, Ye C, Jia X, Yang Q. Artificial intelligence in medi-              org/​abs/​2201.​03545
+    cal imaging: From task-specific models to large-scale foundation             28. Sellergren AB, Chen C, Nabulsi Z, Li Y, Maschinot A, Sarna A,
+    models. Chin Med J (Engl). https://​doi.​org/​10.​1097/​CM9.​00000​              et al. Simplified Transfer Learning for Chest Radiography Mod-
+    00000​003489, Mar 20 2025.                                                       els Using Less Data. Radiology. https://​doi.​org/​10.​1148/​radiol.​
+12. Sun K, Xue S, Sun F, Sun H, Luo Y, Wang L, et al. Medical                        212482, Nov 2022.
+    Multimodal Foundation Models in Clinical Diagnosis and Treat-                29. Lu Z, Li H, Parikh NA, Dillman JR, He L. RadCLIP: Enhancing
+    ment: Applications, Challenges, and Future Directions. arXiv;                    Radiologic Image Analysis through Contrastive Language-Image
+    2024. Available from: http://​arxiv.​org/​abs/​2412.​02621                       Pre-training. 2024. Available from: https://​arxiv.​org/​abs/​2403.​
+13. Sepehri MS, Fabian Z, Soltanolkotabi M, Soltanolkotabi M. Medi-                  09948​v2
+    Confusion: Can you trust your AI radiologist? Probing the reli-              30. Fay L, Delbrouck JB, Küstner T, Yang B, Codella NCF, Lungren
+    ability of multimodal medical foundation models. arXiv; 2025.                    MP, et al. Beyond the Prompt: Deploying Medical Foundation
+    Available from: http://​arxiv.​org/​abs/​2409.​15477                             Models on Diverse Chest X-ray Populations. Proc Mach Learn
+14. Xie W, Wu C, Zhang X, Zhang Y, Wang Y. Towards Generalist                        Res- Rev. :1–15, 2025.
+    Foundation Model for Radiology. Research Square; 2023. Avail-                31. Zhao H, Ou L, Zhang Z, Zhang L, Liu K, Kuang J. The value of
+    able from: https://​www.​resea​rchsq​uare.​com/​artic​le/​rs-​33245​30/​v1       deep learning-based X-ray techniques in detecting and classifying
+15. Zheng Q, Zhao W, Wu C, Zhang X, Dai L, Guan H, et al. Large-                     K-L grades of knee osteoarthritis: a systematic review and meta-
+    scale long-tailed disease diagnosis on radiology images. Nat Com-                analysis. Eur Radiol. https://​doi.​org/​10.​1007/​S00330-​024-​10928-
+    mun 2024 151. https://​doi.​org/​10.​1038/​s41467-​024-​54424-6, Nov             9/​FIGUR​ES/6, Jan 2025.
+    2024.                                                                        32. Zhong J, Yao Y, Cahill DG, Xiao F, Li S, Lee J, et al. Unsuper-
+16. Huix JP, Adithya †, Ganeshan R, Haslum JF, Söderberg M, Mat-                     vised domain adaptation for automated knee osteoarthritis phe-
+    soukas C, et al. Are Natural Domain Foundation Models Useful                     notype classification. Quant Imaging Med Surg. https://​doi.​org/​
+    for Medical Image Classification? p. 7634–43, 2024. Available                    10.​21037/​QIMS-​23-​704/​COIF, Nov 2023.
+    from: https://​github.​com/​joana​apa/​Found​ation-​Medic​al.                33. Blankemeier L, Cohen JP, Kumar A, Veen DV, Gardezi SJS, Pas-
+17. Strotzer QD, Nieberle F, Kupke LS, Napodano G, Muertz AK,                        chali M, et al. Merlin: A Vision Language Foundation Model for
+    Meiler S, et al. Toward Foundation Models in Radiology? Quan-                    3D Computed Tomography. Res Sq. https://​doi.​org/​10.​21203/​
+    titative Assessment of GPT-4V’s Multimodal and Multianatomic                     RS.3.​RS-​45463​09/​V1, June 2024.
+    Region Capabilities. Radiology. https://​doi.​org/​10.​1148/​radiol.​        34. Lee C, Park S, Shin CI, Choi WH, Park HJ, Lee JE, et al. Read
+    240955, Nov 2024.                                                                Like a Radiologist: Efficient Vision-Language Model for 3D
+18. Fox MG, Chang EY, Amini B, Bernard SA, Gorbachova T, Ha                          Medical Imaging Interpretation. 2024. Available from: https://​
+    AS, et al. ACR Appropriateness Criteria® Chronic Knee Pain. J                    arxiv.​org/​abs/​2412.​13558​v1
+    Am Coll Radiol. https://​doi.​org/​10.​1016/j.​jacr.​2018.​09.​016, Nov      35. Lu MY, Chen B, Williamson DFK, Chen RJ, Liang I, Ding T,
+    1 2018.                                                                          et al. A visual-language foundation model for computational
+Journal of Imaging Informatics in Medicine (2026) 39:2136–2149                                                                                                  2149
+
+      pathology. Nat Med 2024 303. https://​doi.​org/​10.​1038/​s41591-​           Foundation Models. 2024 IEEE Int Conf Multimed Expo Work-
+      024-​02856-4, Mar 2024.                                                      shop ICMEW 2024. https://​doi.​org/​10.​1109/​ICMEW​63481.​2024.​
+36.   Shi C, Rezai R, Yang J, Dou Q, Li X. A Survey on Trustworthi-                10645​451, 2024.
+      ness in Foundation Models for Medical Image Analysis. 2024.            46.   Wu C, Zhang X, Zhang Y, Wang Y, Xie W. Towards General-
+      Available from: http://​arxiv.​org/​abs/​2407.​15851                         ist Foundation Model for Radiology by Leveraging Web-scale
+37.   Zhu H, Yao Q, Xiao L, Zhou SK. Learning to Localize Cross-                   2D&3D Medical Data. arXiv; 2023. Available from: http://​arxiv.​
+      Anatomy Landmarks in X-Ray Images with a Universal Model.                    org/​abs/​2308.​02463
+      BME Front. https://​doi.​org/​10.​34133/​2022/​97650​95, Jan 2022.     47.   Ferreira D, Arnaout R. Are foundation models efficient for medi-
+38.   VanBerlo B, Hoey J, Wong A. A survey of the impact of self-                  cal image segmentation? J Am Soc Echocardiogr. https://​doi.​org/​
+      supervised pretraining for diagnostic tasks in medical X-ray, CT,            10.​1016/j.​echo.​2025.​02.​001, Nov 2023. Available from: http://​
+      MRI, and ultrasound. BMC Med Imaging. https://​doi.​org/​10.​1186/​          arxiv.​org/​abs/​2311.​04847 https://​doi.​org/​10.​1016/j.​echo.​2025.​02.​
+      S12880-​024-​01253-0/​TABLES/9, Dec 2024.                                    001
+39.   Mei X, Liu Z, Robson PM, Marinelli B, Huang M, Doshi A, et al.         48.   Wang G, Zhang S, Huang X, Vercauteren T, Metaxas D. Editorial
+      RadImageNet: An Open Radiologic Deep Learning Research                       for special issue on explainable and generalizable deep learning
+      Dataset for Effective Transfer Learning. Radiol Artif Intell.                methods for medical image computing. Med Image Anal. https://​
+      https://​doi.​org/​10.​1148/​RYAI.​210315, Sept 2022.                        doi.​org/​10.​1016/J.​MEDIA.​2022.​102727, Feb 2023.
+40.   Yan B, Pei M. Clinical-BERT: Vision-Language Pre-training for          49.   Glocker B, Jones C, Roschewitz M, Winzeck S. Risk of Bias in
+      Radiograph Diagnosis and Reports Generation. 2022. Available                 Chest Radiography Deep Learning Foundation Models. Radiol
+      from: www.​aaai.​org                                                         Artif Intell. https:// ​ d oi. ​ o rg/ ​ 1 0. ​ 1 148/ ​ RYAI. ​ 2 30060/ ​ A SSET/​
+41.   Veldhuizen V van, Botha V, Lu C, Cesur ME, Lipman KG, Jong                   IMAGES/​LARGE/​RYAI.​230060.​VA.​JPEG, Nov 2023. Avail-
+      ED de, et al. Foundation Models in Medical Imaging -- A Review               able from: https://pubs.rsna.org/doi/https://​doi.​org/​10.​1148/​ryai.​
+      and Outlook. arXiv; 2025. Available from: http://​arxiv.​org/​abs/​          230060
+      2506.​09095                                                            50.   Khan MO, Afzal MM, Mirza S, Fang Y. How Fair are Medical
+42.   Kitamura FC, Topol EJ. The Initial Steps of Multimodal AI in                 Imaging Foundation Models? Vol. 225, Proceedings of Machine
+      Radiology. Radiology. https://​doi.​org/​10.​1148/​RADIOL.​232372/​          Learning Research. PMLR; p. 217–31, 2023. Available from:
+      ASSET/​IMAGES/​LARGE/​RADIOL.​232372.​FIG2.​JPEG, Oct                        https://​proce​edings.​mlr.​press/​v225/​khan2​3a.​html
+      2023. Available from: https://pubs.rsna.org/doi/https://​doi.​org/​
+      10.​1148/​radiol.​232372                                               Publisher's Note Springer Nature remains neutral with regard to
+43.   Nakagawa S, Ono N, Hakamata Y, Ishii T, Saito A, Yanagimoto S,         jurisdictional claims in published maps and institutional affiliations.
+      et al. Quantitative evaluation model of variable diagnosis for chest
+      X-ray images using deep learning. PLOS Digit Health. https://​doi.​    Springer Nature or its licensor (e.g. a society or other partner) holds
+      org/​10.​1371/​JOURN​AL.​PDIG.​00004​60, Mar 2024.                     exclusive rights to this article under a publishing agreement with the
+44.   Wang A, Islam M, Xu M, Zhang Y, Ren H. SAM Meets Robotic               author(s) or other rightsholder(s); author self-archiving of the accepted
+      Surgery: An Empirical Study in Robustness Perspective. 2023.           manuscript version of this article is solely governed by the terms of
+      Available from: https://​arxiv.​org/​abs/​2304.​14674​v1               such publishing agreement and applicable law.
+45.   Zhang Z, Wu H, Ji Z, Li C, Zhang E, Sun W, et al. Q-Boost: On
+      Visual Quality Assessment Ability of Low-Level Multi-Modality
+

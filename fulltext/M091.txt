@@ -1,0 +1,1349 @@
+Multimedia Tools and Applications (2025) 84:41353–41380
+https://doi.org/10.1007/s11042-025-20804-3
+
+
+
+
+Ordinal classification for knee osteoarthritis x‑rays using
+vision transformers
+
+Tayyaba Tariq1        · Zobia Suhail1 · Zubair Nawaz2
+
+Received: 23 April 2024 / Revised: 27 February 2025 / Accepted: 26 March 2025 /
+Published online: 3 April 2025
+© The Author(s), under exclusive licence to Springer Science+Business Media, LLC, part of Springer Nature 2025
+
+
+Abstract
+Knee Osteoarthritis is a progressive and chronic knee joint disease that shows symptoms of
+pain, stiffness, and swelling and is diagnosed by knee radiographs. These radiographs are
+evaluated by radiologists using Kellgren and Lawrence’s (KL) grading scheme. Accord-
+ing to this scheme, the knee radiograph is graded from KL grade 0 (i.e., Normal) to KL
+grade 4 (i.e., Severe) to assess the KOA severity. For an automated system, the first step is
+to localize knee joints from knee radiographs and then classify them according to the KL
+grading system. In this work, we have proposed vision-based transformers to localize knee
+joints. We also proposed a single-stage model to localize the knee and classify KOA using
+a single model. We also explored and compared the performance of various transformers
+using a multiclass image classification strategy. Since KL grades maintain intrinsic ordinal
+information of KL grades, we employed an ordinal classification-based strategy to improve
+automated knee osteoarthritis classification performance. A total of 10 models are trained
+and validated on multiple datasets, and visualizations are generated for the best model for
+better comprehension. Our model obtained state-of-the-art results for knee detection and
+ordinal X-ray classification for KOA. Analysis of Variance (ANOVA) tests also indicate
+that the ordinal classification approach significantly improves the performance of models
+over traditional image classification approaches.
+
+Keywords Explainable Artificial Intelligence (XAI) · Knee localization · Osteoarthritis ·
+Ordinal classification · Vision transformer
+
+
+
+
+* Tayyaba Tariq
+  tayyaba.tariq@pucit.edu.pk
+    Zobia Suhail
+    zobia.suhail@pucit.edu.pk
+    Zubair Nawaz
+    z.nawaz@pucit.edu.pk
+1
+    Department of Computer Science, University of the Punjab, Allama Iqbal Campus,
+    LahorePunjab 54000, Pakistan
+2
+    Department of Data Science, University of the Punjab, Allama Iqbal Campus,
+    LahorePunjab 54000, Pakistan
+
+
+                                                                                         Vol.:(0123456789)
+41354                                        Multimedia Tools and Applications (2025) 84:41353–41380
+
+
+1 Introduction
+
+Knee Osteoarthritis (KOA) is the typical type of Osteoarthritis (OA) affecting millions
+of people over the age of 50. Still, it can also occur in younger individuals, especially
+those who have suffered a knee injury or have a family history of the condition. It occurs
+when the cartilage in the knee joint wears down over time, leading to pain, stiffness,
+and swelling. This can make it difficult to perform everyday activities, such as walking,
+climbing stairs, and bending down [1]. Several treatment options are available for knee
+osteoarthritis, ranging from lifestyle modifications to medication to surgery, depending
+on the severity of the condition.
+    For diagnosis patients’ clinical, blood, and radiographic assessments are done. Radi-
+ologists use radiographs to observe various signs of KOA indications, including joint
+space narrowing, bony lump formations along the edges (osteophytes), and sclerosis [2,
+3].
+    In 2014, the first international workshop on early OA was held in Kyoto, refining the
+criteria for identifying early OA. According to these criteria [4, 5], three conditions must
+be met to classify a case as early OA. First, a tool score, such as the Knee Injury and Osteo-
+arthritis Outcome Score (KOOS), should be less than or equal to 85% in at least two of the
+following categories: pain, symptoms, self-reported function, and quality of life. Second,
+a clinical examination must confirm the presence of tenderness or crepitus (joint popping
+sound). Third, the patient should have a Kellgren & Lawrence (KL) grade of 0 or 1.
+    These criteria intentionally exclude (Magnetic Resonance Imaging) MRI due to limited
+supporting evidence and consensus, which makes the criteria more accessible for primary
+healthcare providers by focusing on practical diagnostic elements [3]. Since knee osteoar-
+thritis (KOA) progresses over several years, it often starts without noticeable symptoms,
+making early diagnosis challenging. As it advances, patients typically experience pain and
+mobility issues, and surgical intervention may become necessary [3].
+    The Kellgren and Lawrence grading system is the prominent method for classifying
+the severity of KOA based on the frontal or Posteroanterior (PA) view of X-ray images.
+It assigns a grade from 0 to 4, with higher grades indicating more severe damage to the
+knee joint [6, 7].
+    KL0 Normal: No evidence of osteoarthritis on X-ray.
+    KL1 Doubtful: Minor osteophyte (bone spur) formation and possible joint space
+narrowing.
+    KL2 Mild: Definite osteophyte formation and some joint space narrowing.
+    KL3 Moderate: Moderate multiple osteophytes, definite joint space narrowing, and
+some sclerosis (hardening) of bone ends.
+    KL4 Severe: Large osteophytes, severe joint space narrowing, sclerosis, and possible
+deformity of bone ends.
+    KL classification system also maintains ordering information about the severity level
+of OA. It can be shown as.
+    KL Grade 0 <KL Grade 1 <KL Grade 2 <KL Grade 3 <KL Grade 4
+    The grades are ordered increasingly, with grade 0 indicating no osteoarthritis and grade
+4 indicating the most severe damage to the knee joint. The grading system is inherently
+ordinal because the grades represent a ranking of the severity of the condition rather than
+a numerical measurement. This means the difference between grades is not necessarily
+equal, and the intervals between grades may vary. For example, the difference between
+grade 0 and grade 1 may be smaller than the difference between grade 2 and grade 3.
+Multimedia Tools and Applications (2025) 84:41353–41380                                 41355
+
+
+   It is important to consider the ordinal nature of the grading system when interpreting
+X-ray images and making clinical decisions based on the severity of osteoarthritis [2, 7].
+   Automated identification of knee osteoarthritis (KOA) stages from X-rays typically
+involves two steps: detecting the knee joint and then determining the severity of KOA.
+However, an automated system can perform both tasks in a single step, identifying the knee
+joint and assessing KOA severity simultaneously without separating the knee joints before-
+hand. The purpose of this study is multifaceted. First, we explored transformer-based archi-
+tectures for object detection to isolate knee joints. Second, we evaluated the performance
+of these transformer-based networks on the task of KOA classification from knee images.
+We conducted two experiments: a single-stage model that simultaneously performs knee
+joint detection and KOA severity classification, and a two-stage model that first isolates the
+knee joint before classifying KOA severity. We then proposed an enhancement method that
+utilizes the ordinal nature of KOA grading, comparing the outcomes of standard classifica-
+tion with ordinal classification. Finally, we generated heatmaps (visualizations) to empha-
+size critical areas of the radiographs, which helps in understanding and building trust in the
+model’s predictions.
+
+
+
+2 Related work
+
+Deep Learning (DL) systems have shown tremendous potential for image segmentation,
+object detection, and image classification tasks [8, 9]. These models can learn complex
+features from large amounts of data, improving models’ accuracy and efficiency. Convo-
+lutional Neural Networks (CNN) is the most popular DL network that achieves state-of-
+the-art results for image classification tasks [8, 9]. These breakthroughs have motivated the
+computer vision community to adapt these ImageNet [10] pre-trained foundation models
+e.g. VGG [11], RESNET [12], DenseNet [13] for medical image recognition and classifica-
+tion tasks. These networks are applied for tumor detection in Magnetic Resonance Imaging
+(MRI), pneumonia prediction from X-rays, skin lesions detection in dermatology images,
+and blood cell classification tasks [12]. These networks are also successfully applied to the
+KOA classification task [14–17].
+    In one study, Guida et al. [18] compared the performance of deep learning models for
+X-rays and 3D MRI sequences. They performed various experiments for knee OA classifi-
+cation using MRI and similar experiments with X-rays. In addition, Multiple experiments
+were performed for 5 KL grades and 2 class OA classifications. They also used trans-
+fer learning approaches with 2D CNN models such as VGG-16, ResNet, and DenseNet.
+Results for MRI assessments showed better results when compared to X-rays. KL grade 2
+is the most commonly misclassified.
+    Feng et al. [19] presented channel and spatial attention modules to enhance the model’s
+performance. In addition, a Mish activation function was used to improve the stability of
+the network. A ResNet was customized to reduce the parameters and depth of the network.
+Then, a Convolution Block Attention Module (CBAM) is implemented with a Mish acti-
+vation Function. Finally, Grad-CAM is used to visualize the output of the network. These
+attention modules help filter feature map information, directing focus to crucial regions.
+Additionally, the Mish activation function, used instead of ReLU, enhances network stabil-
+ity and facilitates faster convergence. Using a convolutional neural network (CNN) archi-
+tecture with these attention modules and the Mish activation function, the method achieved
+an accuracy of 70.23%, recall of 68.23%, precision of 70.25%, and an F1 score of 67.55%
+41356                                        Multimedia Tools and Applications (2025) 84:41353–41380
+
+
+on the knee osteoarthritis dataset. The model’s performance was inconsistent across all
+grades, hence Their method achieved the lowest accuracy for KL grade 1 i.e. 15%.
+    In most studies, [20–22] knee joint localization is done by YOLO and their obtained
+Intersection Over Union (IOU) is 92.2%, 93%, 95.42% respectively.
+    In work by Wang et al. [23], an automated method to extract ROI is suggested. This
+ROI is then sent for classification. An object detection model, YOLO, is finetuned to detect
+knee joints. For classification, ResNet-50 is the backbone architecture. Finally, Visual
+Transformer (ViT) blocks extract features for final classification.
+    In another work by Li et al. [24] extracted radiographic features using PA and lateral
+X-rays. Multiple experiments were performed using popular machine learning algorithms.
+In this study, they used a private dataset of knee X-rays. Both frontal and lateral X-rays
+were labeled by radiologists for knee segmentation. Then, radiomic signatures were cre-
+ated. The whole datum was randomly grouped into 80% crossvalidation and 20% inde-
+pendent testing. Dimensionality reduction was applied using LASSO. The best results were
+obtained using LR to differentiate between Normal and KOA knees.
+    Alshareef et al.[25] have fine-tuned an ImageNet pre-trained Vision Transformer to
+the KOA classification task. They also performed experiments with CNNs and compared
+results. GradCAM does feature visualization. However, the authors suggest improvements
+using large and diverse datasets. In one study [26] simultaneous knee joint detection and
+KL grade classification are applied with the Faster RCNN model. The overall average
+accuracy reported by them is 82.5%. A semisupervised deep learning approach is imple-
+mented with siamese netwerk by Nguyen et al.[27]. They obtained an average accuracy of
+71%. In one work by Tariq et al. [2] have performed various experiments with pre-trained
+CNN networks, i.e., ResNet-34, VGG-19, and DenseNet(121 & 161) CNNs for KOA clas-
+sification tasks. They have suggested an ordinal classification approach with an ordinal loss
+function. They also made an ensemble, improving the KOA classification’s overall and per-
+grade accuracy. They have also implemented EigenCAM visualization for a better under-
+standing of results.
+    In a recent study, Sekhri et al. [28] have used a Swin transformer for the KOA predic-
+tion task. They performed experiments on two popular public datasets and implemented a
+data drift correction strategy to abridge the gap between them. Finally, they implemented
+GradCAM as an interpretability tool to visualize features learned by the model.
+    KOA severity level prediction using X-rays is an image classification task in which each
+KL grade is assigned a distinct category.
+    This is a multiclass classification approach, so a multiple-binary classifier approach can
+also solve this problem. In this approach, The main problem of multi-class classification is
+split into multiple binary classifiers [7]. It can be (N-1) binary classification approach [29]
+e.g., KL classification problem can be divided into four classifiers and trained separately
+with the mentioned labels.
+    KL0 (grade 0 only) and KL >=1 (grades 1 to 4) are included
+    KL <=1 (grades 0 and 1 only) and KL >=2 (grades 2,3,4)
+    KL<=2 (grades 0, 1, and 2) and KL >=3 (grades 3 and 4)
+    KL <=3 (grade 0 to 3) and KL >=4 (grade 4)
+    Classical deep learning image classification systems treat it as multiclass classification
+and train the CNNs using the Cross-Entropy (CE) loss function [19, 30]. In the context of
+knee osteoarthritis (KOA) classification, for example, the model might need to classify an
+X-ray image into one of several severity levels, such as normal, mild, moderate, or severe.
+Each severity level corresponds to a different class, and the model is trained to recognize
+patterns in the images that correlate with these specific classes. The CE loss function is
+Multimedia Tools and Applications (2025) 84:41353–41380                                 41357
+
+
+preferred in multiclass classification tasks because it provides a strong theoretical foun-
+dation and works well empirically for optimizing classification models. It directly relates
+to the concept of maximizing the likelihood of the observed data, making it effective for
+learning complex patterns in data. The CE loss function is designed for multiclass classifi-
+cation problems where the classes are treated as distinct and unordered categories [31, 32].
+This means that the CE loss function assumes that all errors are equally severe, regardless
+of the relative ordering or closeness of the predicted and actual classes [2, 3, 19].
+   Studies by [20, 33], and [34] applied an ordinal classification approach for the KL grad-
+ing task, achieving overall accuracies of 69.7%, 71.08%, and 88.09%, respectively. How-
+ever, accuracy across individual KL grades remained inconsistent, with KL grade 1 show-
+ing particularly poor prediction results.
+
+
+2.1 Ressearch gaps
+
+Upon reviewing the literature, we identified the following gaps in research. • KOA severity
+is often assessed using the Kellgren-Lawrence (KL) grading system, which is inherently
+subjective and can vary significantly between different observers [2, 28]. This variability
+is reflected in the reading reliability of the KL grading, where inter-observer agreement
+(measured by the Kappa statistic) ranges from 0.56 to 0.67 [35], indicating only moderate
+agreement.
+
+• Most of the previous studies treat this problem as a classification task, while the KL
+  grading system is ordinal, meaning the grades are ordered from normal (KL0) to severe
+  (KL4). However, these grades do not represent equal intervals of disease progression,
+  complicating analysis and modeling efforts. This lack of equal spacing between grades
+  can make it difficult to accurately capture the nuances of disease severity, which can
+  impact clinical decision-making [2, 3].
+• Moreover, the KL grading system is challenged by both inter-class and intra-class vari-
+  ability. Inter-class variability refers to the differences in severity between different KL
+  grades, while intra-class variability refers to the differences in severity within a single
+  KL grade. It has been observed that intra-class variability can sometimes be greater
+  than inter-class variability. This means that the severity of KOA within a single grade
+  (e.g., KL2) can vary more widely than the difference between two consecutive grades
+  (e.g., KL2 and KL3). Such variability adds complexity to the interpretation of X-rays
+  and the development of automated classification models, as the models must account
+  for these inconsistencies to provide reliable and accurate assessments. Addressing both
+  intra- and inter-class variability is crucial to improving the robustness of automated
+  KOA classification systems and ensuring they can be effectively used in clinical prac-
+  tice [3, 36].
+• In many previous studies, More confusing KL grades were either removed or merged
+  [37]. To overcome this situation, the previous studies tried to solve it as a binary or ter-
+  tiary classification problem [7, 24, 38–40].
+• The use of deep learning for knee osteoarthritis (KOA) classification from X-rays has
+  predominantly relied on convolutional neural networks (CNNs) [17, 19, 34]. These
+  CNN-based models have demonstrated strong performance in detecting and classifying
+  KOA by learning hierarchical features from medical images. However, with the recent
+  development of vision transformer networks, which have shown impressive results
+  in various computer vision tasks [41, 42], there has been growing interest in apply-
+41358                                        Multimedia Tools and Applications (2025) 84:41353–41380
+
+
+   ing these models to KOA classification using X-rays. Only a few studies have so far
+   explored the use of transformers for this purpose [25, 28]. This study aims to evalu-
+   ate the effectiveness and suitability of various transformer architectures for classifying
+   KOA from X-ray images, providing insights into how these models perform compared
+   to traditional CNN-based approaches.
+
+2.2 Our contributions
+
+In this study, we evaluated the application of transformer networks to localize knee joints
+and classify knee osteoarthritis.
+
+• We applied an object detection transformer for knee joint localization. This study is one
+  of its kind to consider multiple data sources for knee joint detection.
+• We converted the KL grading format of four different datasets to COCO JSON format.
+  we also generated knee joint images with KL grades for three datasets.
+• We implemented a single-stage knee joint localization with KOA classification accord-
+  ing to the KL grading system.
+• We explored Vision Transformers (ViT), Swin Transformers, Pyramid Vision Trans-
+  formers (PCPVT), and Dual Attention ViT (DaViT) and compared the multiclass clas-
+  sification results.
+• We suggested a mechanism to improve the prediction performance of these networks
+  using an ordinal classification approach that fits the knee osteoarthritis x-ray classifica-
+  tion task well.
+• We have also compared the results of multiclass classification vs ordinal image classifi-
+  cation approach using different loss functions.
+• Finally, we implemented an explainable artificial intelligence (XAI) approach to help
+  interpret and visualize the features extracted by our best model and to improve trans-
+  parency.
+• We also validated our best models across multiple datasets.
+• This study is unique in its implementation as it covers a wide range of localization and
+  classification transformers and compares their results for Knee X-rays. It also takes
+  into consideration the implicit ordinal nature of KL grades and provides stateof-the-art
+  results for all KL grades.
+
+
+3 Methodology
+
+In the following sections, we have described the complete dataset details and experi-
+mental settings. First, Sect. 3.1 describes all the datasets considered in this study.
+Then, Sect. 3.2 elaborates on the prepocessing steps applied to dataset images. Next,
+Sect. 3.3 describes the transformer-based models used in our experiments. Section 3.4 elab-
+orates on the complete experimental setup for training and validating the models. Finally,
+Sect. 4 discusses the results obtained by our models.
+
+3.1 Datasets
+
+Knee X-ray images used in this study are obtained from various resources. • Cohort Hip
+and Cohort Knee (CHECK) is a ten-year longitudinal observational multicenter study of
+Multimedia Tools and Applications (2025) 84:41353–41380                                41359
+
+
+1002 individuals aged 45 to 65 with early symptomatic symptoms of KOA [43, 44]. Clini-
+cal, radiographic, and biomechanical variables were evaluated to observe the course and
+progression of early OA. Follow-ups were done at 2, 5, and 10 years. It included X-rays
+of knees and hips classified according to the KL scheme from KL grade 0 to grade 3. The
+knee radiograph is a weight-bearing unilateral Posteroanterior view.
+
+• Osteoarthritis Initiative (OAI) is another multicentric longitudinal study that recruited
+  4796 men and women aged between 45 and 79. It has bilateral knee radiographs from
+  a PA view [https://nda.nih.gov/oai]. These radiographs are graded according to the KL
+  grading scheme from grade 0 to grade 4. Unilateral knee joint X-ray images are pro-
+  vided by [20] and made available at [30]. There are 3857, 1770, 2578, 1286, and 295
+  images in KL0, KL1, KL2, KL3, and KL4, respectively. Data is split into train, test and
+  validation datasets.
+• CGMH-OA is available on Kaggle and includes 400 unilateral PA radiographs col-
+  lected at Chang Gung Memorial Hospital [45]. These radiographs have KL grades from
+  0 to 4 in Portable Network Graphic (PNG) format.
+• Max Gordon and Ehsan Akbarian (G&A) have made their test dataset of knee Xrays
+  available [46, 47]. There are 1,121 PA and lateral views radiographs from 262 patients
+  and their 300 exams. There are approximately 400 PA images. There is more than one
+  radiograph per patient per exam; hence, the number of unique images is less than 200.
+
+
+
+3.2 Preprocessing
+
+For the development of our knee joint localization and knee osteoarthritis (KOA) clas-
+sification models, we curated training, testing, and validation datasets from two primary
+sources: the OAI (Osteoarthritis Initiative) and CHECK (Cohort Hip and Cohort Knee)
+studies. These datasets provided knee radiographs but did not include any existing annota-
+tions for knee joint localization. To address this, we developed custom labeling software,
+which allowed us to manually annotate the knee joints in each radiograph. Through this
+process, we created the essential ground truth data for knee joint detection, ensuring that
+each annotated region represented an accurate bounding box around the knee joint. The
+annotations were then converted into COCO-JSON format, a standard in computer vision,
+to facilitate their use in training both the knee localization and classification models.
+    After our knee joint localization model demonstrated strong accuracy, we utilized it
+to detect knee joints in radiographs from additional datasets, specifically the CGMH-OA
+and G&A datasets. By incorporating these new detections, we assembled a mixed dataset
+that enabled cross-dataset validation of our best transformer-based classifier, enhancing its
+robustness across different sources of radiographic data. To streamline data preparation,
+we also created software capable of automatically cropping the knee joint regions based on
+the bounding boxes generated by our localization model, along with their associated KL
+grades (ranging from KL0 to KL4). To ensure consistency across datasets, this software
+also resized the cropped images, preserving a uniform physical resolution and enabling the
+images to be directly comparable across studies.
+    To enhance the diversity of the dataset and improve the model’s generalizability, we
+employed a range of image augmentation techniques. These augmentations included
+adjustments to brightness and saturation levels, which simulate variations in Xray
+exposure and contrast, allowing the model to adapt to images from different imaging
+41360                                       Multimedia Tools and Applications (2025) 84:41353–41380
+
+
+equipment or settings. Horizontal flipping was also applied to help the model generalize
+to variations in patient positioning.
+    In addition, random affine transformations, such as rotations, translations, and scal-
+ing, were used to create variations in image orientation and scale. This is particularly
+useful given that knee X-ray images often display differences in leg alignment due to
+conditions like severe knee deformity, which can result in images where the legs are not
+straight. Finally, normalization was implemented to standardize pixel intensity distribu-
+tions across images, reducing the influence of lighting discrepancies. Together, these
+transformations ensure that the model is exposed to a broad spectrum of imaging condi-
+tions and knee presentations, enhancing its robustness and ability to accurately classify
+KOA across diverse clinical scenarios.
+    Despite the advantages of a mixed dataset, we faced certain limitations. The Kaggle
+CGMH-OA and G&A datasets, for example, contained relatively few samples, and the
+CHECK dataset lacked examples with the KL4 grade. Consequently, these datasets were
+not ideal for training a Vision Transformer (ViT), which requires ample samples in each
+class to achieve stable learning. Nonetheless, we used this mixed dataset effectively for
+fine-tuning and cross-dataset validation of our top-performing transformer-based clas-
+sifier. This approach allowed us to validate the classifier’s performance across diverse
+radiographic datasets, strengthening its reliability and potential for broader clinical
+application.
+    Sample images from each dataset are attached in Table 1. We prepared datasets for
+two types of experiments. First for localization tasks and second for KOA classification
+tasks.
+
+
+
+
+Table 1  Sample dataset images
+           Grades            KL0      KL1            KL2            KL3           KL4
+
+
+
+          CHECK                                                                   N/A
+
+
+
+        CGMH-OA
+
+
+
+            G&A
+
+
+
+        OAI by Chen
+Multimedia Tools and Applications (2025) 84:41353–41380                            41361
+
+
+3.3 Networks
+
+Transformer networks comprising encoder-decoder architecture are based only on an
+attention mechanism. Transformers were first introduced for natural language process-
+ing tasks that included language translation [48]. The Transformer Encoder Block con-
+sists of Norm, Multi-head Attention, and (Multi Layer Perceptron) MLP. Where Layer
+Norm helps normalize the distributions of intermediate layers. It enables smoother
+gradients, faster training, and better generalization accuracy. Multihead Self-Attention
+(MSA) is an extension of Self-Attention (SA). It concatenates all the attention outputs.
+
+
+3.3.1 Detection transformer (DETR)
+
+Detection Transformer is an object detection deep learning model [49]. Its main com-
+ponent is a Transformer. DETR depends on a CNN backbone that extracts high-level
+features from the image. Spatial information about the objects in the image is added by
+DETR and fed to the Transformer Encoder. DETR introduces the concept of object que-
+ries, keys, and values. The number of object queries is already known and can vary from
+image to image. Keys are the spatial location of an object in an image, while values are
+the extracted features that represent that object. MSA helps capture and maintain infor-
+mation about object relationships and their dependencies in an image, hence keeping the
+information about an object’s local and global contexts.
+
+
+3.3.2 Visiont transformer (ViT)
+
+Vision Transformer, or ViT, is a state-of-the-art deep learning model in computer vision.
+It was introduced in 2020 as an alternative to the popular CNN architecture [41]. The
+Vision Transformer model uses a self-attention mechanism to capture global dependen-
+cies between image patches, which helps it perform well on tasks such as image classifi-
+cation, object detection, and segmentation. The model is trained on large-scale datasets
+such as ImageNet and achieves state-of-the-art results with fewer parameters than tradi-
+tional CNN-based models.
+   ViT works on global image information. It splits the images into small patches,
+vectorizes them, and extracts contextual data of an image on a patch-by-patch basis.
+Transformer’s attention mechanism helps in learning contextual information, which is
+helpful in image classification tasks. These patches and details of a class token are fed
+into Multi Head Spatial Attention (MSA) and output the learned embeddings of patches.
+Lastly, an MLP is used to classify the learned image representations.
+
+
+3.3.3 Swin transformer (Swin)
+
+Swin is another image classification model based on the conventional transformer
+[42]. The input image is converted to a series of patches. A patch size of 4 × 4 pro-
+duces a feature dimension of 4 × 4 × 3 = 48 that is then passed to the linear embedding
+layer. Each Swin block consists of a layer norm (LN), W-MSA, and SW-MSA, multi-
+head self-attention modules with regular and shifted windowing configurations. Swin
+41362                                          Multimedia Tools and Applications (2025) 84:41353–41380
+
+
+Transformer divides the image into stages, each consisting of windows. This hierarchi-
+cal approach allows the model to capture information at different levels of granularity.
+
+
+3.3.4 PCPVT
+
+PCPVT is a Pyramid Vision Transformer that uses conditional positional encoding,
+unlike PVT but has the same number of parameters and FLOPS [50]. This network has
+achieved state-of-the-art results in image classification tasks and has more than 61 million
+parameters.
+
+
+3.3.5 Dual attention vision transformer (DaViT)
+
+DaVit is based on two types of attention and tokens. First is “spatial window selfattention
+with spatial tokens” and channel group “self-attention with channel tokens” [51]. The two
+forms of attention are arranged as complementary and computationally efficient.
+   The core architecture comparison of these networks is shown in Table 2 and Table 3.
+
+
+3.4 Experiments
+
+We have implemented three types of models for knee joint localization and KOA
+classification.
+
+
+3.4.1 Knee joint localization
+
+The first uses a single-stage object detection and localization model. That detects and
+marks the knee joint area. We customized DETR for knee joint area detection, which takes
+an X-ray of the knee as input and generates a confidence score and a bounding box for the
+knee joint area. DETR can detect and produce multiple detections simultaneously for the
+same object. Still, we removed the bounding boxes with low confidence scores and showed
+only bounding boxes with maximum probability.
+
+
+Table 2  Comparison of architectures
+          ViT          Swin               PCPVT                           DaViT
+
+Stage 1   Norm         Linear Embedding   Patch Embedding                 Patch embedding Dual
+                       Swin Transformer   Transformer-Encoder with         transformer block
+                       Block               PEG
+Stage 2   Multi-head Patch Merging        Patch Embedding                 Patch embedding Dual
+           attention Swin Transformer     Transformer-Encoder with         transformer block
+                     Block                 PEG
+Stage3    Norm       Patch Merging        Patch Embedding                 Patch embedding Dual
+                     SwinTransformer      Transformer-Encoder with         transformer block
+                     Block                 PEG
+Stage4    MLP        Patch Merging        Patch Embedding                 Patch embedding Dual
+                     SwinTransformer      Transformer-                     transformer block
+                     Block                Encoder with PEG
+Table 3  Comparison of Vision Transformer Models
+Metric                 ViT                         Swin                       PCPVT                          DaViT
+
+Type                   VisionTrans-                Swin Transformer           PyramidConv                    Dual-Attention
+                       former                                                 Transformer                    Transformer
+Parameters             86 M (ViT-B/16)             87 M (Swin-L)              73 M (PCPVT-L)                 63 M
+(M)
+                                                                                                                                                  Multimedia Tools and Applications (2025) 84:41353–41380
+
+
+
+Layers                 12                          12                         12                             12
+FLOPs (G)              17.6                        15.4                       7.1                            14.5
+Input Size             224 × 224                   224 × 224                  224 × 224                      224 × 224
+Attention              Global self-attention       Hierarchical local         Local self-attention + Convs   Dual attention (spatial + channel)
+Mechanism
+Positional             Learned                     Shifted windowing scheme   Relative positional bias       Learned + Dynamic attention
+Encoding
+
+
+
+
+                                                                                                                                                   41363
+41364                                                Multimedia Tools and Applications (2025) 84:41353–41380
+
+
+3.4.2 Single‑stage knee joint localization and KOA classification
+
+The second approach uses a single-stage object detection and localization model. That
+marks the knee joint area and classifies it according to the KL grading system for the clas-
+sification of knee osteoarthritis.
+
+
+3.4.3 Two‑stage knee joint localization and KOA classification
+
+We implemented vision transformer models for the KOA classification in the last approach.
+Under this approach, various ImageNet pre-trained Vision transformers were applied and com-
+pared using transfer learning. We used knee joint images already detected by the knee-joint
+localization model. We fine-tuned ViT, SwinViT, PCPVT, and DaViT. At this stage, models
+were trained with Cross Entropy loss. To train the ViT classifiers effectively, we used a batch
+size of 28 for each training iteration. To enhance the model’s ability to generalize across vari-
+ations in radiographs, we applied a sequence of image transformations to each batch. These
+transformations, chained together, included adjustments to brightness and saturation, horizon-
+tal flipping, random affine transformations, and normalization. This approach was designed to
+diversify the input data, making the model more robust to variations in imaging conditions.
+Once these transformations were applied, the batch was fed into the model for training.
+
+
+3.4.4 Ordinal classification
+
+Since KL grade classification can be treated as an ordinal regression problem, we adopted
+a rank-consistent ordinal regression framework (CORN) as described by [52]. This method
+aligns well with the ordered nature of KL grades (from KL0 to KL4), ensuring that the
+model’s predictions maintain a meaningful ordinal structure. CORN was used for both
+loss calculation and grade prediction, allowing the model to focus on the rank order of KL
+grades rather than treating each grade independently.
+   During training, each base classifier calculated logits, predicted labels, and computed
+the loss based on CORN’s ordinal regression framework. The following loss function
+is minimized for training ViT, SwinViT, PCPVT, and DaViT with Ordinal regression
+(CORN). [52].
+                   1           �k−1 ��j� �      � � ��                   � � �         �            �
+  L(Z, y) = − ∑                              log 𝜎 z[i] .1y[i] > gj + log 𝜎 z[i] − z[i] .1y[i] ≤ gk
+                 k−1 � �         j=1   i=1                                                              S
+                       s
+                 j=1 �� j ��
+                                                                                                        (1)
+where the training set is
+                                                {           )}N
+                                             D = x[i] , y[i] i=1                                        (2)
+
+    The number of output classes of MLP is set to use g-1 outputs, where g belongs to grade
+1, grade 2, grade 3, and grade 4. gk is the grade for the kth binary subtask. Where |Sj| is the
+size of the j-th conditional training set. Z is the last module’s net input. For 5 class clas-
+sifications of KL grades, CORN converts the problem into four conditional subtasks and
+compares the input image for each task. Multiple subtasks are evaluated for an input image
+with the label KL0, and if the results of all subtasks are false, it produces prediction KL0.
+If the results of all four conditions are valid, prediction KL4 is made.
+Multimedia Tools and Applications (2025) 84:41353–41380                                41365
+
+
+   Result >KL0 = Yes/No (No at this stage means KL Grade 0)
+   Result >KL1 = Yes /No
+   Result >KL2= Yes/No
+   Result >KL3 = Yes/No (4 Yes= KL Grade 4)
+   Implementation is done using PyTorch(version 2.1.0 + cu121). All models are trained
+up to 50 epochs with an Adaptive Moment (ADAM) optimizer with an initial learning
+rate set to 0.0001. To enhance the learning process, the learning rate was reduced every
+five epochs, helping the model fine-tune its weights as training progressed as described
+in Table 4. The model’s performance was validated on a separate validation set after each
+epoch to monitor generalization and adjust the learning rate as needed. We recorded and
+reported the best-performing model results from these validation checks.
+
+3.4.5 Explainable artificial intelligence
+
+To better understand the features extracted by our models, we implemented EigenCAM
+and generated visualizations [53].
+
+3.5 Evaluation metrics
+
+To assess the performance of our models, we computed several statistical metrics.
+
+3.5.1 Intersection over union (IoU)
+
+Is a metric used to evaluate the performance of object detection models. It measures the
+intersection between the predicting bounding box and the ground truth bounding box.
+                                                 AreaofOverlap
+                                       IoU =                   .                           (3)
+                                                  AreaofUnion
+
+
+3.5.2 Confusion matrix
+
+A confusion matrix is a contingency table that summarizes the number of true and false
+predictions made by the model for each class. It makes specific predictions and calculates
+the following cases.
+    True Positive (TP) means a model can correctly identify an image in its respective class.
+    False Positive (FP) means the model identified an image as positive but does not belong
+to this class.
+    True Negative (TN) means the model correctly identified an image as negative.
+    False Negative (FN) means an image is positive but identified by the model as negative.
+
+
+Table 4  Model’s                    HyperParameters                                   Values
+hyperparameters configuration
+                                    Batch Size                                        28
+                                    Learning Rate                                     0.0001
+                                    Optimizer                                         ADAM
+                                    Epochs                                            upto 50
+41366                                       Multimedia Tools and Applications (2025) 84:41353–41380
+
+
+3.5.3 Accuracy
+
+Accuracy is the proportion of correct predictions out of the total predictions.
+                                              TP + TN
+                            Accuracy =                     .                                   (4)
+                                         TP + TN + FP + FN
+
+
+3.5.4 Precision
+
+Precision measures the model’s ability to identify positive cases correctly.
+                                                   TP
+                                   Precision =                                                 (5)
+                                                 TP + FP
+
+
+3.5.5 The receiver operating characteristics curve (ROC) & area under curve (AUC)
+
+ROC measures how accurately the model can differentiate between different classes,
+while AUC is a metric used to measure the model’s ability to distinguish between posi-
+tive and negative cases.
+
+3.5.6 Recall
+
+Recall is the proportion of true positive predictions out of all positive cases.
+                                                 TP
+                                    Recall =                                                   (6)
+                                               TP + FN
+
+
+3.5.7 F‑score
+
+The F-score provides a balanced measure of the model’s performance, considering pre-
+cision and recall.
+                                               Precision ∗ Recall
+                           F − Score = 2 ∗                                                     (7)
+                                               Precision + Recall
+
+
+3.5.8 Cohen’s Kappa
+
+Cohen’s Kappa is a statistical measure that evaluates the agreement between the pre-
+dicted and actual labels while considering the possibility of chance agreement.
+Weighted Cohen’s kappa (κ) is helpful when classification labels are ordered.
+                                         P0 (w) − Pe (w)
+                                    k=                                                         (8)
+                                           1 − Pe (w)
+Multimedia Tools and Applications (2025) 84:41353–41380                                   41367
+
+
+where the proportion of observed agreement is P0, and the theoretical probability of
+chance agreement is Pe. Weights (w) can be assigned according to the ordering or severity
+information.
+
+3.5.9 ANOVA test
+
+The Analysis of Variance (ANOVA) test is used to evaluate whether the differences in mean
+values among two or more groups are statistically significant, based on sample data. Specifi-
+cally, a one-way ANOVA test assesses whether the observed variation in group means reflects
+an actual difference between the groups or if it could simply be attributed to random variation
+within each group. In ANOVA, the F statistic plays a crucial role as it represents the ratio of
+two types of variance: the variance between the group means (i.e., the variability due to the
+differences among the groups) and the variance within the groups (i.e., the variability within
+each group itself). This ratio helps in determining if the observed differences among group
+means are large enough to be considered significant. A smaller F statistic suggests that the
+group means are likely similar, indicating no significant difference, while a larger F statistic
+suggests a greater likelihood that the group means are not equal, thus pointing to a potential
+significant difference.
+
+
+4 Results and discussion
+
+4.1 Knee joint localization
+
+4.1.1 Results
+
+Our model was able to detect all knees with 100% Accuracy. In the testing set, the Average
+Precision is 0.95, and IoU > = 0.5 for 96.84% of images. Some detection results are shown in
+Table 5 and the model’s performance is shown in Table 6.
+
+4.1.2 Interpretation
+
+The model got consistent performance for detecting left and right knees. The model was also
+compatible with identifying all knees of all KL grades. The model was validated on different
+datasets. Stage 1 in Fig. 1 shows the knee localization done by DETR.
+
+4.2 Single stage knee joint localization and KOA classification
+
+4.2.1 Results
+
+The average Precision @ IoU = 0.50:0.95 is 0.35, while Average Recall @ IoU = 0.50:0.95 is
+0.65. The average Precision per KL grade is 0.53, 0.33, 0.54, 0.43, and 0.83 per KL0, KL1,
+KL2, KL3, and KL4, respectively.
+41368                                                 Multimedia Tools and Applications (2025) 84:41353–41380
+
+
+Table 5  Generated knee joint images
+                          Grades        CHECK         CGMH-OA            G&A
+
+
+
+
+                            KL0
+
+
+
+
+                            KL1
+
+
+
+
+                            KL2
+
+
+
+
+                            KL3
+
+
+
+
+                            KL4            N/A
+
+
+
+Table 6  Results- Knee                 Method                           Average Recall            Mean IoU
+Localization
+                                       Chen et al. [20]                 0.922                     0.858
+                                       Muhammad et al. [54]              -                        0.95
+                                       Proposed                         0.99                      0.96
+
+
+
+
+Fig. 1  Transformer based 2 stage knee localization and KOA classification
+Multimedia Tools and Applications (2025) 84:41353–41380                                41369
+
+
+4.2.2 Interpretation
+
+The results indicate that the model performed best in identifying KL grade 4, achieving an
+average precision score of 0.83, which signifies a strong ability to detect severe KOA cases.
+Performance for KL0 and KL2 was also above average, demonstrating reasonable accuracy
+in distinguishing these grades.
+   However, the model struggled significantly with KL grade 1, known as the”Doubtful”
+grade, which represents a subtle and challenging category to classify. This difficulty likely
+stems from the ambiguous features characteristic of KL1, which can often resemble neigh-
+boring grades, leading to frequent misclassifications.
+   These results highlight the model’s capacity for detecting clear cases of KOA absence or
+severe KOA but underscore its limitations in reliably identifying early, less-defined stages.
+The model was validated on different datasets. Figure 2 shows the ground truth (in red) vs.
+the predicted bounding box (in blue and the confidence score in yellow).
+
+4.3 Two‑stage knee joint localization and KOA classification
+
+4.3.1 4.3.1 Results
+
+Since the Model’s performance for each grade is essential, we have calculated and pre-
+sented metrics for all KL classes. All our models obtained more than 70% accuracy as
+shown in Table 7 and Table 8.
+
+4.3.2 Interpretation
+
+Table 7 shows KL grade-wise accuracy, precision, recall, and F1 scores obtained by all
+models. The lowest accuracy is obtained by ViT, i.e., 73%, with a weighted Cohen Kappa
+score of 0.86, which shows perfect agreement between the rating by the model and original
+labels. DaViT obtains the highest accuracy. Dual transformer blocks help it in better feature
+learning. Figure 1 describes the complete working of 2-stage knee localization and KOA
+Classification, where stage 1 is the prediction of bounding boxes for knee joints. and stage
+2 is classification using the transformer-based classifiers.
+   Table 8 presents the confusion matrices and ROC-AUC curves for all evaluated mod-
+els, illustrating their performance in classifying KL grades. The results show a tendency
+for models to misclassify neighboring KL grades more frequently than nonadjacent ones.
+
+
+
+
+Fig. 2  Single stage knee Localization and KOA Classification
+41370                                               Multimedia Tools and Applications (2025) 84:41353–41380
+
+
+Table 7  KL grade-wise              Model          Class    Accuracy    Precision   Recall       F1
+performance results of all models
+                                    ViT            KL0      0.87        0.77        0.87         0.82
+                                                   KL1      0.36        0.45        0.36         0.4
+                                                   KL2      0.68        0.75        0.68         0.71
+                                                   KL3      0.93        0.81        0.93         0.86
+                                                   KL4      0.76        0.97        0.76         0.86
+                                    Swin           KL0      0.92        0.8         0.92         0.86
+                                                   KL1      0.49        0.66        0.49         0.56
+                                                   KL2      0.79        0.85        0.79         0.82
+                                                   KL3      0.95        0.86        0.95         0.9
+                                                   KL4      0.76        1           0.76         0.87
+                                    PCPVT          KL0      0.9         0.8         0.9          0.84
+                                                   KL1      0.51        0.51        0.51         0.51
+                                                   KL2      0.67        0.84        0.67         0.75
+                                                   KL3      0.93        0.87        0.93         0.9
+                                                   KL4      0.9         0.96        0.9          0.93
+                                    DaViT          KL0      0.96        0.91        0.96        0.93
+                                                   KL1      0.8         0.82        0.8         0.81
+                                                   KL2      0.87        0.96        0.87        0.91
+                                                   KL3      0.98        0.94        0.98        0.96
+                                                   KL4      0.9         1           0.9         0.95
+                                    Results with Ordinal Loss
+                                     ViTOrd        KL0      0.92        0.86        0.85        0.89
+                                                   KL1      0.67        0.57        0.81        0.71
+                                                   KL2      0.7         0.9         0.82        0.87
+                                                   KL3      0.91        0.9         0.96        0.95
+                                                   KL4      0.96        0.94        0.92        0.96
+                                     SwinOrd       KL0      0.85        0.91        0.92        0.91
+                                                   KL1      0.81        0.75        0.7         0.72
+                                                   KL2      0.82        0.88        0.88        0.88
+                                                   KL3      0.96        0.92        0.96        0.94
+                                                   KL4      0.92        1           0.9         0.95
+                                     PCPVTOrd      KL0      0.92       0.91         0.92        0.91
+                                                   KL1      0.7        0.75         0.7         0.72
+                                                   KL2      0.88       0.88         0.88        0.88
+                                                   KL3      0.96       0.92         0.96        0.94
+                                                   KL4      0.9        1            0.9         0.95
+                                     DaViTOrd      KL0      0.96       0.94         0.96        0.95
+                                                   KL1      0.88       0.86         0.88        0.87
+                                                   KL2      0.91       0.97         0.91        0.94
+                                                   KL3      0.96       0.96         0.96        0.96
+                                                   KL4      0.96       0.89         0.96        0.92
+
+
+
+For instance, there are substantial misclassifications where KL grade 0 is predicted as KL
+grade 1, or where KL grade 1 is predicted as KL grade 0 or KL grade 2. This pattern high-
+lights the models’ difficulty in distinguishing adjacent grades, which may share overlap-
+ping visual features.
+   Additionally, the models exhibit stronger performance in identifying the extreme KL
+grades (KL grade 0 and KL grade 4) compared to the intermediate grades (KL grades
+Multimedia Tools and Applications (2025) 84:41353–41380               41371
+
+
+Table 8  Results- Confusion Matrices and ROC Curves
+                         Model           Confusion Matrix   ROC-AUC
+
+
+
+
+                         ViT
+
+
+
+
+                         Swin
+
+
+
+
+                         PCPVT
+
+
+
+
+                         DaViT
+
+
+
+
+                         VitOrd
+
+
+
+
+                         SwinOrd
+
+
+
+
+                         PCPVTOrd
+
+
+
+
+                         DaViTOrd
+41372                                       Multimedia Tools and Applications (2025) 84:41353–41380
+
+
+1 and 2). This trend suggests that the models are more reliable at recognizing the clear
+absence or presence of severe KOA, while intermediate stages pose a greater challenge due
+to subtler differences in image features. The performance differences between Dual Atten-
+tion ViT, Swin Transformer, PCPVT, and ViT can be attributed to several architectural and
+functional distinctions. Dual Attention ViT incorporates additional attention mechanisms
+(e.g., self-attention combined with channel or spatial attention) that allow it to focus more
+effectively on both global and local features simultaneously. This dual approach can help in
+better capturing fine-grained details as well as overall context, leading to improved perfor-
+mance. By combining multiple forms of attention, the model can dynamically focus on the
+most relevant features of.
+    the image, enhancing its ability to generalize and perform better across different data
+samples. Hence DaViT is the best model in this scenario. Swin Transformer introduces a
+hierarchical structure by processing the image in non-overlapping windows and progres-
+sively merging these windows at higher levels. This allows it to capture multi-scale features
+efficiently, making it particularly effective for images with complex structures. Hence it is
+proven to be the second best model in our case.
+
+4.4 Ordinal classification
+
+It was observed that models make wrong predictions for adjacent grades, i.e., KL1 needs
+to be clarified with KL0 and KL2. To improve these models’ performances, we replaced
+the loss function with Conditional Ordinal Regression for neural Networks implemented in
+work [2].
+
+4.4.1 Results
+
+Models’ performance before and after the change of loss function can also be observed.
+After modifying the model, No individual accuracy was below 80% except for ViTOrd
+KL = 1 and KL = 2. As mentioned earlier, Cross-Entropy (CE) loss does not take into
+account the ordinal nature of the classes when classifying images, which can lead to subop-
+timal performance. However, after applying an ordinal approach that considers the inherent
+order of the classes, the performance has significantly improved.
+
+4.4.2 Interpretation
+
+A comparison of all the models with Cross Entropy Loss and Ordinal Loss is shown in
+Fig. 3. The results indicate that the ViTOrd model achieved a minimum accuracy of 83%,
+demonstrating a notable improvement over the standard ViT model trained with cross-
+entropy (CE) loss. This improvement is also reflected in the Kappa statistic, which reached
+0.92, highlighting a strong agreement between the predicted and actual classifications.
+    Similarly, the Swin model, when trained with ordinal loss, showed significant perfor-
+mance enhancements. It achieved an accuracy of 86% and a recall of 86%, with a precision
+of 87% and a Kappa score of 0.93. It can be seen that DaViTOrd consistently outperformed
+the other models across all metrics, with the highest Accuracy (93%), Precision (94%),
+Recall (93%), F1-Score (93%), and Kappa Score (0.96). SwinOrd and PCPVTOrd also per-
+formed well, showing strong results in all metrics, particularly in the Kappa Score where
+they both achieved 0.93. These results highlight the effectiveness of using ordinal loss, as
+it enhances the models’ sensitivity to the ordered progression of KL grades and improves
+Multimedia Tools and Applications (2025) 84:41353–41380                               41373
+
+
+
+
+Fig. 3  Comparison
+
+
+overall classification accuracy and consistency. Additionally, models incorporating ordinal
+loss (ViTOrd, SwinOrd, PCPVTOrd, and DaViTOrd) consistently outperformed their base
+versions, indicating the advantage of ordinal loss in this task. Notably, DaViTOrd achieved
+high scores across all metrics, suggesting it is a well-balanced model that maintains a
+strong balance between precision and recall without significant trade-offs.
+
+4.5 Eigen CAM
+
+EigenCAM is a type of class activation mapping (CAM) method that uses the principal
+components of the gradients flowing back from the output layer to the feature maps of
+a convolutional layer. It identifies the most important features (image regions) that influ-
+ence the model’s decision, typically visualized as a heatmap overlaid on the original image.
+EigenCAM visualizations of our best model, i.e., DaViTOrd, are shown in Table 9. The
+model could highlight key areas to help medical practitioners identify knee joint narrow-
+ing, sclerosis, and osteophytes in yellow and blue. It is worth mentioning that the area
+highlighted by the CAM indicates the significant region for potential detection of KOA
+symptoms and can be utilized for precise assignment of the KL grade.
+
+4.6 Cross‑dataset validation
+
+For cross-dataset validation, we mixed three different types of datasets obtained from our
+knee localizer DETR model. our best model, DaViTOrd, achieved an overall accuracy of
+61% without fine-tuning and 73% after fine-tuning for five epochs.
+41374                                           Multimedia Tools and Applications (2025) 84:41353–41380
+
+
+Table 9  Eigen-CAM Visualization for DaViTOrd
+  Grade          KL0            KL1               KL2              KL3               KL4
+
+
+
+
+  Original
+
+
+
+
+  EigenCAM
+
+
+
+
+  Original
+
+
+
+
+  EigenCAM
+
+
+
+
+   Although radiographs in all these studies were taken according to standard protocols,
+there are differences in implementing the KL grading method [44]. The diversity of radi-
+ographs and variance in grading methods may have reduced the model’s performance.
+
+
+
+4.7 ANOVA test
+
+It can also be observed that models with ordinal loss (ViTOrd, SwinOrd, PCPVTOrd,
+DaViTOrd) performed better than their base versions. To prove this claim we per-
+formed an ANOVA test. To compare four base models (with CE loss) to models with
+ordinal loss (ViTOrd, SwinOrd, PCPVTOrd, DaViTOrd) we formulated the following
+hypothesis.
+
+   (H0): The average performance (Accuracy, Precision, Recall, κ) of base models to the
+   Ordinal version of these models is equal.
+   (H1): At least one model has a different average performance. Where Significance
+   level (α) = 0.05
+
+
+4.7.1 Results
+
+ANOVA test results are shown in Table 10, where a comparison test is done for all mod-
+els described above. A comparison of models with CE loss and models with CORN loss
+is also shown.
+Multimedia Tools and Applications (2025) 84:41353–41380                               41375
+
+
+Table 10  ANOVA results
+Models                                 DF           Mean Square   F-Statistic      P-Value
+
+Models (Between all Models)            7            198.4821      14.3697          2.776e−8
+ViT vs. ViTOrd                         1            211.6          7.6945          0.02415
+Swin vs. SwinOrd                       1             67.6          5.4959          0.0471
+PCPVT vs. PCPVTOrd                     1            240.1         16.4452          0.003657
+DaViT vs. DaViTOrd                     1             19.6         23.0588          0.001352
+
+
+
+
+4.7.2 ANOVA interpretation
+
+1. (H0) hypothesis: Since p-value < α, H0 is rejected. Some of the groups’ averages are
+   considered to be not equal. In other words, the difference between the sample averages
+   of some models is big enough to be statistically significant.
+2. P-value: p-value equals 2.7763e-8, [p( x < = F) = 1]. It means that the chance of type1
+   error (rejecting a correct H0) is small: 2.776e-8 (0.0000028%) The smaller the p-value
+   the stronger it supports H1.
+3. The statistics: The test statistic F equals 14.369748, which is not in the 95% region of
+   acceptance: [0: 2.3127]
+4. Effect size The observed effect size f is large (1.77). That indicates that the magnitude
+   of the difference between the averages is large. The η2 equals 0.76. It means that the
+   group explains 75.9% of the variance from the average
+5. Tukey’s honestly Significant Difference (HSD) test: The means of the model pairs are
+   significantly different.
+
+
+4.8 Comparison with previous studies
+
+Our model presents state-of-the-art results compared to previous studies on CNNbased and
+transformers (see Table 11). Work by [25] has obtained an overall accuracy of 70%, but
+accuracies for KL1 and KL2 are under 60%. Their system could receive more than 90% of
+accuracy only for KL4.
+   Similarly, the best accuracy achieved by [28] is 75.43%. They have also reported that
+KL0 and KL1 are the most challenging to classify. Moreover, the dataset used by the
+above-mentioned two studies is the same as ours. Studies by [20, 34] also consider the
+ordinal nature of KL grades. But their overall performance and performance for each KL
+grade still needs improvement.
+
+
+
+5 Conclusion
+
+In our research, we created automated methods for locating knees and classifying knee
+osteoarthritis (KOA) using one-stage and two-stage approaches. The findings indicate that
+two-stage models, with one model for locating the knee joint and another for KOA clas-
+sification, tend to deliver superior performance. To enhance KOA classification accuracy,
+we implemented an ordinal loss function. Additionally, we compared the outcomes of a
+Table 11  Comparison of results
+                                                                                                                                                                41376
+Ref                                  Method                                                    Evaluation
+
+Yong et al. (2021) [34]              Fine-tuning DenseNet-161 with ordinal regression module   Accuracy = 88.09%, MAE = 0.33, QWK = 0.86, Accuracy per KL
+                                                                                                Grade
+                                                                                               KL0 = 80%, KL1 = 39%, KL2 = 70%, KL3 = 80%, KL4 = 86%
+Liu et al. (2022) [17]               Fine-tuning CNN based models with Focal Ordinal Loss      Accuracy = 66%MSE = 0.48Accuracy per KL grade KL0 = 82%,
+                                                                                               KL1 = 29%, KL2 = 57%, KL3 = 85%, KL4 = 82%
+Alshareef et al. (2022) [25]         Fine-tuninga ViT                                          Accuracy per KL Grade
+                                                                                               KL0 = 70%KL1 = 53%KL2 = 57%KL3 = 86%KL4 = 94%
+Sekhrie et al. (2023) [28]           Experiments with Swin Transformers                        Accuracy = 75.43%, F1 = 0.714 Accuracy per KL Grade Not Avail-
+                                                                                                able
+Our Models with Cross Entropy Loss
+ViT                                  Fine-Tuninga ViT                                          Accuracy = 73%, Precision = 72%, Re-call = 73%, F1-Score = 72%
+                                                                                               KappaScore:0.86
+Swin                                 Fine Tuninga Swin                                         Accuracy = 81%, Precision = 80%, Re-call = 81%, F1-Score = 80%
+                                                                                               KappaScore:0.90
+PCPVT                                Fine Tuninga Twin PCPVT                                   Accuracy = 77%Precision = 77%, Re-call = 77%, F1-Score = 77%
+                                                                                               KappaScore:0.88
+DaViT                                Fine Tuninga DaViT                                        Accuracy = 91%, Precision = 91%, Re-call = 91%, F1-Score = 91%
+                                                                                               KappaScore:0.92
+Our Models with Ordinal CORN Loss
+ViTOrd                               ViT with Consistent Ordinal Regression                    Accuracy = 83%, Precision = 83%, Re-call = 82%, F1-Score = 82%
+                                                                                               KappaScore:0.92
+SwinOrd                              Swin with Consistent Ordinal Regression                   Accuracy = 86%, Precision = 87%, Re-call = 86%, F1-Score = 87%
+                                                                                               KappaScore:0.93
+PCPVTOrd                             PCPVT with Consistent Ordinal Regression                  Accuracy = 88%, Precision = 88%, Re-call = 88%, F1-Score = 88%
+                                                                                               KappaScore:0.93
+DaViTOrd                             DaViT with Consistent Ordinal Regression                  Accuracy = 93%, Precision = 94%, Re-call = 93%, F1-
+                                                                                                Score = 93%, KappaScore:0.96                                    Multimedia Tools and Applications (2025) 84:41353–41380
+Multimedia Tools and Applications (2025) 84:41353–41380                                                  41377
+
+
+standard multiclass image classification task with a multiclass ordinal image classification
+task.
+   We utilized images from various sources for the knee localization task, while images for
+the classification task followed a specialized protocol, including specific camera settings.
+We plan to extend our knee joint classification approach to diverse dataset settings. We also
+developed EigenCAM visualizations to interpret the classification results better.
+   Our automated diagnostic system has the potential to enhance the accuracy and effi-
+ciency of knee osteoarthritis diagnosis, a task that can be challenging and timeconsuming
+for radiologists. Our models demonstrated cutting-edge results and, after further validation,
+could find practical application in clinical settings.
+
+
+Funding Not Applicable. No funding received.
+
+Data Availability The CHECK-cohort study is funded by the Dutch Arthritis Foundation. Involved are:
+Erasmus Medical Center Rotterdam; Kennemer Gasthuis Haarlem; Leiden University Medical Center;
+Maastricht University Medical Center; Martini Hospital Groningen /Allied Health Care Center for Rheu-
+matology and Rehabilitation Groningen; Medical Spectrum Twente Enschede /Ziekenhuisgroep Twente
+Almelo; Reade Center for Rehabilitation and Rheumatology; St.Maartens-kliniek Nijmegen; University
+Medical Center Utrecht and Wilhelmina Hospital Assen and dataset is available at doi:10.23698/aida/
+koa2021
+    Osteoarthritis Initiative (OAI) based knee joint X-ray images dataset is available at https://data.mende-
+ley.com/datasets/56rmx5bjcr/1/
+    CGMH-OA dataset is available on Kaggle https://www.kaggle.com/datasets/tommyngx/cgmh-oa.
+    Max Gordon and Ehsan Akbarian (G&A) dataset was obtained for research purposes only. It is available
+upon request from https://doi.org/10.17026/dans-xs3ws3s.
+
+Declarations
+Conflict of interest Tayyaba Tariq declares that she has no conflict of interest. Zobia Suhail declares that she
+has no conflict of interest. Zubair Nawaz declares that he has no conflict of interest.
+
+Ethical approval This article does not contain any studies with human participants or animals performed by
+any of the authors.
+
+Informed consent Not applicable. This article does not contain any studies with human participants that
+require informed consent.
+
+
+
+
+References
+ 1. Saini D, Chand T, Chouhan DK, Prakash M (2021) A comparative analysis of automatic classifica-
+    tion and grading methods for knee osteoarthritis focussing on x-ray images. Biocybern Biomed Eng
+    41(2):419–444
+ 2. Tariq T, Suhail Z, Nawaz Z (2023) Knee osteoarthritis detection and classification using x-rays. IEEE
+    Access 11:48292–48303. https://​doi.​org/​10.​1109/​ACCESS.​2023.​32768​10
+ 3. Tariq T, Suhail Z, Nawaz Z (2025) A review for automated classification of knee osteoarthritis using kl
+    grading scheme for x-rays. Biomed Eng Lett 15(1):1–35
+ 4. Luyten FP, Denti M, Filardo G, Kon E, Engebretsen L (2012) Definition and classification of early
+    osteoarthritis of the knee. Knee Surg Sports Traumatol Arthrosc 20:401–406
+ 5. Kanamoto T, Mae T, Yokoyama T, Tanaka H, Ebina K, Nakata K (2020) Significance and definition of
+    early knee osteoarthritis. Ann Joint 5:4
+ 6. Kellgren JH, Lawrence J (1957) Radiological assessment of osteo-arthrosis. Ann Rheum Dis 16(4):494
+ 7. Tariq T, Suhail Z, Nawaz Z (2023) Machine learning approaches for the classification of knee
+    osteoarthritis. In: 2023 3rd international conference on electrical, computer, communications and
+41378                                                Multimedia Tools and Applications (2025) 84:41353–41380
+
+
+      mechatronics engineering (ICECCME). IEEE, Tenerife, Canary Islands, pp 1–6. https://​doi.​org/​10.​
+      1109/​ICECC​ME578​30.​2023.​10252​236
+ 8.   LeCun Y, Bengio Y, Hinton G (2015) Deep learning. Nature 521(7553):436–444
+ 9.   Litjens G, Kooi T, Bejnordi BE, Setio AAA, Ciompi F, Ghafoorian M, Van Der Laak JA, Van Gin-
+      neken B, S´anchez CI (2017) A survey on deep learning in medical image analysis. Med Image
+      Anal 42:60–88
+10.   Deng J, Dong W, Socher R, Li LJ, Li K, Fei-Fei L (2009) Imagenet: a largescale hierarchical image
+      database. In: 2009 IEEE conference on computer vision and pattern recognition. Miami, FL, pp
+      248-255. https://​doi.​org/​10.​1109/​CVPR.​2009.​52068​48
+11.   Simonyan K, Zisserman A (2014) Very deep convolutional networks for large-scale image recogni-
+      tion. arXiv preprint. https://​doi.​org/​10.​48550/​arXiv.​1409.​1556
+12.   He K, Zhang X, Ren S, Sun J (2016) Deep residual learning for image recognition. In: IEEE confer-
+      ence on computer vision and pattern recognition (CVPR). Las Vegas, NV, pp 770–778. https://​doi.​
+      org/​10.​1109/​CVPR.​2016.​90
+13.   Huang G, Liu Z, Van Der Maaten L, Weinberger KQ (2017) Densely connected convolutional
+      networks. In: Proceedings of the IEEE conference on computer vision and pattern recognition,
+      (CVPR), Honolulu, HI, pp 2261–2269. https://​doi.​org/​10.​1109/​CVPR.​2017.​243
+14.   Alshamrani HA, Rashid M, Alshamrani SS, Alshehri AH (2023) Osteo-net: An automated system
+      for predicting knee osteoarthritis from x-ray images using transfer-learning-based neural networks
+      approach. In: Healthcare, vol 11. MDPI, p 1206. https://​doi.​org/​10.​3390/​healt​hcare​11091​206
+15.   Abd El-Ghany S, Elmogy M, Abd El-Aziz A (2023) A fully automatic fine tuned deep learning
+      model for knee osteoarthritis detection and progression analysis. Egypt Inform J 24(2):229–240
+16.   Antony J, McGuinness K, Moran K, O’Connor NE (2017) Automatic detection of knee joints and
+      quantification of knee osteoarthritis severity using convolutional neural networks. In: International
+      conference on machine learning and data mining in pattern recognition, Lecture notes in computer
+      science, vol 10358. Springer, Cham. https://​doi.​org/​10.​1007/​978-3-​319-​62416-7_​27
+17.   Liu W, Ge T, Luo L, Peng H, Xu X, Chen Y, Zhuang Z (2022) A novel focal ordinal loss for assess-
+      ment of knee osteoarthritis severity. Neural Process Lett 54(6):5199–5224
+18.   Guida C, Zhang M, Shan J (2021) Knee osteoarthritis classification using 3d cnn and mri. Appl Sci
+      11(11):5196
+19.   Feng Y, Liu J, Zhang H, Qiu D (2021) Automated grading of knee osteoarthritis x-ray images based
+      on attention mechanism. In: 2021 IEEE international conference on bioinformatics and biomedi-
+      cine (BIBM), Houston, TX, pp 1927–1932. https://​doi.​org/​10.​1109/​BIBM5​2615.​2021.​96696​23
+20.   Chen P, Gao L, Shi X, Allen K, Yang L (2019) Fully automatic knee osteoarthritis severity grading
+      using deep neural networks with a novel ordinal loss. Comput Med Imaging Graph 75:84–92
+21.   Dalia Y, Bharath A, Mayya V, Kamath SS (2021) DeepOA: Clinical decision support system for
+      early detection and severity grading of knee osteoarthritis. In: 2021 5th international conference on
+      computer, communication and signal processing (ICCCSP), Chennai, pp 250–255. https://​doi.​org/​
+      10.​1109/​ICCCS​P52374.​2021.​94655​22
+22.   Gu H, Li K, Colglazier RJ, Yang J, Lebhar M, O’Donnell J, Jiranek WA, Mather RC, French RJ,
+      Said N, et al. (2022) Automated grading of radiographic knee osteoarthritis severity combined with
+      joint space narrowing. arXiv preprint arXiv:​2203.​08914
+23.   Wang Y, Wang X, Gao T, Du L, Liu W (2021) An automatic knee osteoarthritis diagnosis method
+      based on deep learning: data from the osteoarthritis initiative. J Healthc Eng 2021:1–10
+24.   Li W, Feng J, Zhu D, Xiao Z, Liu J, Fang Y, Yao L, Qian B, Li S (2023) Nomogram model based on
+      radiomics signatures and age to assist in the diagnosis of knee osteoarthritis. Exp Gerontol 171:112031
+25.   Alshareef EA, Ebrahim FO, Lamami Y, Milad MB, Eswani MS, Bashir SA, Bshina SA, Jakdoum
+      A, Abourqeeqah A, Elbasir MO et al (2022) Knee osteoarthritis severity grading using vision trans-
+      former. J Intell Fuzzy Syst (Preprint):1–11
+26.   Liu B, Luo J, Huang H (2020) Toward automatic quantification of knee osteoarthritis severity using
+      improved faster r-cnn. Int J Comput Assist Radiol Surg 15(3):457–466
+27.   Nguyen HH, Saarakkala S, Blaschko MB, Tiulpin A (2020) Semixup: in-and outof-manifold reg-
+      ularization for deep semi-supervised knee osteoarthritis severity grading from plain radiographs.
+      IEEE Trans Med Imaging 39(12):4346–4356
+28.   Sekhri A, Tliba M, Kerkouri MA, Nasser Y, Chetouani A, Bruno A, Jennane R (2023) Automatic
+      diagnosis of knee osteoarthritis severity using swin transformer. arXiv preprint arXiv:​2307.​04442
+29.   Frank E, Hall M (2001) A simple approach to ordinal classification. In: Machine learning: ECML
+      2001: 12th European conference on machine learning Freiburg, Germany, September 5–7, 2001
+      proceedings 12, vol 2167. Springer, Berlin, Heidelberg, pp 145–156. https://​doi.​org/​10.​1007/3-​540-​
+      44795-4_​13
+Multimedia Tools and Applications (2025) 84:41353–41380                                                   41379
+
+
+30. Chen P (n.d.) Knee Osteoarthritis Severity Grading Dataset. https://​data.​mende​ley. com/
+    datasets/56rmx5bjcr/1/
+31. Zhang Z, Sabuncu M (2018) Generalized cross entropy loss for training deep neural networks with
+    noisy labels. Adv Neural Inform Process Syst:31. https://​proce​edings.​neuri​ps.​cc/​paper_​files/​paper/​
+    2018/​file/​f2925​f97bc​13ad2​852a7​a5518​02fee​a0-​Paper.​pdf
+32. Heaton J (2018) Ian goodfellow, yoshua bengio, and aaron courville: Deep learning: The mit press,
+    2016, 800 pp, isbn: 0262035618. Genet Program Evolvable Mach 19(1):305–307
+33. Mikhaylichenko A, Demyanenko Y (2020) Automatic grading of knee osteoarthritis from plain radio-
+    graphs using densely connected convolutional networks. In: International conference on analysis of
+    images, social networks and texts. Springer, pp 149–161. https://​doi.​org/​10.​1007/​978-3-​030-​71214-3_​
+    13
+34. Yong CW, Teo K, Murphy BP, Hum YC, Tee YK, Xia K (2022) Lai KW (2021) Knee osteoarthritis
+    severity classification with ordinal regression module. Multimed Tools Appl 81:41497–41509. https://​
+    doi.​org/​10.​1007/​s11042-​021-​10557-0
+35. Kim DH, Lee KJ, Choi D, Lee JI, Choi HG, Lee YS (2020) Can additional patient information improve
+    the diagnostic performance of deep learning for the interpretation of knee osteoarthritis severity. J Clin
+    Med 9(10):3341
+36. Hu K, Wu W, Li W, Simic M, Zomaya A, Wang Z (2022) Adversarial evolving neural network for lon-
+    gitudinal knee osteoarthritis prediction. IEEE Trans Med Imaging 41(11):3207–3217
+37. Norman B, Pedoia V, Noworolski A, Link TM, Majumdar S (2019) Applying densely connected con-
+    volutional neural networks for staging osteoarthritis severity from plain radiographs. J Digit Imaging
+    32(3):471–477
+38. Anifah L, Purnama IKE, Hariadi M, Purnomo MH (2013) Osteoarthritis classification using self
+    organizing map based on gabor kernel and contrast-limited adaptive histogram equalization. Open
+    Biomed Eng J 7:18
+39. Zhang B, Tan J, Cho K, Chang G, Deniz CM (2020) Attention-based CNN for KL grade classifica-
+    tion: data from the osteoarthritis initiative. In: 2020 IEEE 17th international symposium on biomedical
+    imaging (ISBI), Iowa City, IA, pp 731–735. https://​doi.​org/​10.​1109/​ISBI4​5749.​2020.​90984​56
+40. Tiulpin A, Saarakkala S (2020) Automatic grading of individual knee osteoarthritis features in plain
+    radiographs using deep convolutional neural networks. Diagnostics 10(11):932
+41. Dosovitskiy A, Beyer L, Kolesnikov A, Weissenborn D, Zhai X, Unterthiner T, Dehghani M, Minderer
+    M, Heigold G, Gelly S, et al (2020) An image is worth 16x16 words: Transformers for image recogni-
+    tion at scale. arXiv preprint arXiv:​2010.​11929
+42. Liu Z, Lin Y, Cao Y, Hu H, Wei Y, Zhang Z, Lin S, Guo B (2021) Swin transformer: hierarchical
+    vision transformer using shifted windows. In: Proceedings of the IEEE/CVF international conference
+    on computer vision, pp 10012–10022. https://​doi.​org/​10.​1109/​ICCV4​8922.​2021.​00986
+43. Bijlsma JWJ, Wesseling J (2015) CHECK (Cohort Hip & Cohort Knee) data of baseline (T0).
+    DANS Data Station Life Sciences. https://​doi.​org/​10.​17026/​dans-​xs3-​ws3s. https://​doi.​org/​10.​17026/​
+    dans-​xs3-​ws3s
+44. Wesseling J, Boers M, Viergever MA, Hilberdink WK, Lafeber FP, Dekker J, Bijlsma JW (2016)
+    Cohort profile: cohort hip and cohort knee (check) study. Int J Epidemiol 45(1):36–44
+45. https://​www.​kaggle.​com/​datas​ets/​tommy​ngx/​cgmh-​oa (2020)
+46. Olsson S, Akbarian E, Lind A, Razavian AS, Gordon M (2021) Automating classification of osteoar-
+    thritis according to kellgren-lawrence in the knee using deep learning in an unfiltered adult population.
+    BMC Musculoskelet Disord 22(1):1–8. https://​doi.​org/​10.​23698/​aida/​koa20​21
+47. https://​doi.​org/​10.​23698/​aida/​koa20​21
+48. Vaswani A, Shazeer N, Parmar N, Uszkoreit J, Jones L, Gomez AN, Kaiser L, Polosukhin I (2017)
+    Attention is all you need. Adv Neural Inform Process Syst:30. https://​proce​edings.​neuri​ps.​cc/​paper_​
+    files/​paper/​2017/​file/​3f5ee​24354​7dee9​1fbd0​53c1c​4a845​aa-​Paper.​pdf
+49. Carion N, Massa F, Synnaeve G, Usunier N, Kirillov A, Zagoruyko S (2020) End-to-end object detec-
+    tion with transformers. In: Vedaldi A, Bischof H, Brox T, Frahm JM (eds) Computer vision – ECCV
+    2020. ECCV 2020. lecture notes in computer science(), vol 12346. Springer, Cham. https://​doi.​org/​10.​
+    1007/​978-3-​030-​58452-8_​1351
+50. Chu X, Tian Z, Wang Y, Zhang B, Ren H, Wei X, Xia H, Shen C (2021) Twins: Revisiting the design
+    of spatial attention in vision transformers. Adv Neural Inf Process Syst 34:9355–9366
+51. Ding M, Xiao B, Codella N, Luo P, Wang J, Yuan L (2022) Davit: Dual attention vision transformers.
+    In: European conference on computer vision. Springer, pp. 74–92
+52. Shi X, Cao W, Raschka S (2023) Deep neural networks for rank-consistent ordinal regression
+    based on conditional probabilities. Pattern Anal Applic 26:941–955. https://​doi.​org/​10.​1007/​
+    s10044-​023-​01181-9
+41380                                               Multimedia Tools and Applications (2025) 84:41353–41380
+
+
+53. Gildenblat J, contributors (2021) PyTorch library for CAM methods. GitHub. https://​github.​com/​jacob​
+    gil/​pytor​ch-​grad-​cam
+54. Bany Muhammad M, Yeasin M (2021) Interpretable and parameter optimized ensemble model for
+    knee osteoarthritis assessment using radiographs. Sci Rep 11(1):14348
+
+Publisher’s Note Springer Nature remains neutral with regard to jurisdictional claims in published maps and
+institutional affiliations.
+
+Springer Nature or its licensor (e.g. a society or other partner) holds exclusive rights to this article under
+a publishing agreement with the author(s) or other rightsholder(s); author self-archiving of the accepted
+manuscript version of this article is solely governed by the terms of such publishing agreement and applicable
+law.
+

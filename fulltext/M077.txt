@@ -1,0 +1,380 @@
+                                                                                                                                                                                          3URFHHGLQJVRIWKHWK,QWHUQDWLRQDO&RQIHUHQFHRQ&RPSXWHU6XSSRUWHG&RRSHUDWLYH:RUNLQ'HVLJQ
+
+
+                                                                                                                                                                                   Design of A Low-cost Computer-aided Diagnosis
+                                                                                                                                                                                           System for Knee Osteoarthritis
+
+
+
+
+2025 28th International Conference on Computer Supported Cooperative Work in Design (CSCWD) | 979-8-3315-1305-4/25/$31.00 ©2025 IEEE | DOI: 10.1109/CSCWD64889.2025.11033276
+                                                                                                                                                                                                                                                      Shengyu Lu
+                                                                                                                                                                                                                                 College of Computer Science and Technology
+                                                                                                                                                                                                                                        Harbin Engineering University
+                                                                                                                                                                                                                                                 Harbin, China
+                                                                                                                                                                                                                                            lushengyu@hrbeu.edu.cn
+
+
+                                                                                                                                                                                   Abstract—Knee osteoarthritis (OA) is one of the most common                   factors into decision-making. Besides, some subtle changes in
+                                                                                                                                                                                diseases worldwide, leading to activity limitations and physical                 the images are easily overlooked by the human eyes.
+                                                                                                                                                                                disability in humans. Early detection and quantitative assessment                   With the development of computer-aided diagnosis (CAD),
+                                                                                                                                                                                of OA using the Kellgren-Lawrence (KL) grading system on
+                                                                                                                                                                                plain radiographs can help slow disease progression. Currently,                  some experts suggest using computer vision methods and
+                                                                                                                                                                                computer-aided methods based on deep learning can reliably                       developing CAD tools to achieve automatically knee OA
+                                                                                                                                                                                assess OA severity, but they require a large amount of labeled                   assessment. Those approaches can provide a reliable reference
+                                                                                                                                                                                data to train neural networks. In this work, we propose using                    for radiologists and decrease the error rate of OA diagnosis
+                                                                                                                                                                                transfer learning to achieve fully automatic detection and clas-                 and reduce the burden of their work. Refer to the success
+                                                                                                                                                                                siﬁcation of knee joints in plain radiographs. In addition, we
+                                                                                                                                                                                propose a semi-supervised learning algorithm (SSL) based on                      of machine learning (ML) applied in many medical image
+                                                                                                                                                                                consistency regularization to leverage both unlabeled data and                   tasks such as pulmonary nodules detection [8] and Alzheimer’s
+                                                                                                                                                                                labeled data to improve classiﬁcation performance. On public                     disease diagnosis [9], some researchers proposed using ML
+                                                                                                                                                                                knee X-ray datasets, compared with state-of-the-art supervised                   methods for knee joint diagnosis. The experiments evaluated
+                                                                                                                                                                                learning (SL) methods, our method can achieve great effects while                on some public databases such as the Osteoarthritis Initiative
+                                                                                                                                                                                greatly reducing the cost of labeling data.
+                                                                                                                                                                                   Index Terms—knee osteoarthritis, semi-supervised learning,
+                                                                                                                                                                                                                                                                 (OAI) and Multicenter Osteoarthritis Study (MOST) showed
+                                                                                                                                                                                computer-aided diagnosis                                                         that those methods based on ML were available [10]. For
+                                                                                                                                                                                                                                                                 example, Brahim et al. developed an automatic system that
+                                                                                                                                                                                                         I. I NTRODUCTION                                        adopted the Fourier ﬁlter to process knee X-ray images and
+                                                                                                                                                                                                                                                                 used the random forest and Naive Bayes classiﬁers to predict
+                                                                                                                                                                                    Knee osteoarthritis (OA) is a common musculoskeletal                         OA based on the extracted features [11].
+                                                                                                                                                                                disease that causes joint pain and even disability for patients,                    Deep learning with powerful feature extraction capabilities
+                                                                                                                                                                                with a high incidence among obese people and the elderly [1].                    has been applied in knee OA assessment to promote progress
+                                                                                                                                                                                It is estimated that more than 50% Americans over 65 have                        [12]. Antony et al. developed an approach to detect knee joints
+                                                                                                                                                                                radiological evidence of OA and the incidence may increase                       automatically in X-ray images and train a convectional neural
+                                                                                                                                                                                further in the future ten years [2]. As a result of limited                      network (CNN) to quantify the knee OA severity [13]. Tiulpin
+                                                                                                                                                                                understanding of OA, there is still no effective method to treat                 et al. proposed an ensemble of residual networks with deep
+                                                                                                                                                                                it, and patients have to be treated by the replacement surgery                   layers to achieve both OA features and KL grades prediction
+                                                                                                                                                                                if they suffer this disease severely [3]. Hence, OA imposes                      using radiographs [14]. Chen et al. proposed a fully automatic
+                                                                                                                                                                                a huge burden on patients and affects the quality of their life                  method to assess knee OA that used the YOLOv2 network
+                                                                                                                                                                                [4]. Compared with clinical examination, early observation and                   to detect knee joints in X-ray images and then predict KL
+                                                                                                                                                                                diagnosis of OA can slow OA progression and signiﬁcantly                         grades based on the region of interest (ROI) [2]. Although
+                                                                                                                                                                                reduce the costs of the public health care system, and attract                   these approaches show great effects in knee OA assessment,
+                                                                                                                                                                                increasing attention from experts in recent years [5].                           they rely on a large number of labeled samples to train neural
+                                                                                                                                                                                    Currently, there are some diagnostic tools developed to                      networks.
+                                                                                                                                                                                assist OA assessment such as radiography, magnetic reso-                            In many practical cases, data annotation requires high eco-
+                                                                                                                                                                                nance imaging (MRI) and physical examination [6]. Among                          nomic and time costs, but the collection of massive unlabeled
+                                                                                                                                                                                them, X-ray imaging is the most accessible tool to diagnose                      samples is available [15]. Hence, it is a better option to
+                                                                                                                                                                                knee OA because of its cheapness, convenience and non-                           leverage both labeled data and unlabeled data to train the
+                                                                                                                                                                                invasiveness [7]. Knee joints are typically evaluated via the                    neural network and improve performance. Although Nguyen
+                                                                                                                                                                                Kellgren–Lawrence (KL) grading system, which is the gold                         et al. proposed a deep semi-supervised learning (SSL) method
+                                                                                                                                                                                standard for OA severity measurement in radiographs, as                          that can leverage the unlabeled data to train the Siamese
+                                                                                                                                                                                shown in Figure 1. The traditional diagnosis of plain radio-                     network and reduce the costs of labeled data [1], this method
+                                                                                                                                                                                graphs mainly depends on the visual observation of radiol-                       still requires manual cropping of knee joints in original plain
+                                                                                                                                                                                ogists, which introduces large inconsistencies and subjective                    radiographs and it is limited by the availability of balanced
+
+
+
+                                                                                                                                                                               ,(((                                       
+                                                                                                                                                                                        Authorized licensed use limited to: University of Pittsburgh. Downloaded on July 09,2026 at 06:28:02 UTC from IEEE Xplore. Restrictions apply.
+                                                             Fig. 1. Samples of all KL grades.
+
+
+
+data. In this paper, we propose a method that detects knee                       over union (IOU) threshold of 0.75 [2]. Liu et al. proposed
+joints automatically and predicts the KL grades using semi-                      an improved Faster RCNN model called FLA with focal loss
+supervised learning and transferring learning. The main nov-                     function to detect knee joints in radiographs and achieve an
+elty is that our method can process the original plain radio-                    IOU of 0.92 in the detected joints [5]. Antony introduced
+graphs fully automatically and leverage both labeled data and                    an end-to-end network to localize knee joints automatically
+unlabeled data to achieve OA assessment. Besides, we adopt                       using FCN and achieve an accuracy of 0.91 on the OAI and
+the transferring learning strategy that transfers the features                   MOST data when the IOU threshold is larger than 0.75 [13].
+learned from massive natural images and ﬁne-tunes the model                      Tiulpin et al. proposed a novel method named HOG-SVM
+on our data [16], which can reduce the cost of labeling medical                  that generated the object proposals and used the histogram of
+images.                                                                          oriented gradients (HOG) and support vector machine (SVM)
+   The rest structure of this paper is organized as follows.                     classiﬁer to localize knee joints in radiographs automatically
+Section 2 introduces the background of knee OA disease, deep                     [18].
+learning for knee joint detection, classiﬁcation and SSL. In
+Section 3, we describe the proposed algorithm in detail. We                      B. Quantiﬁcation of knee osteoarthritis severity
+show the experiments and analysis of our method in Section                          For the quantiﬁcation of knee OA severity, the KL grading
+4. Section 5 presents a discussion of this study, while Section                  system is the most popular standard of CAD methods in the
+6 summarizes this paper.                                                         literature. Wahyuningrum et al. proposed an ensemble model
+                                                                                 that used the CNN to extract features from X-ray images and
+                       II. R ELATED W ORK                                        then inputted them into the long short term memory (LSTM)
+   In clinical practice, radiologists usually inspect knee joints                model to achieve classiﬁcation, with an accuracy of 75% [19].
+in raw X-ray images and then give KL grades to them to                           Antony et al. adopted the transferring learning strategy and
+describe the OA severity of patients. In order to achieve                        proposed an approach that used the CNN pre-trained on the
+automatic diagnosis of knee OA from raw plain radiographs,                       ImageNet dataset and ﬁne-tuned the model on knee images
+it is important to accurately detect the presence of knee                        for KL grade classiﬁcation [20]. Tiulpin et al. proposed a
+joints and quantify their severity. In the last decades, several                 multimodal model for knee OA diagnosis that used the CNN
+approaches are proposed to tackle these two tasks in the                         to extract deep features from X-ray images and fused them
+literature. Compared with the co-occurrence CAD methods to                       with clinical features for KL grade classiﬁcation [3]. Zhang et
+assess knee OA severity, deep learning methods have shown                        al. designed a novel neural network that adopted the attention
+superior effects on knee joint detection and KL grade classi-                    mechanism in the residual block for KL grade classiﬁcation
+ﬁcation [17]. The CNN is a typical deep learning algorithm                       and achieved an accuracy of 75% [4].
+that has the capability to extract the deep features of images
+through convolution operations in the receptive ﬁeld and it is                   C. Deep semi-supervised learning
+commonly used to assess knee OA.                                                   Although deep learning methods made much progress in
+                                                                                 medical image tasks, most of them are supervised learning
+A. Detection of knee joints                                                      (SL) methods and rely on a large volume of labeled data
+   Knee joint detection is that marks the location of knee joints                [15]. However, annotating massive medical images by clinical
+in raw X-ray images and distinguishes knee joints from other                     experts is expensive and time-consuming. For the limitation
+regions. Some scholars suggested using deep learning methods                     of SL methods, many researchers proposed SSL methods
+to detect the presence of knee joints and achieve high accuracy.                 that leveraged the labeled data and unlabeled data together
+In particular, Chen et al. proposed a method that preprocessed                   to solve the tasks in recent years [21]. Those approaches
+plain radiographs and applied the YOLOv2 model to achieve                        usually contain two main ideas: consistency regularization and
+a recall of 92% in knee joint detection with an intersection                     pseudo-labeling. Consistency regularization assumes that the
+
+
+
+                                                                            
+        Authorized licensed use limited to: University of Pittsburgh. Downloaded on July 09,2026 at 06:28:02 UTC from IEEE Xplore. Restrictions apply.
+output of model P (y|u) should remain unchanged when data                        B. Object detection
+transformations are applied to the unlabeled data u [22]. As
+                                                                                    Faster RCNN consists of the regional proposed net-
+to pseudo-labeling, it guesses labels for unlabeled data and
+                                                                                 work (RPN) and the region-based convolutional neural net-
+then uses the predicted labels with high conﬁdence to update
+                                                                                 work(RCNN) [26]. The RPN introduces the anchor boxes
+the neural network [1]. For example, Wang et al. proposed a
+                                                                                 multiple scales and aspect ratios on the feature map to generate
+novel SSL method based on consistency regularization for 3D
+                                                                                 the region of interest (ROI), while the RCNN converts the
+medical image detection that used the MixUp augmentation for
+                                                                                 features from the ROI and exploits two fully connected layers
+both image-level and object-level detection [21]. The exper-
+                                                                                 to implement classiﬁcation and regression, respectively, as
+iments showed that their method could signiﬁcantly achieve
+                                                                                 shown in Figure 2. Due to the serious imbalance between
+more superior performance compared with the state-of-the-
+                                                                                 the object and the background, the non-maximal suppression
+art SL methods. Chen et al. introduced an SSL method of
+                                                                                 (NMS) is adopted to deal with all candidate foregrounds.
+pseudo-labeling that considered unlabeled lesion instances to
+                                                                                 It only selects the intersection-over-union (IOU) over the
+boost the performance of small lesion detection [23]. Liu et al.
+                                                                                 threshold as the ROIs [27]. Based on the Faster RCNN
+presented a novel relation-driven SSL method that exploited
+                                                                                 with the ResNet as the backbone [28], we further adopt
+the valuable relationship between unlabeled data and extracted
+                                                                                 the FPN architecture that exploits the pyramidal hierarchy
+extra semantic information to improve the performance of
+                                                                                 of convolutional neural networks in the backbone to extract
+image classiﬁcation [24].
+                                                                                 multi-scale features of plain radiographs [29] [5]. Hence, our
+                                                                                 model can gain more information about knee joints from
+     III. M ETHODOLOGY FOR K NEE O STEOARTHRITIS
+                                                                                 feature pyramid architecture. In order to overcome the defect
+             D ETECTION AND C LASSIFICATION
+                                                                                 of limited and unbalanced medical images, We adopt the
+   Our method involves two steps: automatically localizing                       strategy that transfers the pre-trained weights from the COCO
+knee joints in plain radiographs utilizing Faster RCNN with                      dataset and ﬁne-tunes the model on plain radiographs.
+feature pyramid network (FPN); predicting the KL grades
+based on the localized knee joint images using the SSL algo-                     C. Semi-supervised learning
+rithm. The schematic illustration of our method is presented
+                                                                                    Our proposed SSL method based on consistency regular-
+in Figure 2.
+                                                                                 ization assumes a classiﬁer should preserve the same class
+                                                                                 distribution even though add a little perturbation on the unla-
+A. Preprocessing
+                                                                                 beled data [22] [30]. Given labeled data X and unlabeled data
+  For knee X-ray images, we employ image standardization                         U, we use data augmentation on them. For each sample xi in
+and data augmentation techniques to improve model robust-                        labeled data X, we generate a new sample x̂i = Tlabel () with
+ness against image perturbation. First, we preprocess the image                  data transformation. For each sample uj in unlabeled data U,
+as follows:                                                                      we generate K augmentations ukj = Tunlabel (uj ). Then use
+                             X − Xmean                                           the transferring learning model to guess labels for ukj and
+                     X̄ =                                   (1)
+                                 Xstd                                            compute the average of the guessed labels q̄j across all the
+Where X and X̄ denote the raw image and preprocessed image                       K data transformations of uj .
+respectively. Xmean and Xstd are the mean and standard
+                                                                                                               1 
+                                                                                                                  K
+deviation of X.                                                                                        q̄j =         Pmodel (uj ; θ)                     (4)
+   MixUp augmentation is widely used in image classiﬁcation                                                    K i=1
+tasks and encourages the model to generalize better through
+linear interpolation of two samples [25]. This paper uses the                    Finally, we fuse labeled data with true labels and unlabeled
+MixUp method to process the X-ray images and improve the                         data with guessed labels together to update the weight pa-
+model generalization. Given two samples (xi , yi ) and (xj , yj ),               rameters θ of neural networks. We optimize the combined
+we linearly mix them with a coefﬁcient λ as follows:                             loss function L consists of labeled data loss function LX and
+                                                                                 unlabeled data loss function LU for SSL:
+                  xmix = λ ∗ xi + (1 − λ) ∗ xj                           (2)
+                                                                                                 L(θ) = LX (θ; X) + ω ∗ LU (θ; U )                       (5)
+                  ymix = λ ∗ yi + (1 − λ) ∗ yj                           (3)
+                                                                                                                1 
+                                                                                                                   C
+
+Where, λ ∼ β(α, α), α ∈ (0, +∞). λ controls the strength                                          LX (θ) =            yic ∗ log(Pic )                    (3)
+                                                                                                                N i=1
+of the mixture between original samples. As shown in Figure
+1, the differences of samples from various categories are not
+                                                                                                               1  
+                                                                                                                  N  K
+obvious. If λ is close to 0.5, the mixed sample will make the                                    LU (θ) =              (q̄j ) − qjk 22                 (6)
+model too difﬁcult to learn the features of samples and make                                                   N j=1
+                                                                                                                          k=1
+the right judgment. Hence, we add a conditional constraint
+λ < 0.25 or λ > 0.75.                                                               This is the pseudocode of the SSL algorithm:
+
+
+
+                                                                            
+        Authorized licensed use limited to: University of Pittsburgh. Downloaded on July 09,2026 at 06:28:02 UTC from IEEE Xplore. Restrictions apply.
+                                                          Fig. 2. The framework of our method.
+
+
+Algorithm 1 SSL                                                                  the detection model and achieve localization. For KL grade
+Input: labeled data with labels X = {(xi , yi ), i ∈                             classiﬁcation, knee joint images are used as input to train
+{1, 2, ..., N }}                                                                 the neural network. We repeat the experiment 5 times and
+          Unlabeled data U = {uj , j ∈ {1, 2, ..., M }}                          calculate the average of the results.
+          The number of transformations K                                        B. Results
+1. x̂i = Tlabel ()
+2. pi = Pmodel (x̂i ; θ)                                                            Our model can achieve the most superior performance in
+3. For k = 1 to K do:                                                            knee joint detection compared with state-of-the-art methods
+4.       ukj = Tunlabel (uj )                                                    (see Section 2). As shown in Table 1, the detection results
+5.       qjk = Pmodel (ukj ; θ)                                                  show that our method can achieve an accuracy of 0.98 and
+6. End                                                                           its mean IOU is 0.89. We illustrate several detection samples
+7. Compute the average of the guessed label q¯j with Equa-                       of X-rays from Dataset 1 in Figure 3, the red bounding box
+tion(1)                                                                          and green bounding box represent the annotated knee joint
+8. X̂ = (x̂i , yi )                                                              region and the auto-detected region. Most samples obtain high
+9. Û = (uˆj , q¯j )                                                             overlapping between the true bounding boxes and detected
+10. Compute the LX with Equation(3)                                              bounding boxes, just like Column 1 and Column 2 in Figure
+11. Compute the Lu with Equation(4)                                              3, and only a few samples obtain the IOU less than 0.75 like
+12. Compute the L with Equation(2) and minimize it until                         Column 3.
+convergence                                                                                                     TABLE I
+                                                                                              K NEE JOINT DETECTION RESULTS FOR DATASET 1
+                         IV. E XPERIMENT                                                  Methods                Reference         Accuracy      Mean IOU
+A. Dataset                                                                           Faster RCNN+FPN            Our method           0.98          0.89
+                                                                                        Faster RCNN            Liu et al. [5]        0.97          0.88
+   We use knee plain radiographs from the OAI and MOST                                    YOLOv2              Chen et al. [2]        0.92          0.86
+databases, referred to as Dataset 1 and Dataset 2, to evaluate                              FCN              Antony et al. [20]       –            0.83
+                                                                                         HOG-SVM             Tiulpin et al. [18]      –            0.84
+the performance of our model. The dataset is randomly divided
+into training, validation, and test sets with a ratio of 7:1:2. For
+knee joint detection, X-ray images with annotated bounding                         When it comes to KL grade classiﬁcation, we adopt the
+boxes which are represented by four coordinates are input to                     pre-trained VGG-19 architecture. We further compare the
+
+
+
+                                                                            
+        Authorized licensed use limited to: University of Pittsburgh. Downloaded on July 09,2026 at 06:28:02 UTC from IEEE Xplore. Restrictions apply.
+                                                 Fig. 3. Detection samples of knee images from Dataset 1.
+
+
+
+classiﬁcation performance of our method with other state-                         the total number of samples in the dataset. As the proportion
+of-the art methods on Dataset 1, as shown in Table 2. The                         of labeled data increases, the performance of our method
+experimental results show that samples with grade 1 are easily                    improves. Table 3 presents the results for the two methods
+misclassiﬁed as grade 0, because there is no clear boundary                       when the ratio is set to 0.5. We can ﬁnd that the SSL algorithm
+between these two categories, even for clinical experts. Hence,                   leverages both labeled data and unlabeled data and can achieve
+we consider fusing grade 0 and grade 1 as one category to train                   more superior than the SL algorithm only with labeled data.
+the model, and diagnostic accuracy can be improved to 0.8.                        Besides, our method can achieve fully automatic knee joint
+                                                                                  detection and leverage unlabeled X-ray images to improve the
+                           TABLE II                                               performance of OA diagnosis. As the ratio increases,
+         KL GRADE CLASSIFICATION RESULTS FOR DATASET 1
+
+                          Methods        Accuracy                                                               TABLE III
+                         Our method        0.71                                             A COMPARISION BETWEEN SUPERVISED LEARNING AND
+                         Chen et al.       0.70                                                   SEMI - SUPERVISED LEARNING METHODS
+                         ResNet-18         0.66
+                          DenseNet         0.67                                                       Methods               Dataset 1     Dataset 2
+                                                                                               Semi-supervised learning       0.66          0.71
+                                                                                                 Supervised learning          0.58          0.65
+
+
+
+
+                                                                                                               V. D ISCUSSION
+
+                                                                                     This study presents a method that leverages both labeled
+                                                                                  and unlabeled knee X-ray images to achieve a fully automatic
+                                                                                  OA diagnosis. The experiments on Dataset 1 demonstrate that
+                                                                                  our detection model can localize knee joints accurately with a
+                                                                                  mean IOU of 0.89 and an SSL algorithm leveraging unlabeled
+                                                                                  X-ray images can improve accuracy by 8% on KL grade
+                                                                                  classiﬁcation. Hence, in practice, our proposed algorithm can
+                                                                                  automatically leverage raw plain radiographs to improve knee
+                                                                                  OA diagnosis while signiﬁcantly reducing the costs of labeling
+                                                                                  data.
+Fig. 4. Comparing the classiﬁcation performance of different methods on
+Dataset 1                                                                            Although this study is successful, it has some limitations.
+                                                                                  The boundary between grade 0 and grade 1 is unclear and the
+  We evaluate the classiﬁcation performance of our proposed                       labels are easily affected by the subjectivity of doctors. Hence,
+SSL algorithm on Dataset 1 and Dataset 2. Fig. 4 illustrates                      our current deep learning model could not classify these two
+the classiﬁcation accuracies of supervised learning and semi-                     categories accurately. Besides, we assume that labeled data
+supervised learning methods on Dataset 1, with different ratios.                  and unlabeled data have the same distribution and quantity in
+Here, the ratio represents the proportion of labeled samples to                   our SSL algorithm.
+
+
+
+                                                                             
+         Authorized licensed use limited to: University of Pittsburgh. Downloaded on July 09,2026 at 06:28:02 UTC from IEEE Xplore. Restrictions apply.
+                           VI. C ONCLUSION                                         [12] Livija Jakaite, Vitaly Schetinin, Jiřı́ Hladvka, Sergey Minaev, Aziz
+                                                                                        Ambia, and Wojtek Krzanowski. Deep learning for early detection of
+   In this paper, we exploit a pre-trained Faster RCNN with                             pathological changes in x-ray bone microstructures: case of osteoarthri-
+                                                                                        tis. Scientiﬁc Reports, 11(1):1–9, 2021.
+FPN to detect knee joints and develop an SSL algorithm                             [13] Joseph Antony, Kevin McGuinness, Kieran Moran, and Noel E
+that leverages X-ray images with no KL grades to improve                                O’Connor. Automatic detection of knee joints and quantiﬁcation of
+the performance of knee OA assessment. The experimental                                 knee osteoarthritis severity using convolutional neural networks. In
+                                                                                        International conference on machine learning and data mining in pattern
+results show that our method can achieve state-of-the-art per-                          recognition, pages 376–390. Springer, 2017.
+formance on knee joint localization and signiﬁcantly improve                       [14] Aleksei Tiulpin and Simo Saarakkala. Automatic grading of individual
+the accuracy of KL grade classiﬁcation with unlabeled knee                              knee osteoarthritis features in plain radiographs using deep convolutional
+                                                                                        neural networks. Diagnostics, 10(11):932, 2020.
+X-ray images. For future work, we are interested in exploring                      [15] Yi Zhou, Xiaodong He, Lei Huang, Li Liu, Fan Zhu, Shanshan Cui,
+self-supervised pretraining methods such as contrastive learn-                          and Ling Shao. Collaborative learning of semi-supervised segmentation
+ing, which balances intra-class compactness and inter-class                             and classiﬁcation for medical images. In Proceedings of the IEEE/CVF
+                                                                                        Conference on Computer Vision and Pattern Recognition, pages 2079–
+discrepancy, to further improve classiﬁcation performance.                              2088, 2019.
+Besides, we consider optimizing the architecture of the neural                     [16] Yoshimasa Sakai, Satoko Takemoto, Keisuke Hori, Masaomi Nishimura,
+network for KL grade classiﬁcation that focuses on low-level                            Hiroaki Ikematsu, Tomonori Yano, and Hideo Yokota. Automatic
+                                                                                        detection of early gastric cancer in endoscopic images using a transfer-
+image features to improve the accuracy of OA diagnosis.                                 ring convolutional neural network. In 2018 40th Annual International
+                                                                                        Conference of the IEEE Engineering in Medicine and Biology Society
+                                                                                        (EMBC), pages 4138–4141. IEEE, 2018.
+                              R EFERENCES                                          [17] Deepak Saini, Trilok Chand, Devendra K Chouhan, and Mahesh
+                                                                                        Prakash. A comparative analysis of automatic classiﬁcation and grading
+ [1] Huy Hoang Nguyen, Simo Saarakkala, Matthew B Blaschko, and                         methods for knee osteoarthritis focussing on x-ray images. Biocyber-
+     Aleksei Tiulpin. Semixup: In-and out-of-manifold regularization for                netics and Biomedical Engineering, 2021.
+     deep semi-supervised knee osteoarthritis severity grading from plain          [18] Aleksei Tiulpin, Jerome Thevenot, Esa Rahtu, and Simo Saarakkala.
+     radiographs. IEEE Transactions on Medical Imaging, 39(12):4346–                    A novel method for automatic localization of joint area on knee plain
+     4356, 2020.                                                                        radiographs. In Scandinavian Conference on Image Analysis, pages 290–
+ [2] Pingjun Chen, Linlin Gao, Xiaoshuang Shi, Kyle Allen, and Lin Yang.                301. Springer, 2017.
+     Fully automatic knee osteoarthritis severity grading using deep neural        [19] Rima Tri Wahyuningrum, Lilik Anifah, I Ketut Eddy Purnama, and
+     networks with a novel ordinal loss. Computerized Medical Imaging and               Mauridhi Hery Purnomo. A new approach to classify knee osteoarthritis
+     Graphics, 75:84–92, 2019.                                                          severity from radiographic images based on cnn-lstm method. In
+ [3] Aleksei Tiulpin, Stefan Klein, Sita MA Bierma-Zeinstra, Jérôme                   2019 IEEE 10th International Conference on Awareness Science and
+     Thevenot, Esa Rahtu, Joyce van Meurs, Edwin HG Oei, and Simo                       Technology (iCAST), pages 1–6. IEEE, 2019.
+     Saarakkala. Multimodal machine learning-based knee osteoarthritis pro-        [20] Joseph Antony. Automatic quantiﬁcation of radiographic knee os-
+     gression prediction from plain radiographs and clinical data. Scientiﬁc            teoarthritis severity and associated diagnostic features using deep con-
+     reports, 9(1):1–11, 2019.                                                          volutional neural networks. PhD thesis, Dublin City University, 2018.
+ [4] Bofei Zhang, Jimin Tan, Kyunghyun Cho, Gregory Chang, and Cem M               [21] Dong Wang, Yuan Zhang, Kexin Zhang, and Liwei Wang. Focalmix:
+     Deniz. Attention-based cnn for kl grade classiﬁcation: Data from the               Semi-supervised learning for 3d medical image detection. In Proceed-
+     osteoarthritis initiative. In 2020 IEEE 17th International Symposium on            ings of the IEEE/CVF Conference on Computer Vision and Pattern
+     Biomedical Imaging (ISBI), pages 731–735. IEEE, 2020.                              Recognition, pages 3951–3960, 2020.
+ [5] Bin Liu, Jianxu Luo, and Huan Huang. Toward automatic quantiﬁcation           [22] David Berthelot, Nicholas Carlini, Ian Goodfellow, Nicolas Papernot,
+     of knee osteoarthritis severity using improved faster r-cnn. International         Avital Oliver, and Colin Raffel. Mixmatch: A holistic approach to semi-
+     journal of computer assisted radiology and surgery, 15(3):457–466,                 supervised learning. arXiv preprint arXiv:1905.02249, 2019.
+     2020.                                                                         [23] Qilei Chen, Ping Liu, Jing Ni, Yu Cao, Benyuan Liu, and Honggang
+ [6] Hafsa Khalid, Muzammil Hussain, Mohammed A Al Ghamdi, Tayyaba                      Zhang. Pseudo-labeling for small lesion detection on diabetic retinopa-
+     Khalid, Khadija Khalid, Muhammad Adnan Khan, Kalsoom Fatima,                       thy images. In 2020 International Joint Conference on Neural Networks
+     Khalid Masood, Sultan H Almotiri, Muhammad Shoaib Farooq, et al.                   (IJCNN), pages 1–8. IEEE, 2020.
+     A comparative systematic literature review on knee bone reports from          [24] Quande Liu, Lequan Yu, Luyang Luo, Qi Dou, and Pheng Ann
+     mri, x-rays and ct scans using deep learning and machine learning                  Heng. Semi-supervised medical image classiﬁcation with relation-
+     methodologies. Diagnostics, 10(8):518, 2020.                                       driven self-ensembling model. IEEE Transactions on Medical Imaging,
+ [7] Xia Wang, Win Min Oo, and James M Linklater. What is the                           39(11):3429–3440, 2020.
+     role of imaging in the clinical diagnosis of osteoarthritis and disease       [25] Hongyi Zhang, Moustapha Cisse, Yann N Dauphin, and David Lopez-
+     management? Rheumatology, 57(suppl 4):iv51–iv60, 2018.                             Paz. mixup: Beyond empirical risk minimization. arXiv preprint
+ [8] Arnaud Arindra Adiyoso Setio, Alberto Traverso, Thomas De Bel,                     arXiv:1710.09412, 2017.
+     Moira SN Berens, Cas van den Bogaard, Piergiorgio Cerello, Hao                [26] Tsung-Yi Lin, Piotr Dollár, Ross Girshick, Kaiming He, Bharath Hariha-
+     Chen, Qi Dou, Maria Evelina Fantacci, Bram Geurts, et al. Validation,              ran, and Serge Belongie. Feature pyramid networks for object detection.
+     comparison, and combination of algorithms for automatic detection                  In Proceedings of the IEEE conference on computer vision and pattern
+     of pulmonary nodules in computed tomography images: the luna16                     recognition, pages 2117–2125, 2017.
+     challenge. Medical image analysis, 42:1–13, 2017.                             [27] Alexander Neubeck and Luc Van Gool. Efﬁcient non-maximum sup-
+ [9] Kilian Hett, Vinh-Thong Ta, José V Manjón, Pierrick Coupé,                      pression. In 18th International Conference on Pattern Recognition
+     Alzheimer’s Disease Neuroimaging Initiative, et al. Adaptive fusion                (ICPR’06), volume 3, pages 850–855. IEEE, 2006.
+     of texture-based grading for alzheimer’s disease classiﬁcation. Comput-       [28] Shaoqing Ren, Kaiming He, Ross Girshick, and Jian Sun. Faster r-cnn:
+     erized Medical Imaging and Graphics, 70:8–16, 2018.                                Towards real-time object detection with region proposal networks. arXiv
+[10] C Kokkotis, S Moustakidis, E Papageorgiou, G Giakas, and                           preprint arXiv:1506.01497, 2015.
+     DE Tsaopoulos. Machine learning in knee osteoarthritis: A review.             [29] Zihao Li, Shu Zhang, Junge Zhang, Kaiqi Huang, Yizhou Wang, and
+     Osteoarthritis and Cartilage Open, page 100069, 2020.                              Yizhou Yu. Mvp-net: Multi-view fpn with position-aware attention for
+[11] Abdelbasset Brahim, Rachid Jennane, Rabia Riad, Thomas Janvier, Laila              deep universal lesion detection. In International Conference on Medical
+     Khedher, Hechmi Toumi, and Eric Lespessailles. A decision support                  Image Computing and Computer-Assisted Intervention, pages 13–21.
+     tool for early detection of knee osteoarthritis using x-ray imaging and            Springer, 2019.
+     machine learning: Data from the osteoarthritis initiative. Computerized       [30] Jesper E Van Engelen and Holger H Hoos. A survey on semi-supervised
+     Medical Imaging and Graphics, 73:11–18, 2019.                                      learning. Machine Learning, 109(2):373–440, 2020.
+
+
+
+
+                                                                              
+          Authorized licensed use limited to: University of Pittsburgh. Downloaded on July 09,2026 at 06:28:02 UTC from IEEE Xplore. Restrictions apply.
+

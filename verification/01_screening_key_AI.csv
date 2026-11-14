@@ -1,0 +1,88 @@
+id,ai_decision,ai_reason
+M033,exclude,EM3
+M116,exclude,EM2
+M250,exclude,EM3
+M060,exclude,EM3
+M093,exclude,EM3
+M048,exclude,EM2
+M222,include_fulltext,G2
+M178,exclude,EM4
+M338,exclude,EM1
+M109,exclude,EM2
+M059,exclude,EM5
+M291,exclude,EM4
+M264,exclude,EM3
+M183,exclude,EM1
+M078,exclude,EM1
+M026,exclude,EM3
+M011,exclude,EM3
+M326,exclude,EM3
+M100,include_fulltext,G2
+M027,exclude,EM2
+M218,exclude,EM3
+M173,include_fulltext,G2
+M029,exclude,EM3
+M294,exclude,EM4
+M091,include_fulltext,G2
+M309,exclude,EM2
+M135,exclude,EM2
+M295,exclude,EM1
+M118,exclude,EM3
+M024,exclude,EM3
+M110,include_fulltext,G3
+M101,include_fulltext,G2
+M071,include_fulltext,G2
+M127,exclude,EM1
+M327,exclude,EM3
+M290,exclude,EM1
+M045,exclude,EM1
+M168,exclude,EM3
+M103,exclude,EM1
+M240,exclude,EM3
+M157,include_fulltext,G1
+M043,exclude,EM2
+M322,exclude,EM2
+M145,exclude,EM1
+M152,exclude,EM3
+M263,exclude,EM1
+M256,exclude,EM3
+M165,include_fulltext,G2
+M246,exclude,EM3
+M318,exclude,EM3
+M334,exclude,EM2
+M070,exclude,EM2
+M209,exclude,EM2
+M275,include_fulltext,G2
+M333,exclude,EM2
+M314,exclude,EM3
+M102,exclude,EM4
+M307,exclude,EM2
+M236,exclude,EM1
+M142,exclude,EM3
+M266,include_fulltext,"G2,G4"
+M207,exclude,EM3
+M090,exclude,EM3
+M199,include_fulltext,G2
+M156,exclude,EM3
+M272,include_fulltext,G4
+M308,exclude,EM3
+M160,include_fulltext,G2
+C026,exclude,EM3 no G1-G4 method in title/abstract (or EM2)
+C045,exclude,EM3 no G1-G4 method in title/abstract (or EM2)
+C015,include_fulltext,G2
+C091,exclude,EM3 no G1-G4 method in title/abstract (or EM2)
+C027,exclude,EM3 no G1-G4 method in title/abstract (or EM2)
+C084,exclude,EM3 no G1-G4 method in title/abstract (or EM2)
+C080,exclude,EM3 no abstract; title shows no G1-G4 method
+C093,include_fulltext,G2
+C058,exclude,EM3 no G1-G4 method in title/abstract (or EM2)
+C052,exclude,EM4 retracted
+C078,exclude,EM3 no G1-G4 method in title/abstract (or EM2)
+C018,exclude,EM3 no G1-G4 method in title/abstract (or EM2)
+C007,include_fulltext,G2
+C014,exclude,EM3 no G1-G4 method in title/abstract (or EM2)
+C081,exclude,EM3 no G1-G4 method in title/abstract (or EM2)
+C012,exclude,EM3 no G1-G4 method in title/abstract (or EM2)
+C030,exclude,EM4 review
+C092,exclude,EM3 no G1-G4 method in title/abstract (or EM2)
+C037,include_fulltext,G2

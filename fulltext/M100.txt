@@ -1,0 +1,1172 @@
+             diagnostics
+
+Article
+Adaptive IoU Thresholding for Improving Small Object
+Detection: A Proof-of-Concept Study of Hand Erosions
+Classification of Patients with Rheumatic Arthritis on
+X-ray Images
+Karl Ludger Radke 1, * , Matthias Kors 1 , Anja Müller-Lutz 1 , Miriam Frenken 1 , Lena Marie Wilms 1 ,
+Xenofon Baraliakos 2 , Hans-Jörg Wittsack 1 , Jörg H. W. Distler 3 , Daniel B. Abrar 1 , Gerald Antoch 1
+and Philipp Sewerin 2,3
+
+                                         1   Department of Diagnostic and Interventional Radiology, Medical Faculty, University Dusseldorf,
+                                             D-40225 Dusseldorf, Germany
+                                         2   Rheumazentrum Ruhrgebiet, Ruhr-University Bochum, D-44649 Herne, Germany
+                                         3   Department of Rheumatology & Hiller Research Unit, University Hospital Dusseldorf,
+                                             D-40225 Dusseldorf, Germany
+                                         *   Correspondence: ludger.radke@med.uni-duesseldorf.de
+
+
+                                         Abstract: In recent years, much research evaluating the radiographic destruction of finger joints in
+                                         patients with rheumatoid arthritis (RA) using deep learning models was conducted. Unfortunately,
+                                         most previous models were not clinically applicable due to the small object regions as well as the close
+                                         spatial relationship. In recent years, a new network structure called RetinaNets, in combination with
+                                         the focal loss function, proved reliable for detecting even small objects. Therefore, the study aimed
+                                         to increase the recognition performance to a clinically valuable level by proposing an innovative
+                                         approach with adaptive changes in intersection over union (IoU) values during training of Retina
+Citation: Radke, K.L.; Kors, M.;         Networks using the focal loss error function. To this end, the erosion score was determined using
+Müller-Lutz, A.; Frenken, M.; Wilms,     the Sharp van der Heijde (SvH) metric on 300 conventional radiographs from 119 patients with RA.
+L.M.; Baraliakos, X.; Wittsack, H.-J.;   Subsequently, a standard RetinaNet with different IoU values as well as adaptively modified IoU
+Distler, J.H.W.; Abrar, D.B.; Antoch,
+                                         values were trained and compared in terms of accuracy, mean average accuracy (mAP), and IoU. With
+G.; et al. Adaptive IoU Thresholding
+                                         the proposed approach of adaptive IoU values during training, erosion detection accuracy could
+for Improving Small Object Detection:
+                                         be improved to 94% and an mAP of 0.81 ± 0.18. In contrast Retina networks with static IoU values
+A Proof-of-Concept Study of Hand
+                                         achieved only an accuracy of 80% and an mAP of 0.43 ± 0.24. Thus, adaptive adjustment of IoU
+Erosions Classification of Patients
+with Rheumatic Arthritis on X-ray
+                                         values during training is a simple and effective method to increase the recognition accuracy of small
+Images. Diagnostics 2023, 13, 104.       objects such as finger and wrist joints.
+https://doi.org/10.3390/
+diagnostics13010104                      Keywords: X-ray; imaging; deep learning; AI; RetinaNet; rheumatic arthritis; innovative techniques
+
+Academic Editor: Dechang Chen
+
+Received: 10 October 2022
+Revised: 8 December 2022                 1. Introduction
+Accepted: 28 December 2022                    Rheumatoid arthritis (RA) is a chronic inflammatory autoimmune disease that mainly
+Published: 29 December 2022
+                                         affects the joints of the hands and feet and can lead to irreversible damage of the affected
+                                         joints [1,2]. Therefore, early detection of erosions is essential, as drug treatment strategies
+                                         can delay the potential joint destruction [3].
+Copyright: © 2022 by the authors.
+                                              Due to its wide availability, relatively low cost, and high spatial resolution, conven-
+Licensee MDPI, Basel, Switzerland.       tional radiography, in particular, has emerged in recent decades as the essential tool for
+This article is an open access article   assessing RA stages and early diagnosis [2,4]. While imaging has become increasingly
+distributed under the terms and          time-efficient due to technological advances, and biosensitive sequences such as Chemical
+conditions of the Creative Commons       Exchange Saturation Transfer (CEST) [5–7], delayed gadolinium-enhanced MRI of carti-
+Attribution (CC BY) license (https://    lage (dGEMRIC) [8], and T1rho have shown impressive performance in detecting bony
+creativecommons.org/licenses/by/         lesions in current research [9], subsequent clinical assessment and documentation remain
+4.0/).                                   time-consuming and highly subjective.
+
+
+
+Diagnostics 2023, 13, 104. https://doi.org/10.3390/diagnostics13010104                                   https://www.mdpi.com/journal/diagnostics
+Diagnostics 2023, 13, 104                                                                                             2 of 14
+
+
+
+
+                                  Deep Learning (DL)-based algorithms have proven to be an excellent and timesav-
+                            ing alternative to human assessment [10,11]. Numerous studies have investigated and
+                            successfully validated the potential of DL for medical image classification and segmenta-
+                            tion [10–14]. Some previous works have also explored these concepts for their suitability in
+                            assessing RA patients [13,15]. In numerous previous studies, detecting finger joints and ero-
+                            sions proved difficult and not yet clinically applicable [13,15,16]. Either they used two-stage
+                            approaches, such as cascade classifiers [16], in which joint localization and classification
+                            were developed separately, which may lead to errors, especially in destructed joints, or
+                            the models failed, especially in joint localization of the carpal bones, which could not be
+                            assessed separately because of their spatial distances [16]. Therefore, there is considerable
+                            scientific and clinical interest in new concepts for excellent classification of destructions
+                            and accurate and complete joint localization.
+                                  In the past two years, Retina networks (RetinaNet) [17], in particular, have emerged as
+                            a powerful tool for object detection in medical imaging and other fields [18–20]. Despite
+                            this, small object detection is still a challenging task [13,21], and many DL frameworks
+                            failed. Due to low resolution and background interference, negative areas (where no joint
+                            is shown) outweigh positive areas (where joint is shown) [22]. To alleviate this problem,
+                            Yan et al.’s study showed that the detection of small objects is especially poor when a high
+                            Intersection over Union (IoU) threshold is chosen. In contrast, a low IoU threshold leads
+                            to poor location accuracy [22]. However, in the field of RA research, there is considerable
+                            interest in small objects with close spatial relationships compared to other medical areas.
+                                  Therefore, the study aimed to investigate whether a novel approach based on adaptive
+                            IoU thresholds would provide better localization and detection accuracy. Our hypotheses
+                            were that (1) lower erosion detection thresholds in RA would result in higher detection
+                            performance, analogous to previous studies, and (2) that detection performance, as well
+                            as joint localization accuracy, could be substantially increased with a new adaptive IoU
+                            method.
+
+                            2. Materials and Methods
+                            2.1. Study Design
+                                 This is a retrospective image classification study conducted by local ethic regula-
+                            tions. The local ethics committee (Ethics Committee, Faculty of Medicine, Heinrich-Heine-
+                            University Düsseldorf, Germany, study number 2019-648) approved the study, and written
+                            consent was obtained for pseudonymized analysis in the context of clinic-related cases.
+                            To our knowledge, there is currently no open-source dataset of RA patients, including
+                            erosion classification, for standardized comparison with previous studies. For this reason,
+                            we crafted our own data set. Retrospectively, bilateral hand conventional radiographies
+                            of 119 patients (41 male, 78 female, age = 55.6 ± 12.2 years; age range = 23–87 years) with
+                            300 radiographs acquired between 05/2005 and 04/2021 were analyzed for this purpose
+                            (Table 1). For all images, P.S., an experienced rheumatologist (15 years of experience in
+                            Rheumatology, including clinical trials and scoring Sharp van der Heijde (SvH) method),
+                            determined the erosion score according to van der Heijde et al. [23,24] assigning a value
+                            between 0 and 5 to each joint depending on the extent of erosion (Figure 1). In addition, the
+                            mean position of each joint was recorded. Furthermore, the size of each joint was measured
+                            using 20 patients, and based on this, bounding boxes were determined as ground truth
+                            (GT). Finally, the data set was strictly randomly divided into training (70%, number of
+                            patients = 83, number of images = 231), validation (10%; n = 12, number of images = 45),
+                            and test (20%, n = 24, number of images = 24) data. Initially, 24 of 37 patients with only one
+                            radiograph were assigned to the test group to test the models independently of repeated
+                            measurements. Subsequently, the remaining patients were randomly divided between
+                            training and test data, and one patient with all radiographs was assigned to the same group.
+                            To investigate substantial differences within a rater, P.S. rated the 24 images of the test data
+                            set again after six months.
+                                with only one radiograph were assigned to the test group to test the models inde-
+                                pendently of repeated measurements. Subsequently, the remaining patients were ran-
+                                domly divided between training and test data, and one patient with all radiographs was
+Diagnostics 2023, 13, 104
+                                assigned to the same group. To investigate substantial differences within a rater, P.S. rated
+                                                                                                                        3 of 14
+                                the 24 images of the test data set again after six months.
+
+                                Table 1. Overview of the demographic and medical characteristics of the patients as function of
+                                Table 1.All
+                                group.     Overview
+                                             values areof shown
+                                                          the demographic
+                                                                 as mean ± and  medical
+                                                                            standard    characteristics
+                                                                                     deviation;          of the
+                                                                                                in brackets,   thepatients
+                                                                                                                   range isasadditionally
+                                                                                                                              function of
+                                group.if All
+                                given        values
+                                          useful.     are than
+                                                  If more shownone  mean ±
+                                                                 as X-ray   standard
+                                                                          image      deviation;for
+                                                                                were available   inabrackets,
+                                                                                                     patient, the  range
+                                                                                                               theage        additionally
+                                                                                                                       andisscoring at the
+                                givenofifthe
+                                time      useful.
+                                             first If morewere
+                                                   X-ray   thanused.
+                                                                one X-ray image were available for a patient, the age and scoring at the
+                                time of the first X-ray were used.
+      Parameters                   Overall                       Training                    Validation                   Test
+         Age   [a]
+       Parameters            55.6 ± 12.2
+                                   Overall(23–87)            55 ± 13
+                                                                Training(23–87)            56 ± 7  (29–82)
+                                                                                            Validation              57 ± 12
+                                                                                                                          Test(27–87)
+    Number    patients
+         Age [a]                      119
+                             55.6 ± 12.2 (23–87)                      83
+                                                           55 ± 13 (23–87)                        12
+                                                                                         56 ± 7 (29–82)                     24
+                                                                                                                   57 ± 12 (27–87)
+    Number     images
+     Number patients                  300
+                                      119                            231
+                                                                    83                          1245                        24
+                                                                                                                           24
+     Number   images
+      male/female                     300
+                                     41/78                          231
+                                                                    29/54                       45
+                                                                                                 4/8                       24
+                                                                                                                           6/18
+  Summale/female
+       of erosion score             41/78
+                                    52 ± 22                 53 ±29/54
+                                                                   25 (32–179)                 4/8
+                                                                                          46 ± 8 (32–101)          55 ± 306/18
+                                                                                                                             (32–179)
+   Sum of erosion score            52 ± 22                 53 ± 25 (32–179)              46 ± 8 (32–101)           55 ± 30 (32–179)
+    Mean erosion
+   Mean             score
+          erosion score     1.52 ± 0.70  (1.0–5.59)
+                            1.52 ± 0.70 (1.0–5.59)      1.65±±0.77
+                                                        1.65      0.77(1.0–5.59)
+                                                                         (1.0–5.59)    1.43±±0.25
+                                                                                      1.43           (1.0–4.3)
+                                                                                               0.25(1.0–4.3)     1.72  ± 0.95   (1–5.59)
+                                                                                                                 1.72 ± 0.95 (1–5.59)
+    Min erosion
+   Min             score
+        erosion score           0.0 ±
+                               0.0  ± 0.0
+                                      0.0 (0–0)
+                                          (0–0)               0.0±±0.0
+                                                             0.0     0.0(0–0)
+                                                                          (0–0)           0.0    0.0(0–0)
+                                                                                           0.0±±0.0   (0–0)         0.0±
+                                                                                                                    0.0    0.0 (0–0)
+                                                                                                                         ± 0.0  (0–0)
+   Max
+    Max erosion    score
+         erosion score         4.1 ±
+                               4.1 ± 1.92
+                                     1.92 (1–6)
+                                           (1–6)             4.2±±1.87
+                                                            4.2      1.87(1–6)
+                                                                           (1–6)           3.2±±1.7
+                                                                                         3.2     1.7(1–6)
+                                                                                                      (1–6)         4.6±
+                                                                                                                    4.6  ± 1.6 (1–6)
+                                                                                                                                (1–6)
+
+
+
+
+                                Figure
+                                Figure 1.1. Representative
+                                            Representative conventional
+                                                            conventional radiographs
+                                                                          radiographs (CR)
+                                                                                       (CR) of
+                                                                                            of finger
+                                                                                                finger joints
+                                                                                                        joints as
+                                                                                                               as aa function
+                                                                                                                     function of
+                                                                                                                              of damage,
+                                                                                                                                 damage,
+                                classified  according to the Sharp van  der Heijde (SvH) method    by an   experienced   rheumatologist.
+                                classified according to the Sharp van der Heijde (SvH) method by an experienced rheumatologist.
+                                From left to right, finger joints are sorted by SvH score from normal (SvH score = 0) to severely
+                                From left to right, finger joints are sorted by SvH score from normal (SvH score = 0) to severely
+                                damaged (SvH score = 5) joint. Above each image, the respective score is indicated.
+                                damaged (SvH score = 5) joint. Above each image, the respective score is indicated.
+
+                                2.2. Image Acquisition
+                                      All conventional
+                                          conventional radiographies
+                                                         radiographies(CR)
+                                                                         (CR)were
+                                                                                werecollected
+                                                                                     collectedatathetheUniversity
+                                                                                                        University  Hospital
+                                                                                                                  Hospital    Düs-
+                                                                                                                            Düssel-
+                                seldorf, Germany,   with  clinical x-ray  systems. In  all cases, the systems
+                                dorf, Germany, with clinical x-ray systems. In all cases, the systems were     were  from Siemens
+                                Healthineers (Siemens Healthineers, Erlangen, Germany), and only images showing both
+                                hands were used. In In addition,
+                                                        addition, all
+                                                                  all patients’
+                                                                      patients’ RA
+                                                                                RA was
+                                                                                    was diagnosed
+                                                                                           diagnosed byby an
+                                                                                                          an experienced
+                                                                                                             experienced rheuma-
+                                                                                                                           rheuma-
+                                tologist. The
+                                          The images
+                                               images were
+                                                       were downloaded
+                                                              downloaded from
+                                                                            from the
+                                                                                  the in-house
+                                                                                       in-house Picture
+                                                                                                  Picture Archiving
+                                                                                                           Archiving and
+                                                                                                                      and Commu-
+                                                                                                                          Commu-
+                                nication System (PACS) and were available as Digital Imaging and Communications in
+                                Medicine (DICOM)
+                                           (DICOM) 12-bit
+                                                      12-bit grayscale
+                                                             grayscale images.
+                                                                        images. The
+                                                                                 The image
+                                                                                     image resolution
+                                                                                              resolutionranged
+                                                                                                          rangedfrom    1572×
+                                                                                                                  from1572   × 1572
+                                to 2738 ×2738
+                                            2738pixels.
+                                                 pixels.
+
+                                2.3. Data
+                                2.3. Data Normalization
+                                           Normalization
+                                      Based  on the
+                                      Based on   theDICOM
+                                                     DICOMinformation
+                                                              informationwindow
+                                                                             window    center
+                                                                                     center    and
+                                                                                             and   window
+                                                                                                 window     width,
+                                                                                                         width,      the X-ray
+                                                                                                                the X-ray   im-
+                                images    were  windowed   and  scaled  in a range   between   0 and 4096. Subsequently,
+                                ages were windowed and scaled in a range between 0 and 4096. Subsequently, the training     the
+                                training  data were modified  using  the subsequent   data  augmentation (Section 2.4).
+                                data were modified using the subsequent data augmentation (Section 2.4). Finally, beforeFinally,
+                                before
+                                the     the
+                                     data   datasubmitted
+                                          were   were submitted  to RetinaNet,
+                                                          to RetinaNet,         all datasets
+                                                                         all datasets        were normalized
+                                                                                       were normalized  basedbased  on Z-score
+                                                                                                              on Z-score   nor-
+                                normalization.
+                                malization.
+                                2.4. Data Augmentation
+                                2.4. Data Augmentation
+                                      The performance of deep neural networks is directly related to the amount of data
+                                available for training [10,25]. Therefore, methods for systematic data augmentation and
+                                variation through transformations of the available images are essential. This study’s
+                                training data were artificially augmented using the open-source repository “imgaug”
+                                (https://github.com/aleju/imgaug, accessed on 1 February 2022). In medical research
+                                studies, as well as in our study, only a small number of patients are available. In order to
+                                generate a large amount of artificial data during training, extensive data augmentation was
+                                  The performance of deep neural networks is directly related to the amount of data
+                            available for training [10,25]. Therefore, methods for systematic data augmentation and
+                            variation through transformations of the available images are essential. This study’s train-
+                            ing data were artificially augmented using the open-source repository “imgaug”
+Diagnostics 2023, 13, 104   (https://github.com/aleju/imgaug, accessed on 1 February 2022). In medical research 4 of      stud-
+                                                                                                                              14
+                            ies, as well as in our study, only a small number of patients are available. In order to gen-
+                            erate a large amount of artificial data during training, extensive data augmentation was
+                            used.
+                            used. ToTo this end, image
+                                       this end,   image contrast
+                                                          contrast was
+                                                                    was varied
+                                                                          varied during
+                                                                                 during training
+                                                                                          training using
+                                                                                                    using gamma
+                                                                                                          gamma adjustment
+                                                                                                                   adjustment
+                            (gamma     = 0.5–2); images   were   shifted along  the x and   y axes  by up to 5%
+                            (gamma = 0.5–2); images were shifted along the x and y axes by up to 5% of the image of  the image
+                                                                                                                           size,
+                            size, cropped   from  the  border up  to 5%,  sometimes  (p = 10%)  rotate with 90 degrees,
+                            cropped from the border up to 5%, sometimes (p = 10%) rotate with 90 degrees, scaled         scaled
+                                                                                                                           with
+                            with
+                            a     a factor
+                              factor       between
+                                      between         0.5 2.
+                                                 0.5 and andIn2. In
+                                                                thethe end,
+                                                                     end,    images
+                                                                           images    were
+                                                                                  were      rotated
+                                                                                         rotated    between−15
+                                                                                                  between              degrees
+                                                                                                                    15 degrees
+                                                                                                                 to 15
+                                                                                                             −15to
+                            (Figure 2).
+                            (Figure  2).
+
+
+
+
+                            Figure 2. Representative visualization of a hand and its data expansion, as well as example images
+                            for hands in the degenerated stage. Shown are the original radiograph without the bounding boxes
+                            (a) as well as with the bounding boxes (b) and four exemplary baseline examples (c–f) after data
+                            expansion, including the marked bounding boxes of P.S. (rheumatologist with 15 years of experience).
+                            Two numbers are indicated above each bounding box, separated by an underscore. Here, the first
+                            number represents the number of the joint (1–32), and the second represents the specific erosion value.
+                            Furthermore, three hands in the advanced stage of degeneration (g–i) are shown, which were in the
+                            test data set to allow a complete evaluation of the accuracy of the model.
+                            tel Xeon Gold 6242R Central Processing Units (Intel Corporation, Santa Clara, CA, USA),
+                            376 GB of main memory, and four RTX 3090 Graphics Processing Units (NVIDIA, Santa
+                            Clara, CA, USA), with each model trained on only one GPU. The training and evaluation
+                            routines were implemented in Python (v3.8), and the model was implemented in PyTorch
+                            using PyTorch Lightning. ADAM optimizer to optimize the networks with an initial learn-
+Diagnostics 2023, 13, 104   ing rate of 0.001 and a weight decay of 10−6 [29] was used. Additionally, a scheduler                 5 of to
+                                                                                                                                        14
+                            adjust the learning rate during training (“ReduceLROnPlatau”, patience = 20, cooldown =
+                            20 and factor = 0.1) was used. Networks were trained for 100 epochs based on the highest
+                            mean    average
+                             2.5. Network      accuracy (mAP) in the validation dataset; the optimal network was deter-
+                                            Architecture
+                            mined Forand  applied to the
+                                        simultaneous        test data. The
+                                                         localization    (i.e.,focal
+                                                                                jointloss function with
+                                                                                      classification)  andalpha   = 0.25
+                                                                                                             erosion      and gammaa
+                                                                                                                     classification,
+                            =RetinaNet
+                               2 was used   as  the error function,   analogous     to previous   publications
+                                          was used with a residual neural network (ResNet) as a bottom-up        [30,31]. In addition,
+                                                                                                                              pathway
+                            the  smooth    l1 loss was  used   for  the bounding      box  regression   error calculation.
+                             (Figure 3a) to compress the global image information and a feature pyramid network             Addition-
+                                                                                                                                 (FPN)
+                             as a all
+                            ally,      images were
+                                  top-down            resized
+                                                pathway     withtoskip
+                                                                    400 ×connections
+                                                                           400 pixels, and    a batch
+                                                                                         to merge    thesize of 12 was
+                                                                                                          top-down             Duethe
+                                                                                                                        used.with
+                                                                                                                     layers           to
+                            the  small  number    of images   and   the wide-ranging      data  expansion,   each
+                             bottom-up layers (Figure 3b). Furthermore, one regressor network (Figure 3c) and two image   in the train-
+                            ing  dataset was
+                             classification     predicted
+                                             networks       four 3d,e),
+                                                        (Figure   times per    epoch.to previous
+                                                                         analogous     Furthermore,     in each block
+                                                                                                    studies            Batch
+                                                                                                             [18,20,26–28]    normal-
+                                                                                                                            were  used.
+                            izationthe
+                             Here,    and as  activationwere
+                                         subnetworks       function   Rectified
+                                                               applied to          Linear
+                                                                              the p2       Unit
+                                                                                      and p3     (ReLU)ofwere
+                                                                                               outputs      the applied.
+                                                                                                                backbone (Figure 3).
+
+
+
+
+                            Figure 3.
+                            Figure                   representationofofthe
+                                         Schematicrepresentation
+                                     3. Schematic                        the  RetinaNet,
+                                                                           RetinaNet,     which
+                                                                                        which  waswas  used
+                                                                                                    used   to to
+                                                                                                               detect andand
+                                                                                                                  detect       classify
+                                                                                                                           classify      X-
+                                                                                                                                     X-ray
+                            ray   images
+                            handhand        automatically.
+                                        images             The The
+                                                 automatically. residual  neuralneural
+                                                                     residual    network   (ResNet)
+                                                                                        network      (a)
+                                                                                                 (ResNet)compressed
+                                                                                                             (a)        the global
+                                                                                                                 compressed     the image
+                                                                                                                                    global
+                            information.
+                            image           Then, the
+                                    information.       compressed
+                                                   Then, the        data are
+                                                             compressed    datamerged
+                                                                                 are by
+                                                                                     merged   by skip
+                                                                                           local      connections
+                                                                                                 local skip   connections    arrows)
+                                                                                                                      (blue (blue     and
+                                                                                                                                   arrows)
+                            processed
+                            and processed in the feature pyramid network (FPN) (b). The regression subnetwork (c) andtwo
+                                         in the feature pyramid   network    (FPN)  (b). The regression   subnetwork     (c) and  the  the
+                            classification subnetworks (d,e) were then applied to outputs p2 and p3. Furthermore, batch nor-
+                            two classification subnetworks (d,e) were then applied to outputs p2 and p3. Furthermore, batch
+                            malization and Rectified Linear Unit (ReLU) were used as the activation function.
+                            normalization and Rectified Linear Unit (ReLU) were used as the activation function.
+
+                            2.6. Adaptive  IoU runs
+                                  All training  Threshold Fitting and on
+                                                    were performed    Experimental
+                                                                         a computerParameters
+                                                                                    workstation with two Intel® Xeon® Gold
+                            6242RThe  thresholds
+                                   Central        for positive
+                                            Processing         and negative
+                                                        Units (Intel          regions
+                                                                     Corporation,      areClara,
+                                                                                   Santa   generally
+                                                                                                 CA, the same
+                                                                                                     USA),     throughout
+                                                                                                           376 GB of main
+                            the training.
+                            memory,       Especially
+                                      and four  RTX for
+                                                      3090small  objects,
+                                                           Graphics       this has the
+                                                                      Processing       consequence
+                                                                                  Units (NVIDIA,     that the
+                                                                                                   Santa      negative
+                                                                                                          Clara, CA,   re-
+                                                                                                                     USA),
+                            with  clearly
+                            gions each     predominate.
+                                        model  trained onThus,
+                                                            onlythe
+                                                                  onerror
+                                                                       GPU.function
+                                                                              The can    be and
+                                                                                  training  quickly and easily
+                                                                                                 evaluation     minimized
+                                                                                                            routines were
+                            implemented in Python (v3.8), and the model was implemented in PyTorch using PyTorch
+                            Lightning. ADAM optimizer to optimize the networks with an initial learning rate of
+                            0.001 and a weight decay of 10−6 [29] was used. Additionally, a scheduler to adjust the
+                            learning rate during training (“ReduceLROnPlatau”, patience = 20, cooldown = 20 and
+                            factor = 0.1) was used. Networks were trained for 100 epochs based on the highest mean
+                            average accuracy (mAP) in the validation dataset; the optimal network was determined and
+                            applied to the test data. The focal loss function with alpha = 0.25 and gamma = 2 was used
+                            as the error function, analogous to previous publications [30,31]. In addition, the smooth l1
+                            loss was used for the bounding box regression error calculation. Additionally, all images
+                            were resized to 400 × 400 pixels, and a batch size of 12 was used. Due to the small number
+                            of images and the wide-ranging data expansion, each image in the training dataset was
+                            predicted four times per epoch. Furthermore, in each block Batch normalization and as
+                            activation function Rectified Linear Unit (ReLU) were applied.
+
+                            2.6. Adaptive IoU Threshold Fitting and Experimental Parameters
+                                  The thresholds for positive and negative regions are generally the same throughout
+                            the training. Especially for small objects, this has the consequence that the negative regions
+                            clearly predominate. Thus, the error function can be quickly and easily minimized by
+                            considering all regions as negative. This complicates further optimization since adjusting
+                            the weights will most likely result in false positive detection. Especially for the detec-
+                            tion of small objects, it is, therefore, useful to change the IoU threshold during training
+                            (Equations (1) and (2)). At the beginning of the movement, it is more likely to achieve true
+Diagnostics 2023, 13, 104                                                                                                    6 of 14
+
+
+
+
+                            positive detection by adjusting the weights and minimizing the error function. Subsequent
+                            gradual increases in the thresholds will achieve progressively more accurate localization.
+
+                                                                                        Area of Overlap
+                                                    Intersection over Union (IoU ) =                                            (1)
+                                                                                        Area of Union
+
+                                                                         maximum IoU
+                                                        current IoU =                   current epoch                           (2)
+                                                                        ∆adaptiv epochs
+                                 To validate the effectiveness of adaptive IoU thresholds for erosion classification of RA
+                            patients, the network architecture was trained with both fixed IoU thresholds and adaptive
+                            IoU thresholds. We varied both IoU-positive (0.5–0.3) and IoU-negative (0.4–0.2) entries
+                            and the delta (0.1–0.3) between these two points (Table 2). Adaptive IoU adjustments
+                            were applied over 50 and 100 epochs. This yielded 18 different network settings that were
+                            trained and validated separately.
+
+                            Table 2. Overview of the 18 network configurations investigated. Each IoU positive\negative threshold
+                            pair was trained for the static case (None) or with an adaptive adjustment of 50 or 100 epochs.
+
+       RetinaNet Number         IoU Positive Threshold            IoU Negative Threshold                  Adaptive Epochs
+                 1–3                       0.5                               0.4                             None, 50, 100
+                 3–6                       0.4                               0.3                             None, 50, 100
+                 7–9                       0.3                               0.2                             None, 50, 100
+                10–12                      0.5                               0.3                             None, 50, 100
+                13–15                      0.4                               0.2                             None, 50, 100
+                16–18                      0.5                               0.2                             None, 50, 100
+                            Abbreviation: IoU—Intersection over Union, None—No adaptive adjustment.
+
+
+                            2.7. Evaluation Metrics
+                                  To evaluate the different networks, mAP and accuracy were used, which are well-
+                            known and widely used standard measures for comparing models. Among these, mAP
+                            is the average value of AP across all object categories (Equation (3)). The higher the mAP
+                            value, the better the recognition performance, and vice versa. A joint was classified as
+                            correctly detected if, first, it was seen at the correct location (IoU ≥ 0.3 to the GT box)
+                            and, second, the correct erosion value was detected. In all other cases, the detection was
+                            classified as false. In addition, the mean IoU value was determined since a high match is
+                            associated with high positional accuracy.
+
+                                                                                    1                      | TPc |
+                                          mean average accuracy (mAP) =                       ∑
+                                                                                |classes| c ∈ classes | FPc | + | TPc |
+                                                                                                                                (3)
+
+
+                            2.8. Statistical Analyses
+                                 Statistical analyses were performed by K.L.R. in Python by using the “SciPy” (ver-
+                            sion 1.9.1) Open-Source environment. The Kendall-Tau rank correlation coefficient (τ) was
+                            determined to investigate possible statistical relationships between erosion scores and
+                            sum erosion scores assigned by the model, and those by the rheumatologist were assessed
+                            using Kendall-Tau (τ) rank correlation coefficients. The tau effect size was classified as low
+                            (0.1–0.3), medium (0.3–0.5), and strong (>0.5), according to Cohen et al. [32].
+                                 Due to the experimental design of this study, the significance level was set from
+                            p ≤ 0.05 to an adjusted p ≤ 0.0083 according to the conservative alpha adjustment method
+                            Bonferroni [33]. This “low” significance level prevented alpha error inflation while main-
+                            taining statistical power.
+Diagnostics 2023, 13, 104                                                                                                         7 of 14
+
+
+
+
+                                 3. Results
+                                 3.1. Patient Characteristics
+                                      After the random assignment of patients to the three data sets (training, validation,
+                                 and test), the demographic and medical data of the groups were similar (Table 2). The test
+                                 patients had a mean age of 57 ± 12 years (27–87) and a mean sum erosion score of 55 ± 30
+                                 (32–179). The different disease stages of the SvH score are described in Table 3 and listed for
+                                 the test patient group, including the relative frequency. All assessments were performed by
+                                 the same rheumatologist who was specifically trained for this task.
+
+                                 Table 3. Overview of the distribution of the disease stages according to the SvH erosion classification
+                                 based on the 24 patients and 768 joints in the test data set [24].
+
+   SvH Erosion Score                             Description                             Number of Joints            Proportion
+              0                               Normal joint                                      578                   75.26%
+              1                              discrete erosion                                    53                    6.90%
+              2                    Large erosion not passing midline *                           35                    4.56%
+              3                      Large erosion passing midline *                             27                    3.52%
+              4                    Sum of combined scores equals four                            24                    3.13%
+              5             Sum of combined scores equal to or larger than five                  51                    6.64%
+                                 Abbreviation: *—Previous points can be combined into 2 or 3.
+
+
+                                 3.2. Detection Accuracy and Localization Accuracy
+                                      The agreement of the automatically and manually detected joint position and erosion
+                                 score was assessed in the test group patients using the mAP and accuracy, and the mean
+                                 IoU was determined. Similar to previous studies, we found that decreasing IoU thresholds
+                                 increased accuracy and mAP for the static approach (Table 4). In comparison, the adaptive
+                                 approach allowed higher IoU thresholds, which favored higher site accuracy (Table 5). In
+                                 addition, accuracy and mAP were significantly higher than without adaptive adjustment,
+                                 at 0.95 ± 0.04 and 0.81 ± 0.15, respectively. This is also consistent with the graphically
+                                 observed results and the perception of the rheumatologist who visually reviewed the
+                                 predictions (Figure 4). Localization accuracy scaled and depended on the number of
+                                 adaptive epochs, primarily with the IoU pos threshold. Analogous to the detection accuracy,
+                                 we observed higher joint localization accuracy using the adaptive approach (Table 5).
+
+                                 Table 4. Detection accuracy and map of the studied models as a function of the threshold and the
+                                 number of adaptive epochs. Each value is expressed as mean and standard deviation.
+
+                                               None                       50 Adaptive Epochs                100 Adaptive Epochs
+   Pos/Neg IoU Threshold
+                                  Accuracy              mAP           Accuracy             mAP          Accuracy            mAP
+             0.5/0.4             0.00 ± 0.00          0.00 ± 0.00     0.79 ± 0.11       0.45 ± 0.26    0.77 ± 0.15       0.40 ± 0.23
+             0.4/0.3             0.15 ± 0.07          0.25 ± 0.19     0.94 ± 0.05       0.81 ± 0.18    0.57 ± 0.18       0.27 ± 0.19
+             0.3/0.2             0.80 ± 0.14          0.43 ± 0.24     0.92 ± 0.06       0.67 ± 0.23    0.90 ± 0.08       0.65 ± 0.23
+             0.5/0.3             0.00 ± 0.00          0.00 ± 0.00     0.65 ± 0.20       0.28 ± 0.19    0.94 ± 0.06       0.79 ± 0.22
+             0.4/0.2             0.07 ± 0.45          0.21 ± 0.14     0.56 ± 0.17       0.27 ± 0.17    0.65 ± 0.17       0.26 ± 0.18
+             0.5/0.2             0.20 ± 0.08          0.27 ± 0.19     0.42 ± 0.13       0.27 ± 0.19    0.79 ± 0.15       0.34 ± 0.22
+                                 Abbreviation: pos—positive; neg—negative; IoU—Intersection over Union; mAP—mean average accuracy,
+                                 None—No adaptive adjustment.
+                            Diagnostics 2023, 13, x FOR PEER REVIEW
+Diagnostics 2023, 13, 104                                                                                                                             8 of 814
+                                                                                                                                                             of 14
+
+
+
+
+                                                             Abbreviation: pos—positive; neg—negative; IoU—Intersection over Union; mAP—mean average
+                                                       accuracy,
+                                 Table 5. Location accuracy      None—No
+                                                             of the         adaptive
+                                                                      studied         adjustment.
+                                                                               RetinaNet     models as a function of the threshold and the
+                                 number of adaptive epochs.    Each value is expressed as mean and standard deviation.
+                                                       Table 5. Location accuracy of the studied RetinaNet models as a function of the threshold and the
+                                                             number of adaptive epochs. Each value is expressed as mean and standard deviation.
+                                                                                                                    Adaptive Epochs
+                                    Pos/NegIoU
+                                    Pos/Neg    IoU Threshold              None                                  Adaptive Epochs
+                                                              None                                             50                         100
+                                     Threshold                                                       50                                   100
+                                       0.5/0.4 0.5/0.4      0.00 ± 0.000.00 ± 0.00                       0.59 ± 0.19
+                                                                                                 0.59 ± 0.19                           0.6±±0.14
+                                                                                                                                       0.6    0.14
+                                       0.4/0.3 0.4/0.3      0.11 ± 0.240.11 ± 0.24                       0.72 ± 0.14
+                                                                                                 0.72 ± 0.14                          0.45±±0.28
+                                                                                                                                      0.45     0.28
+                                       0.3/0.2 0.3/0.2      0.63 ± 0.120.63 ± 0.12                       0.68 ± 0.12
+                                                                                                 0.68 ± 0.12                          0.68±±0.16
+                                                                                                                                      0.68     0.16
+                                       0.5/0.3 0.5/0.3      0.00 ± 0.000.00 ± 0.00                       0.48 ± 0.25
+                                                                                                 0.48 ± 0.25                          0.65±±0.07
+                                                                                                                                      0.65     0.07
+                                       0.4/0.2 0.4/0.2      0.05 ± 0.160.05 ± 0.16               0.44 ± 0.27
+                                                                                                         0.44 ± 0.27                  0.47
+                                                                                                                                      0.47±±0.21
+                                                                                                                                               0.21
+                                       0.5/0.2 0.5/0.2      0.20 ± 0.090.20 ± 0.09               0.33 ± 0.30
+                                                                                                         0.33 ± 0.30                  0.59
+                                                                                                                                      0.59±±0.15
+                                                                                                                                               0.15
+                                                        Abbreviation:
+                                 Abbreviation: pos—positive;          pos—positive;
+                                                             neg—negative;          neg—negative;
+                                                                            IoU—Intersection      IoU—Intersection
+                                                                                               over  Union; None—Noover Union; None—No
+                                                                                                                         adaptive       adaptive ad-
+                                                                                                                                  adjustment.
+                                                             justment.
+
+
+
+
+                                                             Figure 4. Visualization of a representative hand of a 68-year-old female patient and SvH erosion
+                                 Figure 4. Visualization    of a representative hand of a 68-year-old female patient and SvH erosion
+                                                         classifications for the best-trained models according to the mAP metric of the validation patients as
+                                 classifications for the a function
+                                                         best-trained      models
+                                                                     of adaptive      according
+                                                                                  epochs and  the to the   mAPmanual
+                                                                                                 corresponding    metric of   theclassifications
+                                                                                                                       reference   validationfrompatients
+                                                                                                                                                     an expe-
+                                                         rienced
+                                 as a function of adaptive        rheumatologist.
+                                                               epochs     and the (a)   Reference ground
+                                                                                     corresponding        truth (GT)
+                                                                                                        manual       image from
+                                                                                                                  reference      an experienced from
+                                                                                                                              classifications    rheumatolo-
+                                                                                                                                                        an
+                                                         gist. (b) Without adaptive adjustment of IoU values during training, not all joints were localized,
+                                 experienced rheumatologist. (a) Reference ground truth (GT) image from an experienced rheumatol-
+                                 ogist. (b) Without adaptive adjustment of IoU values during training, not all joints were localized,
+                                 and the network mainly classified joints with an erosion value of 0, regardless of joint degeneration.
+                                 Retinal networks trained with adaptive adaptation over 50 epochs and IoU pos\neg 0.4\0.3 values (c)
+                                 or 100 epochs and IoU pos\neg 0.5\0.3 values (d) recognized all joints. Strikingly, adaptation over
+                                 100 epochs provided slightly higher localization accuracy and outperformed GT localization accuracy.
+                                 In contrast, in the model fitted over 50 epochs, all erosion classifications matched the reference image,
+                                 whereas the model held over 100 adaptive epochs misclassified two joints.
+
+                                 3.3. Agreement and Differences between Automatic and Manual Evaluation
+                                     For the best-trained RetinaNet, a high degree of agreement was found between the
+                                 automatic erosion classification and the manual classification, with an accuracy of 94% and
+                                    For the best-trained RetinaNet, a high degree of agreement was found between the
+                              automatic erosion classification and the manual classification, with an accuracy of 94%
+                              and an mAP of 0.81. Repeatability within the reader was also found, with an accuracy of
+                              88.5% and an mAP of 0.79. However, differences were observed in the distribution of de-
+                              viations between the automatic and both manual classifications. For the distribution of
+Diagnostics 2023, 13, 104     prediction (DL vs. manual time point 1, Figure 5a) or reproducibility (manual time9 point                  of 14
+                              1 vs. time point 2 after 6 months, Figure 5b), we observed differences as a function of
+                              classes. The diagonal elements of the confusion matrix represent the number of points
+                            an   mAPthe
+                              where      of predicted   or reproduced
+                                            0.81. Repeatability        withinprediction
+                                                                                 the readermatched    the true
+                                                                                               was also         labelwith
+                                                                                                           found,     (manual     time 1, GT),
+                                                                                                                             an accuracy    of
+                            88.5% and an mAP of 0.79. However, differences were observed in the distribution The
+                              while    the  off-diagonal      elements     are  those    that  were   mislabeled    by    the  classifier.  of
+                              higher
+                            deviations  thebetween
+                                            diagonalthe values    of the and
+                                                            automatic     confusion
+                                                                                 both matrix,
+                                                                                        manual the better,    as thisFor the
+                                                                                                  classifications.     indicates    many cor-
+                                                                                                                                distribution
+                            ofrect predictions.
+                                prediction           Due to
+                                               (DL vs.        the class
+                                                          manual           imbalance,
+                                                                     time point      1, all  data
+                                                                                        Figure   5a)were
+                                                                                                      or normalized
+                                                                                                         reproducibility   (to the      timeof
+                                                                                                                                   number
+                                                                                                                              (manual
+                            point  1 vs. in
+                              elements        each
+                                           time      class).
+                                                 point        While
+                                                         2 after  6 the     rheumatologic
+                                                                    months, Figure             assessment
+                                                                                          5b), we  observeddiffered      onlyas
+                                                                                                               differences      byaan  erosion
+                                                                                                                                    function
+                            ofscore,  theThe
+                               classes.    DL diagonal
+                                                approachelements
+                                                             classifiedof joints
+                                                                             the with
+                                                                                  confusion    matrixscore
+                                                                                         an erosion          of 0 more
+                                                                                                        represent         frequently
+                                                                                                                   the number          (Figure
+                                                                                                                                    of points
+                              5). In  addition,     the lowest    class   accuracy     of the  DL   framework,     0.48,
+                            where the predicted or reproduced prediction matched the true label (manual time 1, GT),        was  significantly
+                              lower
+                            while     than the
+                                    the           human
+                                         off-diagonal      assessment
+                                                         elements     are by
+                                                                           thoseanthat were
+                                                                                    experienced     rheumatologist,
+                                                                                               mislabeled               0.64. The higher
+                                                                                                             by the classifier.
+                            the diagonal
+                                    Moreover, values
+                                                   for of
+                                                       the the   confusion
+                                                            DL-based      SvHmatrix,      the we
+                                                                                 assessment,   better,
+                                                                                                     found thistrong
+                                                                                                        as a            and many
+                                                                                                                 indicates            correct
+                                                                                                                              significant  cor-
+                            predictions.
+                              relation        Due to
+                                         for both    thethe   class joints
+                                                         individual  imbalance, (τ = all  data
+                                                                                      0.92, p < were   normalized
+                                                                                                 0.001) and   the sum        the (τ =
+                                                                                                                       (toscore       0.88, of
+                                                                                                                                 number     p<
+                              0.001). in
+                            elements        each we
+                                       Similarly,  class). While a
+                                                        observed    thestrong and
+                                                                          rheumatologic       assessment
+                                                                                       significant          differed
+                                                                                                    correlation        only by
+                                                                                                                  between     the an
+                                                                                                                                  twoerosion
+                                                                                                                                       human
+                            score,  the DL time
+                              assessment      approach    classified
+                                                     points            joints with joints
+                                                             for the individual      an erosion   scorepof
+                                                                                            (τ = 0.90,        moreand
+                                                                                                          < 0.001)         the sum(Figure
+                                                                                                                     frequently             5).=
+                                                                                                                                     score (τ
+                            In0.92,
+                                addition,    the lowest   class   accuracy     of the  DL  framework,      0.48, was
+                                     p < 0.001). This is also illustrated by the covariance matrix shown in Figure 4.  significantly   lower
+                            than the human assessment by an experienced rheumatologist, 0.64.
+
+
+
+
+                            Figure 5. Comparison of confusion matrices: the X axis shows the assumed ground truth, i.e., the SvH
+                            erosion score of the
+                              Figure 5.          experienced
+                                        Comparison of         rheumatologist
+                                                         confusion  matrices: at  timeaxis
+                                                                                the X  point    1, and
+                                                                                            shows    thethe Y
+                                                                                                          assumed  representstruth,
+                                                                                                              axis ground          erosion
+                                                                                                                               the i.e., the
+                              SvH erosion
+                            scores         score
+                                   predicted  by of the  experienced
+                                                  RetinaNet (a)       rheumatologist
+                                                                and the erosion   scoresatattime
+                                                                                             the point
+                                                                                                  second1,time  pointY axis
+                                                                                                             and the         represents
+                                                                                                                       determined        the
+                                                                                                                                    by the
+                              erosion
+                            same      scores predicted
+                                  experienced           by RetinaNet
+                                               rheumatologist,        (a) and(b).
+                                                                respectively   the We
+                                                                                   erosion
+                                                                                      found scores
+                                                                                               that at
+                                                                                                     bothethe
+                                                                                                            second  time
+                                                                                                               AI and  thepoint determined
+                                                                                                                           rheumatologist
+                              by the same
+                            confidently    experienced
+                                         classified      rheumatologist,
+                                                    the extreme  points SvHrespectively
+                                                                                erosions(b).
+                                                                                          withWe    found of
+                                                                                                 a score   that both5,the AI
+                                                                                                              0 and           and the and
+                                                                                                                        respectively, rheu-
+                            showed no discrepancies. However, RetinaNet tended to classify a joint as 0 more often than average,
+                            whereas the rheumatologist deviated exclusively by one from the previous score.
+
+                                 Moreover, for the DL-based SvH assessment, we found a strong and significant cor-
+                            relation for both the individual joints (τ = 0.92, p < 0.001) and the sum score (τ = 0.88,
+                            p < 0.001). Similarly, we observed a strong and significant correlation between the two
+                            human assessment time points for the individual joints (τ = 0.90, p < 0.001) and the sum
+                            score (τ = 0.92, p < 0.001). This is also illustrated by the covariance matrix shown in Figure 4.
+
+                            3.4. Time Required
+                                 On average, DL-based analysis of an X-ray image took less than 1 s on the special-
+                            ized workstation and 5 s on a standard clinical workstation. Both are substantial time
+                            savings compared to evaluation by an experienced rheumatologist, who is estimated to
+                            take 9 ± 13 min (measured duration of P.S. for 20 randomly selected patients) to evaluate
+                            and document each finger and wrist joint.
+Diagnostics 2023, 13, 104                                                                                            10 of 14
+
+
+
+
+                            4. Discussion
+                                  In this study, we successfully presented a new method to substantially improve the
+                            recognition accuracy of small objects by adaptively adjusting the IoU thresholds during the
+                            training process.
+                                  In recent years, the research field of artificial intelligence has expanded in all areas
+                            of medicine, including radiology and rheumatology [11]. Especially in image processing,
+                            innovative techniques have shown great promise in improving and speeding up clinical
+                            workflows and reducing the workload of medical staff. Given the clinical experience,
+                            requirements, and human need to monitor DL pipeline decisions, we decided to implement
+                            joint erosion classification using a RetinaNet. Compared to feedforward neural networks
+                            (FNN) that only have a vector of classifications at the end of the convolutions, for example,
+                            to decide if the patient has corona on the CT image or not [14], the RetinaNet allows a
+                            visual representation of which region the respective decision is based on. The radiologist
+                            or rheumatologist is thus able to verify and confirm the results.
+                                  Although joint damage is increasingly assessed with echography and MRI examina-
+                            tions, radiographs still provide a comprehensive or panoramic view of joints and are the
+                            clinical standard for classifying RA stages [16]. Deep-learning algorithms could greatly
+                            improve the clinical assessment of radiographs in many cases, e.g., Pneumonia detection
+                            in chest X-ray images or bone lesion detection in musculoskeletal radiographs [34,35]. In
+                            addition, new radiographic findings of joint destruction could be discovered. Recently,
+                            numerous studies have reported that Deep Learning or CNN was used to assess joints or
+                            bones. In this regard, different types of osteoarthritis have been investigated, including
+                            osteoarthritis of the hip [36], and osteoporosis of the knees [37], but also the assessment of
+                            bone age [38] has been the focus of the studies. However, these previous studies consider-
+                            ing large joints have limited applicability to RA as a polyarthritis with central involvement
+                            of small joints. Our study overcomes the difficult task of identifying small joints, thus
+                            closing the gap in RA joint classification.
+                                  In our study, we observed a dependence between detection accuracy and the IoU
+                            thresholds used, analogous to Yan et al. [22]. Furthermore, no trained RetinaNet with fixed
+                            IoU values over the training epochs achieved sufficient accuracy for clinical applicability.
+                                  In particular, many joints of different sizes are located close to each other in the carpal
+                            region. Analogous to the study of Hirano et al., who achieved a localization accuracy of
+                            95.3% for the finger joints using a two-stage approach [16], which is comparable to our
+                            study, the intercarpal joints tended to be neglected in their study because these areas are
+                            complex and have a closer spatial relationship. We observed similar results with single-
+                            stage RetinaNet without adaptive adjustment of the IoU threshold. However, the final
+                            model with adaptive IoU adjustment was able to capture complex regions by adaptive
+                            adjustment during training. Therefore, it can be assumed that adaptive adaptation is not
+                            only suitable for small objects but also of interest for complex structures with close spatial
+                            relationships.
+                                  Due to the lack of localization and low accuracy in erosion detection, none of the
+                            models we tested without adaptive IoU values achieved sufficient accuracy for routine
+                            clinical use. In comparison, with the proposed adaptive approach and end-Pos-IoU\end-
+                            Neg-IoU values of 0.4\0.3 and 50 adaptive epochs or end-Pos-IoU\end-Neg-IoU values
+                            of 0.5\0.3 for 100 adaptive epochs, an accuracy of more than 94% was achieved with
+                            an mAP of 0.81 ± 0.18 (50 adaptive epochs) and an mAP of 0.79 ± 0.22 (100 adaptive
+                            epochs). These results are comparable to the repeatability of an experienced rheumatologist
+                            (mAP = 0.79 and accuracy 88.5%) within one evaluator.
+                                  Similar results were observed by Wang et al. in their study on JSN classification in
+                            patients with RA [22]. They achieved only a maximum mAP of 0.71 using the classical You
+                            only look once (YOLO) version 4 approach. Their proposed adjustment of error functions
+                            based on the distance to the GT box, loss generalization, consideration of aspect ratios, and
+                            separation of hand and finger joints increased the performance to mAP = 0.87 for two-hand
+                            radiographs. However, the performance was determined using validation data rather than
+Diagnostics 2023, 13, 104                                                                                            11 of 14
+
+
+
+
+                            test data, and that hands in advanced stages of degeneration were excluded, making a
+                            comparison difficult. Nonetheless, our proposed fit is straightforward, requires no prior
+                            assumptions, and is extensible to any data set. In addition, we could classify both wrists
+                            and finger joints simultaneously in models without requiring additional computational
+                            steps. This significantly reduces the computational power and, thus, the availability of
+                            usable hardware in the clinical setting. On a standard workstation without GPU used in
+                            clinic, a complete evaluation requires only 5 s, which allows a significant acceleration of
+                            the clinical routine.
+                                  Our study, as well as the study by Wang et al., impressively show that the recognition
+                            accuracy can be significantly improved by adjusting the loss as a function of spatial rela-
+                            tionship compared to previous RA studies, in which only recognition accuracies between
+                            70.6 to 77.5 could be achieved [16,39], we targeted mAP values of 0.81 and 0.87, respectively.
+                                  In addition, it was notable that the best model we trained had a higher agreement
+                            with the rater than the rater had with himself at a delay of six months. This could be
+                            because the model generalized the subjective decision-making of the rater for the first time.
+                            Nevertheless, the RetinaNet sometimes differed from the rheumatologist by more than
+                            one SvH score. In contrast, at six months, the rheumatologist differed from his previous
+                            evaluation by no more than one score. Here, the model tended to classify joints with a score
+                            of 1–4 as score 0, which could be due to the class imbalance of the individual scores. While
+                            score 0 was present in 75.26% of the joints, scores 1–4 were present in only 3.13–6.9% of the
+                            joints.
+                                  Furthermore, our study shows that the medical care of RA patients can be optimized
+                            in terms of time by using deep learning frameworks. Experienced rheumatologists need
+                            9 ± 13 min for a complete erosion history and documentation. In contrast, the RetinaNet we
+                            used took about 5 s for equivalent documentation. This time savings could allow physicians
+                            to spend less time on documentation alone in the years to come. In this way, rheumatol-
+                            ogists can spend more time with their patients and perform tasks, such as face-to-face
+                            discussions with patients about clinical problems and limitations, that cannot be performed
+                            equivalently by DL frameworks. Nevertheless, some limitations have to be mentioned.
+                            First, the number of patients was limited, mainly due to the fact that there was no freely
+                            available data set. Consequently, we need to prepare our own dataset, which is time-
+                            consuming work. Second, we only examined CR from Siemens Healthineers. However,
+                            compared to MRI measurements in which numerous different scanner coil configurations
+                            are available, X-ray images, on the other hand, can be considered comparatively uniform.
+                            However, this study did not consider the effects of variability between different providers,
+                            platforms, and institutes. In addition, the effects of rings or other interfering objects on the
+                            accuracy of the assessment were not investigated. Therefore, further studies are needed
+                            to validate its applicability across multiple institutions and other x-ray manufacturers.
+                            Third, our proposed approach was only studied for one retinal network. Although retinal
+                            networks have been shown in numerous studies to have higher accuracy compared to other
+                            network configurations such as YOLO, single-shot multi-box detectors (SSD), etc. [18,40],
+                            further studies are needed to investigate the benefits of adaptive adjustment of IoU thresh-
+                            olds as well as to evaluate the different model types in assessing erosion values. Fourth,
+                            the paragraph we gave was applied exclusively to images in which all objects were small
+                            but of comparable size. Its usefulness for classification tasks in which objects of different
+                            sizes are to be detected must therefore be investigated in subsequent studies.
+
+                            5. Conclusions
+                                  In our study on small object detection using erosion classification of RA patients
+                            as an example, we successfully validated a new approach to adaptive IoU values. Our
+                            proposed method makes it possible to determine joint erosions on hand radiographs with
+                            high accuracy, which potentially provides a reliable and fast methodology to improve
+                            clinical workflow.
+Diagnostics 2023, 13, 104                                                                                                              12 of 14
+
+
+
+
+                                   Author Contributions: Conceptualization, K.L.R., M.K. and P.S.; methodology, K.L.R., M.K. and
+                                   P.S.; software, K.L.R.; validation, K.L.R., M.K. and P.S.; formal analysis, K.L.R., M.K. and P.S.;
+                                   investigation, K.L.R. and P.S.; resources, G.A.; data curation, K.L.R., M.K. and P.S.; writing—original
+                                   draft preparation, K.L.R., A.M.-L., H.-J.W. and P.S.; writing—review and editing, K.L.R., M.K., A.M.-
+                                   L., M.F., L.M.W., X.B., H.-J.W., J.H.W.D., D.B.A., G.A. and P.S.; visualization, K.L.R.; supervision,
+                                   A.M.-L., M.F., L.M.W., X.B., H.-J.W., J.H.W.D., D.B.A., G.A. and P.S.; project administration, K.L.R.
+                                   and P.S. All authors have read and agreed to the published version of the manuscript.
+                                   Funding: M.F.: L.M.W. and D.B.A. were supported by grants from the Local Research Committee of
+                                   the Medical Faculty of Heinrich-Heine-University Düsseldorf, Germany.
+                                   Institutional Review Board Statement: The study was conducted according to the guidelines of
+                                   the Declaration of Helsinki and approved by the Institutional Ethics Committee of Heinrich-Heine
+                                   University of Düsseldorf (protocol code 2019-648).
+                                   Informed Consent Statement: Informed consent was obtained for pseudonymized analysis in the
+                                   context of clinic-related cases.
+                                   Data Availability Statement: Data and evaluation scripts can be provided by the authors upon
+                                   reasonable request.
+                                   Conflicts of Interest: The authors declare no conflict of interest.
+
+                                   Abbreviations and Acronyms
+
+                                   SvH            Sharp van der Heijde
+                                   CEST           Chemical Exchange Saturation Transfer
+                                   dGEMRIC        delayed gadolinium-enhanced MRI of cartilage
+                                   DL             Deep Learning
+                                   RetinaNet      Retina networks
+                                   IoU            Intersection over Union
+                                   GT             ground truth
+                                   CR             conventional radiographs
+                                   PACS           Picture Archiving and Communication System
+                                   DICOM          Digital Imaging and Communications in Medicine
+                                   mAP            mean average accuracy
+                                   ReLU           Rectified Linear Unit
+                                   ResNet         residual neural network
+                                   FPN            feature pyramid network
+                                   FNN            feedforward neural networks
+                                   YOLO           You only look once
+                                   SSD            single-shot detector
+
+References
+1.    Wilson, R.L. Rheumatoid Arthritis of the Hand. Orthop. Clin. N. Am. 1986, 17, 313–343. [CrossRef]
+2.    Frenken, M.; Rübsam, G.; Mewes, A.; Radke, K.L.; Li, L.; Wilms, L.M.; Nebelung, S.; Abrar, D.B.; Sewerin, P. To Contrast or Not
+      to Contrast? On the Role of Contrast Enhancement in Hand MRI Studies of Patients with Rheumatoid Arthritis. Diagnostics
+      2022, 12, 465. [CrossRef] [PubMed]
+3.    van der Helm-van Mil, A.H.M.; Detert, J.; Le Cessie, S.; Filer, A.; Bastian, H.; Burmester, G.R.; Huizinga, T.W.J.; Raza, K. Validation
+      of a prediction rule for disease outcome in patients with recent-onset undifferentiated arthritis: Moving toward individualized
+      treatment decision-making. Arthritis Rheum. 2008, 58, 2241–2247. [CrossRef] [PubMed]
+4.    Lindegaard, H.M.; Vallø, J.; Hørslev-Petersen, K.; Junker, P.; Østergaard, M. Low-cost, low-field dedicated extremity magnetic
+      resonance imaging in early rheumatoid arthritis: A 1-year follow-up study. Ann. Rheum. Dis. 2006, 65, 1208–1212. [CrossRef]
+      [PubMed]
+5.    Abrar, D.B.; Schleich, C.; Radke, K.L.; Frenken, M.; Stabinska, J.; Ljimani, A.; Wittsack, H.-J.; Antoch, G.; Bittersohl, B.; Hesper, T.;
+      et al. Detection of early cartilage degeneration in the tibiotalar joint using 3 T gagCEST imaging: A feasibility study. Magma
+      2021, 34, 249–260. [CrossRef] [PubMed]
+6.    Radke, K.L.; Wilms, L.M.; Frenken, M.; Stabinska, J.; Knet, M.; Kamp, B.; Thiel, T.A.; Filler, T.J.; Nebelung, S.; Antoch, G.; et al.
+      Lorentzian-Corrected Apparent Exchange-Dependent Relaxation (LAREX) Ω-Plot Analysis—An Adaptation for qCEST in a
+      Multi-Pool System: Comprehensive In Silico, In Situ, and In Vivo Studies. Int. J. Mol. Sci. 2022, 23, 6920. [CrossRef] [PubMed]
+Diagnostics 2023, 13, 104                                                                                                            13 of 14
+
+
+
+
+7.    Radke, K.L.; Abrar, D.B.; Frenken, M.; Wilms, L.M.; Kamp, B.; Boschheidgen, M.; Liebig, P.; Ljimani, A.; Filler, T.J.; Antoch, G.;
+      et al. Chemical Exchange Saturation Transfer for Lactate-Weighted Imaging at 3 T MRI: Comprehensive In Silico, In Vitro, In Situ,
+      and In Vivo Evaluations. Tomography 2022, 8, 1277–1292. [CrossRef] [PubMed]
+8.    Abrar, D.B.; Schleich, C.; Müller-Lutz, A.; Frenken, M.; Radke, K.L.; Vordenbäumen, S.; Schneider, M.; Ostendorf, B.; Sewerin, P.
+      Cartilage Degradation in Psoriatic Arthritis Is Associated With Increased Synovial Perfusion as Detected by Magnetic Resonance
+      Imaging. Front. Med. 2020, 7, 539870. [CrossRef]
+9.    Truhn, D.; Zwingenberger, K.T.; Schock, J.; Abrar, D.B.; Radke, K.L.; Post, M.; Linka, K.; Knobe, M.; Kuhl, C.; Nebelung, S. No
+      pressure, no diamonds?—Static vs. dynamic compressive in-situ loading to evaluate human articular cartilage functionality by
+      functional MRI. J. Mech. Behav. Biomed. Mater. 2021, 120, 104558. [CrossRef]
+10.   Radke, K.L.; Wollschläger, L.M.; Nebelung, S.; Abrar, D.B.; Schleich, C.; Boschheidgen, M.; Frenken, M.; Schock, J.; Klee, D.;
+      Frahm, J.; et al. Deep Learning-Based Post-Processing of Real-Time MRI to Assess and Quantify Dynamic Wrist Movement in
+      Health and Disease. Diagnostics 2021, 11, 1077. [CrossRef]
+11.   Schock, J.; Truhn, D.; Nürnberger, D.; Conrad, S.; Huppertz, M.S.; Keil, S.; Kuhl, C.; Merhof, D.; Nebelung, S. Artificial
+      intelligence-based automatic assessment of lower limb torsion on MRI. Sci. Rep. 2021, 11, 23244. [CrossRef] [PubMed]
+12.   Zeng, G.; Guo, Y.; Zhan, J.; Wang, Z.; Lai, Z.; Du, X.; Qu, X.; Guo, D. A review on deep learning MRI reconstruction without fully
+      sampled k-space. BMC Med. Imaging 2021, 21, 195. [CrossRef] [PubMed]
+13.   Wang, H.-J.; Su, C.-P.; Lai, C.-C.; Chen, W.-R.; Chen, C.; Ho, L.-Y.; Chu, W.-C.; Lien, C.-Y. Deep Learning-Based Computer-
+      Aided Diagnosis of Rheumatoid Arthritis with Hand X-ray Images Conforming to Modified Total Sharp/van der Heijde Score.
+      Biomedicines 2022, 10, 1355. [CrossRef] [PubMed]
+14.   Gayathri, J.L.; Abraham, B.; Sujarani, M.S.; Nair, M.S. A computer-aided diagnosis system for the classification of COVID-19
+      and non-COVID-19 pneumonia on chest X-ray images by integrating CNN with sparse autoencoder and feed forward neural
+      network. Comput. Biol. Med. 2022, 141, 105134.
+15.   Bai, L.; Zhang, Y.; Wang, P.; Zhu, X.; Xiong, J.-W.; Cui, L. Improved diagnosis of rheumatoid arthritis using an artificial neural
+      network. Sci. Rep. 2022, 12, 9810. [CrossRef]
+16.   Hirano, T.; Nishide, M.; Nonaka, N.; Seita, J.; Ebina, K.; Sakurada, K.; Kumanogoh, A. Development and validation of a deep-
+      learning model for scoring of radiographic finger joint destruction in rheumatoid arthritis. Rheumatol. Adv. Pract. 2019, 3, rkz047.
+      [CrossRef]
+17.   Del Prete, R.; Graziano, M.D.; Renga, A. RetinaNet: A deep learning architecture to achieve a robust wake detector in SAR images.
+      In Proceedings of the 2021 IEEE 6th International Forum on Research and Technology for Society and Industry (RTSI), Naples,
+      Italy, 6–9 September 2021; pp. 171–176.
+18.   Tan, L.; Huangfu, T.; Wu, L.; Chen, W. Comparison of RetinaNet, SSD, and YOLO v3 for real-time pill identification. BMC Med.
+      Inform. Decis. Mak. 2021, 21, 324. [CrossRef]
+19.   Nobis, F.; Geisslinger, M.; Weber, M.; Betz, J.; Lienkamp, M. A Deep Learning-based Radar and Camera Sensor Fusion Architecture
+      for Object Detection. arXiv 2020. [CrossRef]
+20.   Zlocha, M.; Dou, Q.; Glocker, B. Improving RetinaNet for CT Lesion Detection with Dense Masks from Weak RECIST Labels. In
+      Medical Image Computing and Computer Assisted Intervention-MICCAI 2019, 1st ed.; Shen, D., Birukou, Eds.; Springer International
+      Publishing: Berlin/Heidelberg, Germany, 2019; pp. 402–410.
+21.   Choi, H.-T.; Lee, H.-J.; Kang, H.; Yu, S.; Park, H.-H. SSD-EMB: An Improved SSD Using Enhanced Feature Map Block for Object
+      Detection. Sensors 2021, 21, 2842. [CrossRef]
+22.   Yan, J.; Wang, H.; Yan, M.; Diao, W.; Sun, X.; Li, H. IoU-Adaptive Deformable R-CNN: Make Full Use of IoU for Multi-Class
+      Object Detection in Remote Sensing Imagery. Remote Sens. 2019, 11, 286. [CrossRef]
+23.   van der Heijde, D.; Dankert, T.; Nieman, F.; Rau, R.; Boers, M. Reliability and sensitivity to change of a simplification of the
+      Sharp/van der Heijde radiological assessment in rheumatoid arthritis. Rheumatology 1999, 38, 941–947. [CrossRef] [PubMed]
+24.   van der Heijde, D. How to read radiographs according to the Sharp/van der Heijde method. J. Rheumatol. 2000, 27, 261–263.
+25.   Khan, Z.; Yahya, N.; Alsaih, K.; Ali, S.S.A.; Meriaudeau, F. Evaluation of Deep Neural Networks for Semantic Segmentation of
+      Prostate in T2W MRI. Sensors 2020, 20, 3183. [CrossRef] [PubMed]
+26.   Drałus, G.; Mazur, D.; Czmil, A. Automatic Detection and Counting of Blood Cells in Smear Images Using RetinaNet. Entropy
+      2021, 23, 1522. [CrossRef] [PubMed]
+27.   Santos, A.; Marcato Junior, J.; de Andrade Silva, J.; Pereira, R.; Matos, D.; Menezes, G.; Higa, L.; Eltner, A.; Ramos, A.P.; Osco, L.;
+      et al. Storm-Drain and Manhole Detection Using the RetinaNet Method. Sensors 2020, 20, 4450. [CrossRef]
+28.   Xie, J.; Stensrud, E.; Skramstad, T. Detection-Based Object Tracking Applied to Remote Ship Inspection. Sensors 2021, 21, 761.
+      [CrossRef]
+29.   Kingma, D.P.; Ba, J. Adam: A Method for Stochastic Optimization. In Proceedings of the 3rd International Conference for Learning
+      Representations, San Diego, CA, USA, 7–9 May 2014.
+30.   Lin, T.-Y.; Goyal, P.; Girshick, R.; He, K.; Dollár, P. Focal Loss for Dense Object Detection. arXiv 2017. [CrossRef]
+31.   Tan, O.; Liu, L.; You, Q.; Wang, J.; Chen, A.; Ing, E.; Morrison, J.C.; Jia, Y.; Huang, D. Focal Loss Analysis of Nerve Fiber Layer
+      Reflectance for Glaucoma Diagnosis. Transl. Vis. Sci. Technol. 2021, 10, 9. [CrossRef]
+32.   Cohen, J. Statistical Power Analysis for the Behavioral Sciences, 2nd ed.; Lawrence Erlbaum Associates: Hillsdale, NJ, USA, 1988.
+Diagnostics 2023, 13, 104                                                                                                        14 of 14
+
+
+
+
+33.   Armstrong, R.A. When to use the Bonferroni correction. Ophthalmic Physiol. Opt. J. Br. Coll. Ophthalmic Opt. 2014, 34, 502–508.
+      [CrossRef]
+34.   Jones, R.M.; Sharma, A.; Hotchkiss, R.; Sperling, J.W.; Hamburger, J.; Ledig, C.; O’Toole, R.; Gardner, M.; Venkatesh, S.; Roberts,
+      M.M.; et al. Assessment of a deep-learning system for fracture detection in musculoskeletal radiographs. NPJ Digit. Med.
+      2020, 3, 144. [CrossRef]
+35.   Kundu, R.; Das, R.; Geem, Z.W.; Han, G.-T.; Sarkar, R. Pneumonia detection in chest X-ray images using an ensemble of deep
+      learning models. PLoS ONE 2021, 16, e0256630. [CrossRef] [PubMed]
+36.   Xue, Y.; Zhang, R.; Deng, Y.; Chen, K.; Jiang, T. A preliminary examination of the diagnostic value of deep learning in hip
+      osteoarthritis. PLoS ONE 2017, 12, e0178992. [CrossRef] [PubMed]
+37.   Liu, F.; Zhou, Z.; Samsonov, A.; Blankenbaker, D.; Larison, W.; Kanarek, A.; Lian, K.; Kambhampati, S.; Kijowski, R. Deep
+      Learning Approach for Evaluating Knee MR Images: Achieving High Diagnostic Performance for Cartilage Lesion Detection.
+      Radiology 2018, 289, 160–169. [CrossRef]
+38.   Spampinato, C.; Palazzo, S.; Giordano, D.; Aldinucci, M.; Leonardi, R. Deep learning for automated skeletal bone age assessment
+      in X-ray images. Med. Image Anal. 2017, 36, 41–51. [CrossRef] [PubMed]
+39.   Rohrbach, J.; Reinhard, T.; Sick, B.; Dürr, O. Bone erosion scoring for rheumatoid arthritis with deep convolutional neural
+      networks. Comput. Electr. Eng. 2019, 78, 472–481. [CrossRef]
+40.   Fan, J.; Huo, T.; Li, X. A Review of One-Stage Detection Algorithms in Autonomous Driving. In Proceedings of the 2020 4th CAA
+      International Conference on Vehicular Control and Intelligence (CVCI), Hangzhou, China, 18–20 December 2020; pp. 210–214.
+
+Disclaimer/Publisher’s Note: The statements, opinions and data contained in all publications are solely those of the individual
+author(s) and contributor(s) and not of MDPI and/or the editor(s). MDPI and/or the editor(s) disclaim responsibility for any injury to
+people or property resulting from any ideas, methods, instructions or products referred to in the content.
+

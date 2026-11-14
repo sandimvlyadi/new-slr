@@ -1,0 +1,205 @@
+id,field,AI_value,reviewer_value (kosongkan bila setuju),page_or_table
+M005,dataset,"Z. Wang 2022 set, 2700/760/358 images",,"p. 3, §2.1 (plus RSNA Pediatric Bone Age n=14,036 for transfer learning on p. 5, §2.4)"
+M005,split,image-level (original split),,"p. 3, §2.1"
+M005,external,N,,"p. 3, §2.1; p. 6, §2.7"
+M005,key_comparison,"best PCC 0.925, RMSE 18.02 vs inter-radiologist PCC 0.97, RMSE 18.75",,"p. 3, §2.1; p. 7–8, §3.1, Table 1; p. 9–11, §3.2, Table 2"
+M005,ablation,Y (schemes compared),,"p. 8, Table 1; p. 10, Table 2"
+M005,runs_ci,N,,"p. 6–11, §2.7–3.2; Tables 1–2"
+M005,code,NR,,p. 1–13 (not reported)
+M005,Q1_abl,Y,,"p. 8, Table 1; p. 10, Table 2"
+M005,Q2_runs,N,,"p. 8, Table 1; p. 10, Table 2"
+M005,Q3_patient,N,,"p. 3, §2.1"
+M005,Q5_ext,N,,"p. 3, §2.1; p. 6, §2.7"
+M005,Q6_code,N,,p. 1–13 (not reported)
+M015,dataset,SNUH-1M unlabeled + public downstream sets,,"p. 6–7, Result; p. 19–26, Methods (SNUH-1M n=1,296,540; OAI KL 0–4 n=8,260 on p. 24)"
+M015,split,patient-level,,"p. 21, Downstream task evaluation; p. 24, Knee osteoarthritis grading (OAI); p. 27, Leakage Mitigation"
+M015,external,Y (bone tumour centres),,"p. 12, Result; p. 15–16, Discussion; p. 32, Methods"
+M015,key_comparison,avg relative +6.21% vs its ImageNet-MAE init under identical protocol; beat ImageNet and medical-domain (Radio-DINO) pretrained models,,"p. 7–8, Evaluation across diverse musculoskeletal diagnostic tasks; p. 9, Calibration analysis (exact OAI KL grading metrics in Suppl. Tables 4–15)"
+M015,ablation,"Y (init-matched comparison, resolution ablation)",,"p. 7–8 (init-matched ViT-MAE/I1K); p. 9–10 & p. 26–27, Fig. 2d–f (label-fraction 10%–100%); p. 17 (resolution ablation, Suppl. Fig. 11)"
+M015,runs_ci,"bootstrap 5,000",,"p. 8, Result; p. 21 & p. 34, Methods; p. 43, Fig. 2 caption"
+M015,code,"weights on GitHub (skhoha/SKELEX), academic use",,"p. 35, Declaration statements (2) Code availability"
+M015,Q1_abl,Y,,"p. 7–8, Result; p. 21, Methods"
+M015,Q2_runs,Y,,"p. 8, Result; p. 21 & p. 34, Methods"
+M015,Q3_patient,Y,,"p. 21, Downstream task evaluation; p. 24, Knee osteoarthritis grading (OAI); p. 27, Leakage Mitigation"
+M015,Q5_ext,Y,,"p. 12, Result; p. 15–16, Discussion; p. 32, Methods"
+M015,Q6_code,Y,,"p. 35, Code availability"
+M039,dataset,"3 centres, 2,703 radiographs",,Abstract; §Methods 'Study population and dataset' (line 34); Table 1
+M039,split,5-fold CV on 2 centres + external centre,,"Abstract; §Methods 'Study population and dataset' (lines 7, 34)"
+M039,external,Y (750 images),,Abstract; §Methods 'Study population and dataset' (line 34); Table 1; Table 2
+M039,key_comparison,"ablation: removing uncertainty gating QWK -0.040, CORAL→CE QWK -0.068, no clinical encoder -0.060 (all p<0.001); external QWK 0.900",,"§Results 'Comprehensive model comparison' (line 71), 'Ablation study' (line 82), Table 3 (line 83)"
+M039,ablation,Y (Table 3),,"§Results 'Ablation study' (line 82), Table 3 (line 83)"
+M039,runs_ci,95% CI,,"§Methods 'Statistical analysis' (line 65); §Results, Tables 2–4"
+M039,code,NR,,"§Declarations 'Data availability' (line 174, code not reported)"
+M039,Q1_abl,Y,,"§Results 'Ablation study' (line 82), Table 3 (line 83)"
+M039,Q2_runs,Y,,"§Methods 'Statistical analysis' (line 65); §Results, Tables 2–4"
+M039,Q3_patient,U,,§Methods 'Study population and dataset' (line 34)
+M039,Q5_ext,Y,,§Methods 'Study population and dataset' (line 34); Table 1; Table 2
+M039,Q6_code,N,,§Declarations (line 174)
+M041,dataset,"OAI hand radiographs, 3,591 with OA signs (DIP crops)",,"p. 4–5, §2.1–2.2, Table 1; p. 9, Table 3"
+M041,split,fixed train/val/test (two-stage protocol),,"p. 4–5, §2.2, Table 1; p. 6, §2.3.1; p. 9, Table 3; p. 12, §3.2"
+M041,external,N,,"p. 4–5, §2.2, Table 1; p. 20, §4 Limitations"
+M041,key_comparison,oversampling most consistent; SD+OS OA F1 0.613 vs 0.416 (p=0.029); SD+OS+FL KL3 F1 0.527 vs 0.280 (p=0.048); FL-only weak on KL3/KL4,"6 VGG19 arms across 3 runs (Tables 4, 6, 7): (1) Baseline: Overall Acc 0.763/F1 0.747, KL3 F1 0.280±0.062 (Acc 0.217), KL4 F1 0.573±0.064 (Acc 0.583), binary OA F1 0.416±0.034 (Table 7; 0.701 in Table 5, Sens 0.566); (2) SD Only (+182 validated CycleGAN KL3): Overall Acc 0.767/F1 0.740, KL3 F1 0.350±0.104 (p=0.369), KL4 F1 0.590±0.104 (p=0.868), OA F1 0.462±0.090 (p=0.520, Sens 0.636); (3) OS Only (KL3 x5, KL4 x10): Overall Acc 0.767/F1 0.747, KL3 F1 0.447±0.061 (p=0.015*), KL4 F1 0.750±0.027 (Acc 0.933, p=0.071), OA F1 0.588±0.045 (p=0.031*, Sens 0.954); (4) FL Only (gamma=2.94, alpha=[0.80,0.80,0.80,1.60,1.44]): Overall Acc 0.767/F1 0.737, KL3 F1 0.427±0.006 (Acc/Rec 0.510, highest single-arm KL3 recall, p=0.062), KL4 F1 0.563±0.179 (Acc 0.500, p=0.947), OA F1 0.490±0.083 (p=0.266, Sens 0.837); (5) SD+OS: Overall Acc 0.770/F1 0.753, KL3 F1 0.503±0.055 (p=0.015*), KL4 F1 0.740±0.027 (p=0.086), OA F1 0.613±0.041 (p=0.029*, Sens 0.961); (6) SD+OS+FL: Overall Acc 0.760/F1 0.730, KL3 F1 0.527±0.051 (p=0.048*), KL4 F1 0.733±0.061 (p=0.150), OA F1 0.623±0.055 (p=0.055, Sens 0.954). Note: FL-only was strong on KL3 (F1 0.427 vs 0.280, recall 0.510 vs 0.203) but weak on KL4 (F1 0.563) and KL1 (F1 0.167 vs 0.267).","p. 13, Table 4; p. 16, Table 5; p. 18, Tables 6–7"
+M041,ablation,Y (6 arms),,"p. 9–11, §2.4.1–2.4.6; p. 13, Table 4; p. 18, Tables 6–7"
+M041,runs_ci,95% CI + tests,,"p. 12, §3.2; p. 18, §3.2.9, Tables 6–7"
+M041,code,NR (data from OAI),,"p. 22, Data Availability Statement"
+M041,Q1_abl,Y,,"p. 9–11, §2.4; p. 13, Table 4; p. 18, Tables 6–7"
+M041,Q2_runs,Y,,"p. 12, §3.2; p. 18, §3.2.9, Tables 6–7"
+M041,Q3_patient,U,Y,"p. 4, §2.2 (lines 213–215)"
+M041,Q5_ext,N,,"p. 4–5, §2.2, Table 1; p. 20, §4 Limitations"
+M041,Q6_code,N,,"p. 22, Data Availability Statement"
+M044,dataset,"OAI-derived Kaggle set, 9,786 images; external MOST",,"p. 2–4, §2.1–2.2, Tables 1–3; p. 14–15, §4.7, Table 13"
+M044,split,patient-level,,"p. 3, §2.2; p. 4, Table 2"
+M044,external,Y (MOST),,"p. 14–15, §4.7, Table 13"
+M044,key_comparison,"internal BACC 0.928, macro-F1 +0.018 over strongest same-split baseline (adj. McNemar p=0.018); MOST accuracy 0.862, macro-F1 0.839",,"p. 12, Table 7; p. 13, Table 8; p. 13–14, §4.4–4.5, Tables 10–11, 13"
+M044,ablation,Y (component-wise),,"p. 13–14, §4.4, Table 10"
+M044,runs_ci,bootstrap CI + McNemar,,"p. 9, Table 6; p. 10, §3.7; p. 13–14, §4.5, Table 11"
+M044,code,GitHub (ali-raza-research/ResBiAtt-KOA-Net) + checkpoint,,"p. 10, §3.6 (lines 614–616)"
+M044,Q1_abl,Y,,"p. 13–14, §4.4, Table 10"
+M044,Q2_runs,Y,,"p. 9, Table 6; p. 10, §3.7; p. 13–14, §4.5, Table 11"
+M044,Q3_patient,Y,,"p. 3, §2.2; p. 4, Table 2"
+M044,Q5_ext,Y,,"p. 14–15, §4.7, Table 13"
+M044,Q6_code,Y,,"p. 10, §3.6"
+M061,dataset,"OAI baseline, sites A-D train (8,050), site E test (953)",,"p. 3, §3.1, Table 1"
+M061,split,site-wise,,"p. 3, §3.1–3.2, Table 1"
+M061,external,Y (held-out acquisition site),,"p. 3, §3.1–3.2, Table 1"
+M061,key_comparison,"SSL improves deep active learning; performance drops without SSL resolved with SSL (BA, 5 repeats, ~10% labels)","Balanced Accuracy (BA %, mean ± SE over 5 seeds, Table 2; full-data supervised baseline BA = 64.13±0.88%): At N=800 labeled samples (~10% budget), SSL consistency regularization (CR) vs without SSL: ENT-MCD (MC-Dropout total uncertainty) 56.39±0.59 vs 52.18±1.83 (+4.21%; at 250 labels: 40.06±2.34 vs 37.43±2.83; at 500 labels: 49.14±2.07 vs 50.39±1.85); MI-MCD (MC-Dropout epistemic uncertainty) 50.91±0.73 vs 51.97±1.35 (at 250: 28.68±2.03 vs 28.66±2.13; at 500: 42.81±1.08 vs 43.02±4.81, with CR eliminating large intermediate drops in Fig. 4c); Least Confidence (LC) 46.59±1.55 vs 45.17±4.45 (at 250: 30.19±2.97 vs 25.01±1.77 [+5.18%]; at 500: 43.99±1.73 vs 36.73±3.68 [+7.26%]); Naive Entropy (ENT) 50.07±1.08 vs 49.97±1.77 (at 250: 34.72±2.76 vs 23.37±2.38 [+11.35%]; at 500: 40.49±2.66 vs 36.12±2.26 [+4.37%]); Random query baseline (no SSL): 20.71±0.67 (50), 21.92±1.39 (250), 34.73±1.54 (500), 43.5±1.93 (800).","p. 3, §3.3, Table 2, Fig. 4"
+M061,ablation,Y,,"p. 3, §3.3, Table 2, Fig. 4"
+M061,runs_ci,"5 runs, mean ± SD","5 runs (random seeds), mean ± SE (standard error)","p. 3, §3.2 (lines 277–279), Table 2"
+M061,code,NR,,p. 1–4 (not reported)
+M061,Q1_abl,Y,,"p. 3, §3.3, Table 2, Fig. 4"
+M061,Q2_runs,Y,,"p. 3, §3.2, Table 2"
+M061,Q3_patient,U,Y,"p. 3, §3.1–3.2 (lines 167–170, 269–273)"
+M061,Q5_ext,Y,,"p. 3, §3.1, Table 1"
+M061,Q6_code,N,,p. 1–4 (not reported)
+M071,dataset,"OAI kneeKL224 (official test 1,656)",,"p. 1, Abstract; p. 6–7, §3.1–3.4; p. 13, §6"
+M071,split,stratified 5-fold + official test,,"p. 7, §3.4; p. 11, §5.1; p. 13, §6; p. 22, §8.5"
+M071,external,N (simulated acquisition shifts),,"p. 18–19, §7.5, Table 6"
+M071,key_comparison,"ablation from ViT-CORAL baseline accuracy 65.15 / F1 68.60 → full 70.29 / 70.19; KL1 +6.6, KL2 +19.4 vs VGG19","Official OAI test set (n=1,656, Tables 2–5): Reproduced baselines (Table 3): VGG19 (PD-2 Ordinal) Acc 65.6%, Macro-F1 48.9% (but Table 5 per-class F1s [79.7, 29.6, 48.0, 73.1, 80.0] average to 62.08%); plain ViT-B/16 (Cross-Entropy) Acc 68.59%, Macro-F1 69.42% (Table 5 per-class F1s [76.03, 35.09, 64.47, 77.46, 86.79] average to 67.97%). Proposed VL-OrdinalFormer (ViT-L/16 + CORAL + class weights + CLIP distillation + TTA/tau tuning + 5-fold ensemble): Acc 70.29%, Macro-Precision 69.80%, Macro-Recall 71.56%, Macro-F1 70.19% (reported as 69.80% in Table 4 and 69.92% with Acc 70.35% in Table 6), Macro-AUROC 81.61%. Stepwise ablation (Table 4): ViT-CORAL (no weights) Acc 65.15% / Macro-F1 68.60% -> +Class weighting [1.0,1.5,1.5,1.0,1.0] Acc 66.4% / Macro-F1 63.6% (-5.0% F1 drop!) -> +VLM CLIP Distillation Acc 67.2% / Macro-F1 65.0% -> +TTA + tau tuned Acc 67.8% / Macro-F1 67.0% -> +5-fold Ensemble Acc 70.29% / Macro-F1 69.80% (70.19% in Tables 2–3). Class-wise F1 (Table 5, Proposed vs VGG19 / vs ViT-CE): KL0 80.26 (+0.6 / +4.2), KL1 36.23 (+6.6 / +1.1), KL2 67.24 (+19.2 / +2.8), KL3 82.27 (+9.2 / +4.8), KL4 84.96 (+5.0 / -1.8).","p. 14–15, §6.1–6.3, Tables 2–5; p. 19, Table 6"
+M071,ablation,Y (Table 4),,"p. 14, Table 3; p. 15, §6.2, Table 4"
+M071,runs_ci,N,,"p. 16, §6.4; p. 22, Table 7"
+M071,code,GitHub (Zahid672/kneeKL224),,"p. 3, §1 (lines 119–120)"
+M071,Q1_abl,Y,,"p. 14, Table 3; p. 15, §6.2, Table 4"
+M071,Q2_runs,N,,"p. 14–16, Tables 2–5, §6.4; p. 22, Table 7"
+M071,Q3_patient,U,"N (for 5-fold CV: §8.5 p. 22 states train+val directories of kneeKL224 were merged and split via stratified 5-fold CV at the image level without patient IDs, contradicting §3.4 p. 7; official test n=1,656 held out)","p. 7, §3.4 & p. 21, Alg. 1 vs p. 22, §8.5"
+M071,Q5_ext,N,,"p. 18–19, §7.5, Table 6"
+M071,Q6_code,Y,,"p. 3, §1 (lines 119–120)"
+M089,dataset,"OAI baseline, 4,130 knee pairs, 7:1:2",,"p. 3, §2; p. 6, §4"
+M089,split,random stratified (unit NR),,"p. 3, §2 (lines 139–142)"
+M089,external,N,,"p. 3, §2; p. 11, §5"
+M089,key_comparison,"ORM vs multi-class compared on accuracy, MAE, QWK for 23 networks (numbers not extracted)","21 networks across 6 families compared (Baseline Cross-Entropy vs proposed Ordinal Regression Module [ORM] with Cumulative-Link [CL] loss on OAI test n=1,656; Tables 1–2; note §1 says 23 networks but §4 & Tables 1–2 evaluate 21): ORM+CL improved MAE and QWK on all 21/21 networks (mean QWK gain +0.0441, range +0.0183 [VGG-13bn: 0.8274->0.8457] to +0.0825 [MobileNetV2: 0.7560->0.8385]) and improved ACCMacro on 17/21 networks. Key models (Baseline CE -> ORM+CL): DenseNet-161 (best ORM): MAE 0.399 -> 0.330 (-0.069), ACCMacro 85.92% -> 88.09% (+2.17%), QWK 0.8204 -> 0.8609 (+0.0405); VGG-16bn (best CE baseline): MAE 0.373 -> 0.338 (-0.035; vs Chen et al. ordinal loss 0.376), ACCMacro 87.78% -> 87.75% (-0.03%), QWK 0.8228 -> 0.8575 (+0.0347); VGG-19: MAE 0.376 -> 0.345 (-0.031; Chen et al. 0.360), ACCMacro 86.62% -> 87.58% (+0.96%), QWK 0.8272 -> 0.8532 (+0.0260); ResNet-34: MAE 0.444 -> 0.389 (-0.055; Chen et al. 0.402), ACCMacro 85.87% -> 86.45% (+0.58%), QWK 0.7704 -> 0.8314 (+0.0610); ResNet-50: MAE 0.444 -> 0.412 (-0.032; Chen et al. 0.403), ACCMacro 85.94% -> 85.58% (-0.36%), QWK 0.7858 -> 0.8161 (+0.0303); DenseNet-121: MAE 0.447 -> 0.379 (-0.068), ACCMacro 86.18% -> 86.69%, QWK 0.7687 -> 0.8354 (+0.0667); MobileNetV2: MAE 0.479 -> 0.402 (-0.077), ACCMacro 85.31% -> 86.04%, QWK 0.7560 -> 0.8385 (+0.0825). (Note: ACCMacro in Eq. 4 is mean one-vs-rest binary class accuracy; from Fig. 3 contingency matrix, DenseNet-161 ORM balanced recall is 69.11% vs CE 64.91%).","p. 6–10, §4, Tables 1–2, Fig. 3"
+M089,ablation,Y (with vs without ORM per network),,"p. 4, §3.1–3.2; p. 6–9, §4, Tables 1–2"
+M089,runs_ci,N,,"p. 4–9, §3.1, §4, Tables 1–2"
+M089,code,NR,,p. 1–12 (not reported)
+M089,Q1_abl,Y,,"p. 4, §3.1–3.2; p. 6–9, §4, Tables 1–2"
+M089,Q2_runs,N,,"p. 4–9, §3.1, §4, Tables 1–2"
+M089,Q3_patient,U,,"p. 3, §2 (lines 138–142)"
+M089,Q5_ext,N,,"p. 3, §2; p. 11, §5"
+M089,Q6_code,N,,p. 1–12 (not reported)
+M110,dataset,"OAI baseline (train 10,456 / val 1,614 / test 1,656 + CP split 827)","OAI baseline (4,130 radiographs / 8,260 knee joints from Chen et al. 2019, balanced via data augmentation; Exp. 3 [KL0-4]: train 10,456 / val 2,614 for EDL & MCD [for CP: val 1,614 + CP calibration split 1,000] / test 1,656; Exp. 1 [KL2-4]: train 4,800 [CP: 3,800 + cal 1,000] / val 384 / test 721; Exp. 2 [KL0-2]: train 6,273 / val 1,569 [CP: train 5,489 / val 785, ~1,500 cal] / test 1,382)","p. 2, §III-A, Fig. 1; p. 3, §III-B (lines 162–163), Table II"
+M110,split,official split,,"p. 2, §III-A; p. 3, §III-B, Table II"
+M110,external,N,,"p. 2, §III-A"
+M110,key_comparison,similar accuracy across methods; RAPS coverage 0.91-0.93 at 0.90 target; CP needs extra calibration split but gives guarantees,,"p. 3, §IV, Table II; p. 4, Table III"
+M110,ablation,Y (methods compared),,"p. 2–4, §III-B, §IV, Tables II–III"
+M110,runs_ci,N,,"p. 2–3, §III-B, §IV"
+M110,code,NR,,p. 1–4 (not reported)
+M110,Q1_abl,Y,,"p. 2–4, §III-B, §IV, Tables II–III"
+M110,Q2_runs,N,,"p. 2–3, §III-B, §IV"
+M110,Q3_patient,U,,"p. 2, §III-A; p. 3, Table II"
+M110,Q5_ext,N,,"p. 2, §III-A"
+M110,Q6_code,N,,p. 1–4 (not reported)
+M130,dataset,"197 patients internal, 52 external",,p. 2 Abstract; p. 8 §4.1; p. 9 Table 1
+M130,split,patient-wise 4-fold CV × 15 repeats,,p. 8 §4.2
+M130,external,Y (52 patients),Same-institution hold-out (52 patients / 104 DRRs from Osaka University Hospital),p. 8 §4.1; p. 9 Table 1; p. 18 §6
+M130,key_comparison,ViT regression ECA 0.656 ± 0.015 (combined); uncertainty validated as predictor of misclassification,,p. 2 Abstract; p. 10 §5.1 Table 3; p. 12 Fig. 3; p. 15 §5.2 Fig. 8
+M130,ablation,"Y (dropout rate, head weights)",,p. 6 §3.4; p. 7 §3.5; p. 10 Table 3; p. 23 Appendix A Fig. 11
+M130,runs_ci,"15 repeats, mean ± SD",,p. 7 §3.7; p. 8 §4.2; p. 10 Table 3
+M130,code,GitHub promised (NAIST-ICB/HipOA-Grading),,p. 2 Abstract
+M130,Q1_abl,Y,,p. 6 §3.4; p. 10 Table 3; p. 23 Appendix A Fig. 11
+M130,Q2_runs,Y,,p. 8 §4.2; p. 10 Table 3
+M130,Q3_patient,Y,,p. 8 §4.2
+M130,Q5_ext,Y,N (same-institution hold-out cohort of 52 patients),p. 8 §4.1; p. 9 Table 1; p. 18 §6
+M130,Q6_code,P,,p. 2 Abstract
+M132,dataset,"OAI (Chen et al. 4,130 images) + enhanced set",,p. 5205 §3.1; pp. 5205-5208 §3.2
+M132,split,random 7:1:2,,p. 5205 §3.1
+M132,external,N,,p. 5205 §3.1
+M132,key_comparison,"FOL beats CE and fixed-penalty loss on most metrics incl. MSE (ResNet-18-CE acc 63.89 ± 1.30, kappa 0.678)","FOL beats CEL and FPL on MSE and Kappa across backbones (e.g., ResNet-18 original set: CEL Acc 63.89 ± 1.300%, MSE 0.678 ± 0.045, Kappa 0.774 ± 0.014 -> FOL Acc 64.10 ± 0.900%, MSE 0.598 ± 0.048, Kappa 0.794 ± 0.097; 12.11%–18.82% mean MSE reduction on ResNets)",p. 5212 Table 1; pp. 5213-5220 Tables 2-8; p. 5214 §4.3.1
+M132,ablation,Y (3 losses),,"pp. 5212-5220 §4.3, Tables 1-8"
+M132,runs_ci,"10 repeats, mean ± SD",,p. 5211 §4.2 & §4.3.1; pp. 5212-5220 Tables 1-8
+M132,code,NR,,p. 5211 §4.2; p. 5222 Declarations
+M132,Q1_abl,Y,,pp. 5212-5220 Tables 1-8
+M132,Q2_runs,Y,,p. 5211 §4.2 & §4.3.1
+M132,Q3_patient,U,,p. 5205 §3.1
+M132,Q5_ext,N,,p. 5205 §3.1
+M132,Q6_code,N,,p. 5222 Declarations
+M185,dataset,"OAI (Chen) + other public sets, limited labels","5-class KL grading: OAI (Chen 2018: 9,786 original + 5,400 MI-Rec reconstructed = 15,186 knee X-rays) and DKXI (Gornale 2020: 1,836 original + 297 reconstructed = 2,133 X-rays); plus 2 binary generalizability sets: OP (3,806 + 478 rec) and KO (4,988 + 2,089 rec)","pp. 11-12 §4.1, Table 2"
+M185,split,NR in snippets,"80% train / 20% test (within train: 20% labeled [original + reconstructed], 80% unlabeled); image-level split after YOLOv2 single-knee cropping (early stopping patience=10)",pp. 12-13 §4.1.1 & §4.3; p. 15 Fig. 11(a)
+M185,external,partly (multiple datasets),Y (cross-dataset generalizability evaluation between OAI and DKXI in §5.4 Table 9),"pp. 18-19 §5.4, Table 9"
+M185,key_comparison,beats 13 baselines; ablation on OAI isolates components (numbers not extracted),"OAI (20% labels): H-SemiS Acc 84.9%, Pre 86.1%, Rec 83.4%, F1 84.7%, beating 13 baselines (best supervised: Teoh 2023 Acc 83.1%, F1 80.8%; best SSL: Burton 2020 Acc 82.9%, F1 81.7%; Mean-Teacher Acc 80.3%, F1 81.9%); DKXI: Acc 86.8%, F1 84.4% (vs Mean-Teacher 85.5%, F1 83.5%). Ablations on OAI (§5.3): (1) MI-Rec 75% masking Acc 84.9%/F1 84.7% vs MAE 79.5%/78.6%, CMAE 80.4%/82.2%, GAN-MAE 83.1%/81.8%; (2) SiRL threshold tau_80 Acc 84.9%/F1 84.7% vs tau_60 78.6%/75.9%, tau_70 83.8%/83.8%, tau_90 79.9%/80.7%; (3) Q-TeSt modules at 20% labels: Base Network (BN) Acc 82.3%/F1 82.1% -> BN+QCN 83.7%/83.2% -> BN+NL+QCN 84.9%/84.7% (at 1%/5%/10% labels: Acc 68.3%/73.1%/81.4%); (4) Hierarchical decomposition + RecS Acc 84.9%/F1 84.7% vs OriS-only 80.4%/80.5% vs No decomposition 77.2%/76.4% vs Random decomposition 74.1%/75.2%","pp. 13-18 §5.1-5.3, Tables 4-8, Fig. 17"
+M185,ablation,Y (5.3),,"pp. 16-18 §5.3, Tables 6-8, Fig. 17"
+M185,runs_ci,U,"N (single point estimates in all tables; §5.5 reports p < 1e-10 vs null distribution at alpha=0.05, no multi-seed SD or CI)",pp. 14-19 Tables 4-9; p. 18 §5.5
+M185,code,GitHub (chandravardhan-singh-raghaw/H-SemiS),,p. 1 Abstract
+M185,Q1_abl,Y,,"pp. 16-18 §5.3, Tables 6-8, Fig. 17"
+M185,Q2_runs,U,N,pp. 14-19 Tables 4-9; p. 18 §5.5
+M185,Q3_patient,U,N,pp. 11-13 §4.1 & §4.3; p. 15 Fig. 11(a)
+M185,Q5_ext,U,Y,"pp. 18-19 §5.4, Table 9"
+M185,Q6_code,Y,,p. 1 Abstract
+M197,dataset,"OAI (patient-level split, both knees same split)",,"pp. 5-6 §3, Table 1"
+M197,split,patient-level,,p. 5 §3
+M197,external,N,,p. 5 §3; p. 19 §9
+M197,key_comparison,"OA detection AUC 56.7 → 81.0% vs SOTA (+24.3); FewSOME 58.3 → 72.9%; 5 seeds, SD reported",,"pp. 2-3 §1; pp. 13-15 §7, Table 3"
+M197,ablation,"Y (stages, CLIP ablation)",,p. 14 Table 3; p. 16 §8.1 Table 5; p. 17 §8.2 Table 6
+M197,runs_ci,"5 seeds, SD",,p. 13 §7; p. 14 Table 3; p. 18 §8.4 Fig. 11
+M197,code,GitHub (niamhbelton/SS-FewSOME_Disease_Severity_Knee),,p. 1 Abstract
+M197,Q1_abl,Y,,p. 14 Table 3; pp. 16-17 §8.1-8.2 Tables 5-6
+M197,Q2_runs,Y,,p. 13 §7; p. 14 Table 3
+M197,Q3_patient,Y,,p. 5 §3
+M197,Q5_ext,N,,p. 5 §3; p. 19 §9
+M197,Q6_code,Y,,p. 1 Abstract
+M219,dataset,Mendeley KOA sets (source K ↔ target M),,"p. 2 §1; pp. 6-7 §4.1, Table 1"
+M219,split,dataset-wise; early stopping on val QWK,,"pp. 6-8 §4.1-4.2.1, Table 1"
+M219,external,Y (cross-dataset),,"pp. 7-9 §4.2.1 & §4.3.1, Tables 2-3"
+M219,key_comparison,"merging labelled source + target gave QWK +0.218/+0.209 over source-only; proposed method further QWK 0.678 → 0.732, MAE 0.598 → 0.525 (M→K, ResNet18)",,"pp. 8-9 §4.3.1, Tables 2 & 3"
+M219,ablation,Y (modules),,"pp. 10-11 §4.3.4, Tables 6 & 7"
+M219,runs_ci,single seed 1118,,p. 8 §4.2.1
+M219,code,data public; code NR,,p. 13 Data Availability Statement
+M219,Q1_abl,Y,,"pp. 10-11 §4.3.4, Tables 6 & 7"
+M219,Q2_runs,N,,p. 8 §4.2.1
+M219,Q3_patient,U,,"pp. 6-7 §4.1, Table 1"
+M219,Q5_ext,Y,,"pp. 8-9 §4.3.1, Tables 2 & 3"
+M219,Q6_code,N,,p. 13 Data Availability Statement
+M272,dataset,"Kaggle KOA 9,786 (pre-split)",,p. 1 Abstract; p. 4 Table 1; p. 8 §3.1
+M272,split,pre-split (image-level),,p. 8 §3.1
+M272,external,N,,p. 8 §3.1; p. 19 §5.2
+M272,key_comparison,accuracy 69% → 82.07% when evaluated on CleanLab-remediated test labels (p < 1e-5); on ORIGINAL test labels the difference was not significant (p = 0.076),,"p. 1 Abstract; pp. 14-15 §4.1-4.3, Tables 2 & 3; p. 18 Table 4"
+M272,ablation,Y (raw vs relabelled training),,"p. 15 §4.3, Table 3"
+M272,runs_ci,N,,pp. 14-15 §4.1-4.3
+M272,code,NR,,p. 21 Data Availability Statement
+M272,Q1_abl,Y,,"p. 15 §4.3, Table 3"
+M272,Q2_runs,N,,pp. 14-15 §4.1-4.3
+M272,Q3_patient,N,,p. 8 §3.1; pp. 10 & 16 §3.2.2 & §4.4
+M272,Q5_ext,N,,p. 8 §3.1; p. 19 §5.2
+M272,Q6_code,N,,p. 21 Data Availability Statement
+C015,dataset,"OAI (Chen) 8,260, 5,778/826/1,656",,"p. 2305 Abstract; p. 2307 §2.1, Table 1"
+C015,split,official split; no test sample used for tuning,,p. 2307 §2.1
+C015,external,N,,p. 2307 §2.1; p. 2313 §3.5
+C015,key_comparison,"QWK 0.845, MAE 0.390, within ±1 95.6%; accuracy +2.11 pts and macro-F1 +1.71 vs ResNet34-ViT hybrid",,p. 2305 Abstract; p. 2309 §3.1 Table 3; pp. 2311-2313 §3.4 Table 4
+C015,ablation,partial,,p. 2308 §2.5; p. 2309 Table 2; p. 2313 Table 4
+C015,runs_ci,seed 42,,p. 2309 Table 2
+C015,code,NR,,p. 2314 §5 Data Availability
+C015,Q1_abl,U,,p. 2308 §2.5; p. 2313 Table 4
+C015,Q2_runs,N,,p. 2309 Table 2
+C015,Q3_patient,N,,"p. 2307 §2.1, Table 1"
+C015,Q5_ext,N,,p. 2307 §2.1; p. 2313 §3.5
+C015,Q6_code,N,,p. 2314 §5 Data Availability
+C093,dataset,"OAI-derived (Chen) 8,260",,"p. 187 Abstract; p. 190 §III.A, Table II"
+C093,split,single train/val/test,,p. 190 Table II; p. 203 §V.A
+C093,external,N,,p. 187 Abstract; p. 203 §V.A
+C093,key_comparison,ConvNeXt-Tiny alone best (up to 83.8% accuracy); weighted ensemble not better than single model by bootstrap CI; TTA consistently improved accuracy; sampling comparison reported (numbers not extracted),"Sampling & TTA comparison on 4-class test set (n=1,656, all with Focal Loss gamma=2): (1) 15% EfficientNet-B3 + 85% ConvNeXt-Tiny Ensemble + TTA (Table VI, p. 197): Standard (unweighted) sampling achieved Acc 82.50%, Macro-Rec 79.92%, Macro-Pre 82.64%, Macro-Spec 92.26%, Macro-F1 81.06%, MCC 0.6997, Kappa 0.6980 (QWK ~0.857, p. 196), MR 17.51%; Class-weighted sampling (WeightedRandomSampler) improved all metrics to Acc 83.00% (+0.50%), Macro-Rec 81.26% (+1.34%), Macro-Pre 82.81%, Macro-Spec 93.05%, Macro-F1 81.94% (+0.88%), MCC 0.7141 (+0.0144), Kappa 0.7135 (+0.0155), MR 17.03% (and G2 sensitivity rose from 63.31% to 75.8%, Fig. 2b; G2 PR-AUC rose from 0.76 to 0.79, Fig. 4). (2) Single models & TTA across sampling regimes (Fig. 8, p. 201): Under Standard sampling (No-TTA -> TTA): EfficientNet-B3 77.8% -> 79.2%, ConvNeXt-Tiny 82.9% -> 83.1%, 15/85 Ensemble 81.4% -> 82.5%. Under Class-weighted sampling (No-TTA -> TTA): EfficientNet-B3 78.4% -> 79.6%, ConvNeXt-Tiny 82.6% -> 83.8% (best overall), 15/85 Ensemble 82.0% -> 83.0% (55/45 Ensemble: 82.07%, Macro-F1 80.66%). (3) Bootstrap 95% CIs (N=1,000, Fig. 7, pp. 199-200): Standard TTA: EfficientNet-B3 79.2% [77.2-81.2%], ConvNeXt-Tiny 83.1% [81.3-84.9%], Ensemble 82.5% [80.6-84.4%]; Class-weighted TTA: EfficientNet-B3 80.37% [78.50-82.19%], ConvNeXt-Tiny 82.85% [81.10-84.66%], Ensemble 82.92% [81.22-84.72%] (overlapping CIs confirm ensemble is not statistically superior to ConvNeXt-Tiny alone).","pp. 195-201 §IV, Table VI, Figs. 2, 4, 7, 8"
+C093,ablation,Y (inference components),,"pp. 195-201 §IV, Table VI, Figs. 2, 7, 8"
+C093,runs_ci,bootstrap CI,,"p. 194 §III.I; pp. 199-200 §IV.B, Fig. 7"
+C093,code,NR,Google Drive repository provided (https://drive.google.com/drive/folders/18_Ii7qpgA35PsSx-vsdctCfbqmnrSgbh),p. 204 Declarations (Availability of data and material)
+C093,Q1_abl,Y,,"pp. 195-201 §IV, Table VI, Figs. 7 & 8"
+C093,Q2_runs,Y,,"p. 194 §III.I; pp. 199-200 §IV.B, Fig. 7"
+C093,Q3_patient,N,,"p. 190 §III.A, Table II"
+C093,Q5_ext,N,,p. 203 §V.A
+C093,Q6_code,N,Y,p. 204 Declarations (Availability of data and material)
