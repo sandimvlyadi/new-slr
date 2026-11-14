@@ -126,19 +126,28 @@ def cmd_bootstrap(args):
         run_cmd([COLAB_BIN, 'new', '-s', s, '--gpu', args.gpu])
     run_cmd([COLAB_BIN, 'install', '-s', s, 'timm', 'albumentations', 'opencv-python-headless', 'scikit-learn', 'scipy'])
 
-    # Package ramscore code and upload to /content/code.tar.gz
+    # Package only code/src and code/pyproject.toml (~45 KB, excluding .venv)
     code_tar = Path(tempfile.gettempdir()) / 'ramscore_code.tar.gz'
-    subprocess.run(['tar', '-czf', str(code_tar), '-C', str(ROOT), 'code'], check=True)
+    subprocess.run(
+        ['tar', '-czf', str(code_tar), '--exclude=.venv', '--exclude=__pycache__', '-C', str(ROOT), 'code/src', 'code/pyproject.toml'],
+        check=True,
+    )
     run_cmd([COLAB_BIN, 'upload', '-s', s, str(code_tar), '/content/ramscore_code.tar.gz'])
-
-    bundle = ROOT / 'data' / 'colab_data_bundle.tar.gz'
-    run_cmd([COLAB_BIN, 'upload', '-s', s, str(bundle), '/content/colab_data_bundle.tar.gz'])
+    run_cmd([COLAB_BIN, 'upload', '-s', s, RCLONE_CONF, '/content/colab.conf'])
 
     setup_py = Path(tempfile.gettempdir()) / 'colab_setup_remote.py'
     setup_py.write_text(
-        "import subprocess, pathlib, torch\n"
+        "import shutil, subprocess, pathlib, torch\n"
+        "if shutil.which('rclone') is None:\n"
+        "    subprocess.run(['apt-get', 'update', '-qq'], check=True)\n"
+        "    subprocess.run(['apt-get', 'install', '-y', '-qq', 'rclone'], check=True)\n"
         "pathlib.Path('/content/data').mkdir(exist_ok=True)\n"
         "subprocess.run(['tar', '-xzf', '/content/ramscore_code.tar.gz', '-C', '/content'], check=True)\n"
+        "if not pathlib.Path('/content/colab_data_bundle.tar.gz').exists():\n"
+        "    subprocess.run([\n"
+        "        'rclone', 'copy', '--config', '/content/colab.conf',\n"
+        f"        '{GDRIVE_REMOTE}/data/colab_data_bundle.tar.gz', '/content/'\n"
+        "    ], check=True)\n"
         "subprocess.run(['tar', '-xzf', '/content/colab_data_bundle.tar.gz', '-C', '/content/data'], check=True)\n"
         "print('CUDA available:', torch.cuda.is_available(), "
         "torch.cuda.get_device_name(0) if torch.cuda.is_available() else 'CPU')\n"
@@ -156,10 +165,15 @@ def run_remote_train(session: str, stage: str, run_name: str, cli_args: list[str
     full_argv = ['--name', run_name, '--out', remote_out] + cli_args
     runner_py = Path(tempfile.gettempdir()) / f'exec_{run_name}.py'
     runner_py.write_text(
-        "import sys\n"
+        "import subprocess, sys\n"
         "sys.path.insert(0, '/content/code/src')\n"
         "from ramscore.train import main\n"
         f"main({full_argv!r})\n"
+        "subprocess.run([\n"
+        "    'rclone', 'copy', '--config', '/content/colab.conf',\n"
+        "    '--exclude', 'model_best.pt',\n"
+        f"    '{remote_out}/{run_name}', '{GDRIVE_REMOTE}/runs/{stage}/{run_name}'\n"
+        "], check=False)\n"
     )
     t0 = time.time()
     run_cmd([COLAB_BIN, 'exec', '-s', session, '-f', str(runner_py)])
