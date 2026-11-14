@@ -1,0 +1,23 @@
+# Python & Virtual Environments
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+.pytest_cache/
+.ruff_cache/
+.venv/
+code/.venv/
+code/uv.lock
+
+# Datasets & Heavy Artifacts (stored on Google Drive: gdrive:new-slr-experiments/)
+data/
+artifacts/
+
+# Experiment Run Checkpoints & Temporary Outputs
+runs/**/*.pt
+runs/**/*.pth
+runs/**/*.npz
+runs/_smoke_test/
+tmp/
+*.tar.gz
+*.zip
