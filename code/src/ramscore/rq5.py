@@ -307,6 +307,18 @@ def train_mean_teacher(
     test_df, test_lg, test_lb = predict(teacher, test_loader, 'softmax', device, NATIVE_SCORES, return_logits=True)
     test_df.to_csv(out_dir / 'test_predictions.csv', index=False)
 
+    for tag, df_s, lg_s, lb_s in (('val', val_df, val_lg, val_lb), ('test', test_df, test_lg, test_lb)):
+        np.savez_compressed(
+            out_dir / f'{tag}_logits.npz',
+            logits=lg_s,
+            labels=lb_s,
+            gt=df_s['gt'].to_numpy(),
+            pred=df_s['pred'].to_numpy(),
+            case=df_s['case'].to_numpy(dtype=str),
+            patient=df_s['patient'].to_numpy(dtype=str),
+            joint=df_s['joint'].to_numpy(dtype=str),
+        )
+
     args_meta = {
         'name': name, 'model': 'resnet34', 'head': 'softmax', 'label_fraction': label_fraction,
         'fraction_seed': fraction_seed, 'seed': seed, 'image_size': 224, 'logit_adjust': 1.0,

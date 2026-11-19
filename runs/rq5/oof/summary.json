@@ -1,0 +1,6 @@
+{
+  "n_train_joints": 12688,
+  "n_issues_flagged": 3084,
+  "issue_rate": 0.24306431273644388,
+  "n_longitudinal_downweighted": 1638
+}

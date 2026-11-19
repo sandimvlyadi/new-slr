@@ -183,7 +183,7 @@ def train(args):
     from .train import seed_everything
 
     run_dir = Path(args.out) / args.name
-    run_dir.mkdir(parents=True, exist_ok=False)
+    run_dir.mkdir(parents=True, exist_ok=True)
     seed_everything(args.seed)
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     splits = load_splits(args)
@@ -229,9 +229,13 @@ def train(args):
 
 
 @torch.no_grad()
-def classifier_logits(run, records, device, workers):
-    net = build_model('resnet34', len(NATIVE_SCORES), 'softmax')
-    net.load_state_dict(torch.load(Path(run) / 'model_best.pt', map_location='cpu')['model'])
+def classifier_logits(run, records, device, workers, split=None):
+    if split is not None:
+        npz_path = Path(run) / f'{split}_logits.npz'
+        if npz_path.exists():
+            return np.load(npz_path)['logits']
+    net = build_model('resnet34', len(NATIVE_SCORES), 'softmax', pretrained=False)
+    net.load_state_dict(torch.load(Path(run) / 'model_best.pt', map_location='cpu', weights_only=False)['model'])
     net.to(device).eval()
     ds = BEDataset(records, NATIVE_SCORES, 224, None)
     out = [net(b['img'].to(device)).float().cpu() for b in DataLoader(ds, batch_size=64, num_workers=workers)]
@@ -240,7 +244,7 @@ def classifier_logits(run, records, device, workers):
 
 def gate(args):
     run_dir = Path(args.out) / args.name
-    run_dir.mkdir(parents=True, exist_ok=False)
+    run_dir.mkdir(parents=True, exist_ok=True)
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     (run_dir / 'args.json').write_text(json.dumps(vars(args), indent=2))
     splits = load_splits(args)
@@ -248,7 +252,7 @@ def gate(args):
     for s in ('val', 'test'):
         df = pd.read_csv(Path(args.normality) / f'scores_{s}.csv')
         score[s] = df['score'].to_numpy()
-        logits = classifier_logits(args.classifier, splits[s], device, args.workers)
+        logits = classifier_logits(args.classifier, splits[s], device, args.workers, split=s)
         positive[s] = np.asarray(NATIVE_SCORES)[logits[:, 1:].argmax(axis=1) + 1]
     t, val_bacc4 = choose_gate(score['val'], [r['score'] for r in splits['val']], positive['val'])
     (run_dir / 'cutpoints.json').write_text(json.dumps({'gate': t, 'val_bacc4': val_bacc4}, indent=2))

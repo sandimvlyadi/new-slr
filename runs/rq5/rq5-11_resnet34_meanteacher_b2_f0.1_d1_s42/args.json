@@ -1,0 +1,10 @@
+{
+  "name": "rq5-11_resnet34_meanteacher_b2_f0.1_d1_s42",
+  "model": "resnet34",
+  "head": "softmax",
+  "label_fraction": 0.1,
+  "fraction_seed": 1,
+  "seed": 42,
+  "image_size": 224,
+  "logit_adjust": 1.0
+}

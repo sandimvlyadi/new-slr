@@ -1,4 +1,5 @@
 # Python & Virtual Environments
+.env
 __pycache__/
 *.py[cod]
 *$py.class
